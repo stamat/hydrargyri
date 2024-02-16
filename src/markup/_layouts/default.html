@@ -11,8 +11,8 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com"> 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="{{ relativePathPrefix }}dist/site.min.css">
-  
+  <link rel="stylesheet" href="{{ relativePathPrefix }}dist/site.css">
+
   {% set fontparts = '' %}
   
   {% for font in fonts %}
@@ -39,7 +39,7 @@
     {% block content %} {% endblock %}
   </div>
   <script>hljs.highlightAll();</script>
-  <script async type="text/javascript" src="{{ relativePathPrefix }}dist/salis.min.js"></script>
+  <script async type="text/javascript" src="{{ relativePathPrefix }}dist/salis.js"></script>
 
   {% if livereload_port %}
     <script>

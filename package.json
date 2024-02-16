@@ -1,24 +1,23 @@
 {
   "private": true,
-  "name": "shitstorm",
+  "name": "salis",
   "version": "1.0.0",
-  "description": "Poops project template",
+  "description": "Web components",
   "main": "src/scripts/script.js",
-  "style": "src/scripts/index.scss",
-  "homepage": "https://stamat.github.io/shitstorm/",
+  "homepage": "https://stamat.github.io/salis/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stamat/shitstorm.git"
+    "url": "https://github.com/stamat/salis.git"
   },
   "keywords": [
-    "poops",
-    "template"
+    "web",
+    "components"
   ],
   "author": "Nikola Stamatovic <@stamat>",
   "contributors": [],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/stamat/shitstorm/issues"
+    "url": "https://github.com/stamat/salis/issues"
   },
   "scripts": {
     "dev": "poops",

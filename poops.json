@@ -1,7 +1,7 @@
 {
   "scripts": [{
-    "in": "src/scripts/script.js",
-    "out": "dist/script.js",
+    "in": "src/scripts/salis.js",
+    "out": "dist/salis.js",
     "options": {
       "sourcemap": true,
       "minify": true,
@@ -24,9 +24,9 @@
     "out": "/",
     "options": {
       "site": {
-        "title": "💩🌪️ Shitstorm",
-        "description": "Poops project template",
-        "url": "https://stamat.github.io/shitstorm"
+        "title": "<sup>🜔</sup> Salis",
+        "description": "Web components",
+        "url": "https://stamat.github.io/salis"
       },
       "data": [
         "_data/fonts.yaml"

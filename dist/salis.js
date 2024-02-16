@@ -1,20 +1,35 @@
 /* salis v1.0.0 | https://stamat.github.io/salis/ | MIT License */
 (() => {
-  // node_modules/book-of-spells/src/browser.mjs
-  function isUserAgentMobile(str) {
-    return /\b(BlackBerry|webOS|iPhone|IEMobile)\b/i.test(str) || /\b(Android|Windows Phone|iPad|iPod)\b/i.test(str);
-  }
-  function isMobile() {
-    if ("maxTouchPoints" in navigator)
-      return navigator.maxTouchPoints > 0;
-    if ("matchMedia" in window)
-      return !!matchMedia("(pointer:coarse)").matches;
-    if ("orientation" in window)
-      return true;
-    return isUserAgentMobile(navigator.userAgent);
-  }
-
   // src/scripts/salis.js
-  console.log(`hello ${isMobile() ? "mobile" : "desktop"} world!`);
+  var Salis = class {
+    constructor(name, attributesToObserve) {
+      class SalisElement extends HTMLElement {
+        static get observedAttributes() {
+          return attributesToObserve;
+        }
+        constructor() {
+          super();
+          this._attributes = {};
+          for (let attr of attributesToObserve) {
+            Object.defineProperty(this, attr, {
+              get: () => this.getAttribute(attr),
+              set: (value) => this.setAttribute(attr, value)
+            });
+          }
+        }
+        attributeChangedCallback(name2, oldValue, newValue) {
+          console.log(`Attribute ${name2} changed from ${oldValue} to ${newValue}`);
+          this._attributes[name2] = newValue;
+        }
+      }
+      this.class = SalisElement;
+      this.name = name;
+      customElements.define(name, SalisElement);
+    }
+  };
+  var salis = new Salis("salis-element", ["test", "attr2"]);
+  console.log(salis);
+  document.querySelector("salis-element").attr2 = 54;
+  console.log(document.querySelector("salis-element"));
 })();
 //# sourceMappingURL=salis.js.map

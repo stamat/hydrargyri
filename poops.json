@@ -24,7 +24,7 @@
     "out": "/",
     "options": {
       "site": {
-        "title": "<sup>🜔</sup> Salis",
+        "title": "Salis",
         "description": "Web components",
         "url": "https://stamat.github.io/salis"
       },

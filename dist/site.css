@@ -7152,7 +7152,10 @@ template {
     clear: none;
   }
 }
-a {
-  color: #824F2D;
+.github-buttons {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  padding: 16px;
 }
-/*# sourceMappingURL=style.css.map */
+/*# sourceMappingURL=site.css.map */

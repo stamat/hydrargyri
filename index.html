@@ -36,23 +36,29 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 </head>
 <body>
-  
-<div class="container">
-  <h1><sup>🜔</sup> Salis</h1>
-  Web components
-
-<p>  Discover <a href="https://github.com/stamat/poops/">Poops</a> - super fast and easy bundler and static site generator.</p>
-</div>
+  <div class="container">
+    
+<h1><sup>🜔</sup> Salis</h1>
+<p>Web components</p>
+<p>Discover <a href="https://github.com/stamat/poops/">Poops</a> - super fast and easy bundler and static site generator.</p>
 
 
-
-  
-  <script>document.write('<script src="http://'
-    + (location.host || 'localhost').split(':')[0]
-    + ':35730/livereload.js?snipver=1"></'
-    + 'script>')</script>
-  
+  </div>
   <script>hljs.highlightAll();</script>
   <script async type="text/javascript" src="dist/script.min.js"></script>
+
+  
+    <script>
+      const host = (location.host || 'localhost').split(':')[0];
+      const isLocalhost = host === 'localhost';
+      const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(host);
+      if (isLocalhost || isIP) {
+        document.write('<script src="http://'
+        + host
+        + ':35729/livereload.js?snipver=1"></'
+        + 'script>')
+      }
+    </script>
+  
 </body>
 </html>

@@ -64,7 +64,7 @@ export default class Salis {
         }
 
         this.querySelectorAll('[bind],[data-bind]').forEach((el) => {
-          if ( el.closest(self.name).parentNode.closest(self.name)) return;
+          if ( el.closest(self.name).parentNode.closest(self.name) === this) return;
           const bind = el.getAttribute('bind') || el.getAttribute('data-bind');
           if (this._binds.hasOwnProperty(bind)) {
             if (isArray(this._binds[bind])) this._binds[bind].push(el);
@@ -75,10 +75,10 @@ export default class Salis {
         });
 
         this.querySelectorAll('[on],[data-on]').forEach((el) => {
-          if ( el.closest(self.name).parentNode.closest(self.name)) return;
+          if (el.closest(self.name).parentNode.closest(self.name) === this) return;
           const value = el.getAttribute('on') || el.getAttribute('data-on');
           const parts = value.split(':');
-
+          
           this.addEventListener(parts[0], (e) => {
             this.executeHandler(parts[1], e);
           });
@@ -94,9 +94,15 @@ export default class Salis {
         newValue = stringToPrimitive(newValue);
         this._attributes[name] = newValue;
 
-        if (this.binds.hasOwnProperty(name)) this._binds[name].textContent = newValue;
+        if (this.binds.hasOwnProperty(name)) {
+          if (isArray(this.binds[name])) this.binds[name].forEach((el) => {
+            el.textContent = newValue;
+          });
+          else
+          this._binds[name].textContent = newValue;
+        }
 
-        console.log(`Attribute ${name} changed from ${oldValue} to ${newValue}`);
+        // console.log(`Attribute ${name} changed from ${oldValue} to ${newValue}`);
         if (this._options.attributeChangedCallback) this._options.attributeChangedCallback(name, oldValue, newValue);
       }
     }
@@ -107,24 +113,19 @@ export default class Salis {
 }
 
 const salis = new Salis('salis-element', {
-  attributes: ['test', 'attr2', 'aria-foo'],
-  handlers: {
-    yell: (e, el) => {
-      console.log('yell', e, el)
-    }
-  },
+  attributes: ['test', 'attr2', 'aria-foo']
 });
 
-console.log(salis)
+//console.log(salis)
 
 const elem = document.querySelector('salis-element[test="baz"]');
-console.log(elem)
+//console.log(elem)
 
 elem.attr2 = 54
 elem['aria-foo'] = 'bar'
-console.log(elem.foo)
+//console.log(elem.foo)
 elem.handlers.yell = (e, el) => {
-  console.log('yell', e, el)
+  console.log('yell', e, el, this)
 }
 
 

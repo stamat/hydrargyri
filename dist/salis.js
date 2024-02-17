@@ -146,10 +146,13 @@
   elem.attr2 = 54;
   elem["aria-foo"] = "bar";
   elem.handlers.yell = (e, el) => {
-    console.log("yell", e, el, void 0);
+    console.log("yell", e, el);
   };
   var elem3 = document.querySelector('salis-element[test="bar"]');
   elem3.attr2 = 78;
+  elem3.handlers.yell = (e, el) => {
+    console.log("AAAAAAAAAAAAAAAAA!!!!!!");
+  };
   var elem2 = document.querySelector('salis-element[test="foo"]');
   elem2.attr2 = 23;
   console.log(elem2.handlers);

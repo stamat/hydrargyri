@@ -1,6 +1,13 @@
 import { isArray, isObject, shallowMerge, stringToPrimitive } from "book-of-spells";
 
 //TODO: Does this have to be a class? It can be a function...
+/**
+ * Salis
+ * 
+ * @todo dash-case attributes vs camelCase, check how it's resolved
+ * @todo test the support for custom properties and bind them to the DOM
+ * @todo multiple event handlers separated by semicolon
+ */
 export default class Salis {
   constructor(name, options) {
     this.name = name;
@@ -125,11 +132,15 @@ elem.attr2 = 54
 elem['aria-foo'] = 'bar'
 //console.log(elem.foo)
 elem.handlers.yell = (e, el) => {
-  console.log('yell', e, el, this)
+  console.log('yell', e, el)
 }
 
 const elem3 = document.querySelector('salis-element[test="bar"]');
 elem3.attr2 = 78
+
+elem3.handlers.yell = (e, el) => {
+  console.log('AAAAAAAAAAAAAAAAA!!!!!!');
+}
 
 const elem2 = document.querySelector('salis-element[test="foo"]');
 elem2.attr2 = 23

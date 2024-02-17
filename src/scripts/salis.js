@@ -88,6 +88,7 @@ export default class Salis {
             return this._attributes[attr];
           },
           set: (value) => {
+            this.setAttribute(attr, value);
             this._attributes[attr] = value;
             this.update(attr);
           }
@@ -133,15 +134,17 @@ export default class Salis {
         }
       }
       
+      //TODO: what about single attribute change handler?
       attributeChangedCallback(name, oldValue, newValue) {
-        oldValue = stringToPrimitive(oldValue);
         newValue = stringToPrimitive(newValue);
         this._attributes[name] = newValue;
-
         this.update(name);
 
         console.log(`Attribute ${name} changed from ${oldValue} to ${newValue}`);
-        if (this._options.attributeChangedCallback) this._options.attributeChangedCallback(name, oldValue, newValue);
+        if (this._options.attributeChangedCallback) {
+          oldValue = stringToPrimitive(oldValue);
+          this._options.attributeChangedCallback(name, oldValue, newValue);
+        }
       }
     }
     this.class = SalisElement;

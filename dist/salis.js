@@ -71,29 +71,37 @@
           this._initializeHandlers();
         }
         _initializeBinds() {
-          this.querySelectorAll("[bind],[data-bind]").forEach((el) => {
-            if (el.closest(this.tagName) !== this)
-              return;
-            const bind = el.getAttribute("bind") || el.getAttribute("data-bind");
-            if (this._binds.hasOwnProperty(bind)) {
-              if (isArray(this._binds[bind]))
-                this._binds[bind].push(el);
-              else
-                this._binds[bind] = [this._binds[bind], el];
-            } else {
-              this._binds[bind] = el;
-            }
-          });
+          this.querySelectorAll("[bind],[data-bind]").forEach(this._initializeSingleBind.bind(this));
+          this._initializeSingleBind(this);
+        }
+        _initializeSingleBind(el) {
+          if (el.closest(this.tagName) !== this)
+            return;
+          const bind = el.getAttribute("bind") || el.getAttribute("data-bind");
+          if (!bind)
+            return;
+          if (this._binds.hasOwnProperty(bind)) {
+            if (isArray(this._binds[bind]))
+              this._binds[bind].push(el);
+            else
+              this._binds[bind] = [this._binds[bind], el];
+          } else {
+            this._binds[bind] = el;
+          }
         }
         _initializeHandlers() {
-          this.querySelectorAll("[on],[data-on]").forEach((el) => {
-            if (el.closest(this.tagName) !== this)
-              return;
-            const value = el.getAttribute("on") || el.getAttribute("data-on");
-            const parts = value.split(":");
-            el.addEventListener(parts[0], (e) => {
-              this._executeHandler(parts[1], e);
-            });
+          this.querySelectorAll("[on],[data-on]").forEach(this._initializeSingleHandler.bind(this));
+          this._initializeSingleHandler(this);
+        }
+        _initializeSingleHandler(el) {
+          if (el.closest(this.tagName) !== this)
+            return;
+          const value = el.getAttribute("on") || el.getAttribute("data-on");
+          if (!value)
+            return;
+          const parts = value.split(":");
+          el.addEventListener(parts[0], (e) => {
+            this._executeHandler(parts[1], e);
           });
         }
         subscribeAttribute(attr) {
@@ -176,6 +184,7 @@
   elem.handlers.yell = (e, el) => {
     console.log("yell", e, el);
   };
+  console.log(elem.binds);
   var elem3 = document.querySelector('salis-element[test="bar"]');
   elem3.attr2 = 78;
   elem3.subscribeProperty("foo");

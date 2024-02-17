@@ -5,7 +5,7 @@ layout: default
 # <sup>🜔</sup> {{ site.title }}
 <p class="p1">{{ site.description }}<p>
 <div>
-  <salis-element test="baz" foo="bar">
+  <salis-element test="baz" foo="bar" on="click:yell">
     <div bind="attr2">
       45
     </div>

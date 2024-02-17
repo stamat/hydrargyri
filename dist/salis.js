@@ -25,9 +25,6 @@
       return bool;
     return stringToNumber(str) || str;
   }
-  function isObject(o) {
-    return typeof o === "object" && !Array.isArray(o) && o !== null;
-  }
   function isArray(o) {
     return Array.isArray(o);
   }
@@ -49,6 +46,12 @@
         get binds() {
           return this._binds;
         }
+        get attributes() {
+          return this._attributes;
+        }
+        get properties() {
+          return this._properties;
+        }
         constructor() {
           super();
           this._attributes = {};
@@ -58,40 +61,16 @@
           this._binds = {};
           this.setAttribute("salis", "");
           for (let attr of this._options.attributes) {
-            Object.defineProperty(this, attr, {
-              get: () => {
-                return stringToPrimitive(this.getAttribute(attr));
-              },
-              set: (value) => {
-                if (isArray(value) || isObject(value))
-                  value = JSON.stringify(value);
-                else
-                  value = value.toString();
-                this.setAttribute(attr, value);
-              }
-            });
+            this.subscribeAttribute(attr);
           }
           for (let prop in this._options.properties) {
-            Object.defineProperty(this, prop, {
-              get: () => {
-                return this._properties[prop];
-              },
-              set: (value) => {
-                this._properties[prop] = value;
-                if (this.binds.hasOwnProperty(prop)) {
-                  if (isArray(this.binds[prop]))
-                    this.binds[prop].forEach((el) => {
-                      el.textContent = value;
-                    });
-                  else
-                    this.binds[prop].textContent = value;
-                }
-              }
-            });
+            this.subscribeProperty(prop);
           }
-          for (let handler in this._options.handlers) {
-            this.handlers[handler] = this._options.handlers[handler];
-          }
+          this.handlers = this._options.handlers || {};
+          this._initializeBinds();
+          this._initializeHandlers();
+        }
+        _initializeBinds() {
           this.querySelectorAll("[bind],[data-bind]").forEach((el) => {
             if (el.closest(this.tagName) !== this)
               return;
@@ -105,6 +84,8 @@
               this._binds[bind] = el;
             }
           });
+        }
+        _initializeHandlers() {
           this.querySelectorAll("[on],[data-on]").forEach((el) => {
             if (el.closest(this.tagName) !== this)
               return;
@@ -115,22 +96,66 @@
             });
           });
         }
+        subscribeAttribute(attr) {
+          if (!this._attributes.hasOwnProperty(attr))
+            this._attributes[attr] = null;
+          Object.defineProperty(this, attr, {
+            get: () => {
+              return this._attributes[attr];
+            },
+            set: (value) => {
+              this._attributes[attr] = value;
+              this.update(attr);
+            }
+          });
+        }
+        subscribeProperty(prop) {
+          if (!this._properties.hasOwnProperty(prop))
+            this._properties[prop] = null;
+          Object.defineProperty(this, prop, {
+            get: () => {
+              return this._properties[prop];
+            },
+            set: (value) => {
+              this._properties[prop] = value;
+              this.update(prop);
+            }
+          });
+        }
         _executeHandler(name2, e) {
+          if (this.hasOwnProperty(name2) && typeof this[name2] === "function")
+            this[name2](e, this);
           if (this.handlers.hasOwnProperty(name2))
             this.handlers[name2](e, this);
+        }
+        //TODO: there should be a way to tell how to update the binding, if it's textContent, innerHTML, value, etc.
+        // There should be a way to also add callbacks to the binding, so when it's updated, it calls a function.
+        // You should be able to set multiple bindings separated by semicolon.
+        // Something like attr2:textContent:callbackName;attr3:innerHTML:callbackName2
+        _updateBinding(bind) {
+          if (!this._binds.hasOwnProperty(bind))
+            return;
+          if (isArray(this._binds[bind]))
+            this._binds[bind].forEach((el) => {
+              el.textContent = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+            });
+          else
+            this._binds[bind].textContent = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+        }
+        update(bind) {
+          if (bind) {
+            this._updateBinding(bind);
+          } else
+            for (let bind2 in this._binds) {
+              this._updateBinding(bind2);
+            }
         }
         attributeChangedCallback(name2, oldValue, newValue) {
           oldValue = stringToPrimitive(oldValue);
           newValue = stringToPrimitive(newValue);
           this._attributes[name2] = newValue;
-          if (this.binds.hasOwnProperty(name2)) {
-            if (isArray(this.binds[name2]))
-              this.binds[name2].forEach((el) => {
-                el.textContent = newValue;
-              });
-            else
-              this._binds[name2].textContent = newValue;
-          }
+          this.update(name2);
+          console.log(`Attribute ${name2} changed from ${oldValue} to ${newValue}`);
           if (this._options.attributeChangedCallback)
             this._options.attributeChangedCallback(name2, oldValue, newValue);
         }
@@ -150,8 +175,12 @@
   };
   var elem3 = document.querySelector('salis-element[test="bar"]');
   elem3.attr2 = 78;
-  elem3.handlers.yell = (e, el) => {
+  elem3.subscribeProperty("foo");
+  elem3.foo = "bar";
+  elem3.yell = (e, el) => {
     console.log("AAAAAAAAAAAAAAAAA!!!!!!");
+    elem3.foo = "baz";
+    console.log(void 0);
   };
   var elem2 = document.querySelector('salis-element[test="foo"]');
   elem2.attr2 = 23;

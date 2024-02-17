@@ -1,11 +1,10 @@
 import { isArray, isObject, shallowMerge, stringToPrimitive } from "book-of-spells";
 
-//TODO: Does this have to be a class? It can be a function...
+//TODO: Does this have to be a class? It can be a function... Or even better try to extend a custom class with SalisElement
 /**
  * Salis
  * 
  * @todo dash-case attributes vs camelCase, check how it's resolved
- * @todo test the support for custom properties and bind them to the DOM
  * @todo multiple event handlers separated by semicolon
  */
 export default class Salis {
@@ -26,6 +25,14 @@ export default class Salis {
         return this._binds;
       }
 
+      get attributes() {
+        return this._attributes;
+      }
+
+      get properties() {
+        return this._properties;
+      }
+
       constructor() {
         super();
         this._attributes = {};
@@ -36,40 +43,20 @@ export default class Salis {
         this.setAttribute('salis', '');
 
         for (let attr of this._options.attributes) {
-          Object.defineProperty(this, attr, {
-            get: () => {
-              return stringToPrimitive(this.getAttribute(attr))
-            },
-            set: (value) => {
-              if (isArray(value) || isObject(value)) value = JSON.stringify(value);
-              else value = value.toString();
-              this.setAttribute(attr, value)
-            }
-          });
+          this.subscribeAttribute(attr);
         }
 
         for (let prop in this._options.properties) {
-          Object.defineProperty(this, prop, {
-            get: () => {
-              return this._properties[prop];
-            },
-            set: (value) => {
-              this._properties[prop] = value;
-
-              if (this.binds.hasOwnProperty(prop)) {
-                if (isArray(this.binds[prop])) this.binds[prop].forEach((el) => {
-                  el.textContent = value;
-                });
-                else this.binds[prop].textContent = value;
-              }
-            }
-          });
+          this.subscribeProperty(prop);
         }
 
-        for (let handler in this._options.handlers) {
-          this.handlers[handler] = this._options.handlers[handler];
-        }
+        this.handlers = this._options.handlers || {};
 
+        this._initializeBinds();
+        this._initializeHandlers();
+      }
+
+      _initializeBinds() {
         this.querySelectorAll('[bind],[data-bind]').forEach((el) => {
           if (el.closest(this.tagName) !== this) return;
           const bind = el.getAttribute('bind') || el.getAttribute('data-bind');
@@ -80,7 +67,9 @@ export default class Salis {
             this._binds[bind] = el;
           }
         });
-
+      }
+    
+      _initializeHandlers() {
         this.querySelectorAll('[on],[data-on]').forEach((el) => {
           if (el.closest(this.tagName) !== this) return;
           const value = el.getAttribute('on') || el.getAttribute('data-on');
@@ -92,8 +81,56 @@ export default class Salis {
         });
       }
 
+      subscribeAttribute(attr) {
+        if (!this._attributes.hasOwnProperty(attr)) this._attributes[attr] = null;
+        Object.defineProperty(this, attr, {
+          get: () => {
+            return this._attributes[attr];
+          },
+          set: (value) => {
+            this._attributes[attr] = value;
+            this.update(attr);
+          }
+        });
+      }
+
+      subscribeProperty(prop) {
+        if (!this._properties.hasOwnProperty(prop)) this._properties[prop] = null;
+        Object.defineProperty(this, prop, {
+          get: () => {
+            return this._properties[prop];
+          },
+          set: (value) => {
+            this._properties[prop] = value;
+            this.update(prop);
+          }
+        });
+      }
+
       _executeHandler(name, e) {
+        if (this.hasOwnProperty(name) && typeof this[name] === 'function') this[name](e, this);
         if (this.handlers.hasOwnProperty(name)) this.handlers[name](e, this);
+      }
+
+      //TODO: there should be a way to tell how to update the binding, if it's textContent, innerHTML, value, etc.
+      // There should be a way to also add callbacks to the binding, so when it's updated, it calls a function.
+      // You should be able to set multiple bindings separated by semicolon.
+      // Something like attr2:textContent:callbackName;attr3:innerHTML:callbackName2
+      _updateBinding(bind) {
+        if (!this._binds.hasOwnProperty(bind)) return;
+        if (isArray(this._binds[bind])) this._binds[bind].forEach((el) => {
+          el.textContent = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+        });
+        else this._binds[bind].textContent = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+      }
+
+      update(bind) {
+        if (bind) {
+          this._updateBinding(bind);
+        } else
+        for (let bind in this._binds) {
+          this._updateBinding(bind);
+        }
       }
       
       attributeChangedCallback(name, oldValue, newValue) {
@@ -101,20 +138,14 @@ export default class Salis {
         newValue = stringToPrimitive(newValue);
         this._attributes[name] = newValue;
 
-        if (this.binds.hasOwnProperty(name)) {
-          if (isArray(this.binds[name])) this.binds[name].forEach((el) => {
-            el.textContent = newValue;
-          });
-          else
-          this._binds[name].textContent = newValue;
-        }
+        this.update(name);
 
-        // console.log(`Attribute ${name} changed from ${oldValue} to ${newValue}`);
+        console.log(`Attribute ${name} changed from ${oldValue} to ${newValue}`);
         if (this._options.attributeChangedCallback) this._options.attributeChangedCallback(name, oldValue, newValue);
       }
     }
     this.class = SalisElement;
-
+    
     customElements.define(name, SalisElement);
   }
 }
@@ -137,9 +168,13 @@ elem.handlers.yell = (e, el) => {
 
 const elem3 = document.querySelector('salis-element[test="bar"]');
 elem3.attr2 = 78
+elem3.subscribeProperty('foo')
+elem3.foo = 'bar'
 
-elem3.handlers.yell = (e, el) => {
+elem3.yell = (e, el) => {
   console.log('AAAAAAAAAAAAAAAAA!!!!!!');
+  elem3.foo = 'baz';
+  console.log(this);
 }
 
 const elem2 = document.querySelector('salis-element[test="foo"]');

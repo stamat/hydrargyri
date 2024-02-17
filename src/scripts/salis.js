@@ -171,6 +171,8 @@ salis('salis-element', {
 
 //console.log(salis)
 
+window.whatever = 'foo'
+
 const elem = document.querySelector('salis-element[test="baz"]');
 //console.log(elem)
 
@@ -180,6 +182,8 @@ elem['aria-foo'] = 'bar'
 elem.handlers.yell = (e, el) => {
   console.log('yell', e, el)
 }
+
+elem.update()
 
 console.log(elem.binds)
 

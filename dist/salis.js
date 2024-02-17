@@ -182,12 +182,14 @@
   salis("salis-element", {
     attributes: ["test", "attr2", "aria-foo"]
   });
+  window.whatever = "foo";
   var elem = document.querySelector('salis-element[test="baz"]');
   elem.attr2 = 54;
   elem["aria-foo"] = "bar";
   elem.handlers.yell = (e, el) => {
     console.log("yell", e, el);
   };
+  elem.update();
   console.log(elem.binds);
   var elem3 = document.querySelector('salis-element[test="bar"]');
   elem3.attr2 = 78;

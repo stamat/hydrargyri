@@ -88,6 +88,33 @@
           this._binds[bind] = el;
         }
       }
+      //TODO: this
+      parseBindString(value2) {
+        const parts = value2.split(";");
+        const binds = {};
+        for (let part of parts) {
+          const entry = this.parseBindEntry(part);
+          if (binds.hasOwnProperty(entry.path[0])) {
+            if (isArray(binds[entry.path[0]]))
+              binds[entry.path[0]].push(entry);
+            else
+              binds[entry.path[0]] = [binds[entry.path[0]], entry];
+          } else {
+            binds[entry.path[0]] = entry;
+          }
+        }
+      }
+      //TODO: and this
+      parseBindEntry(entry) {
+        const parts = value.split(":");
+        const path = parts[0];
+        let type = parts[1];
+        const typeParts = type.split("#");
+        type = typeParts[0];
+        const attribute = typeParts[1];
+        const callback = parts[2];
+        return { path, type, attribute, callback };
+      }
       _initializeHandlers() {
         this.querySelectorAll("[on],[data-on]").forEach(this._initializeSingleHandler.bind(this));
         this._initializeSingleHandler(this);
@@ -95,10 +122,10 @@
       _initializeSingleHandler(el) {
         if (el.closest(this.tagName) !== this)
           return;
-        const value = el.getAttribute("on") || el.getAttribute("data-on");
-        if (!value)
+        const value2 = el.getAttribute("on") || el.getAttribute("data-on");
+        if (!value2)
           return;
-        const parts = value.split(":");
+        const parts = value2.split(":");
         el.addEventListener(parts[0], (e) => {
           this._executeHandler(parts[1], e);
         });
@@ -110,9 +137,9 @@
           get: () => {
             return this._attributes[attr];
           },
-          set: (value) => {
-            this.setAttribute(attr, value);
-            this._attributes[attr] = value;
+          set: (value2) => {
+            this.setAttribute(attr, value2);
+            this._attributes[attr] = value2;
             this.update(attr);
           }
         });
@@ -124,8 +151,8 @@
           get: () => {
             return this._properties[prop];
           },
-          set: (value) => {
-            this._properties[prop] = value;
+          set: (value2) => {
+            this._properties[prop] = value2;
             this.update(prop);
           }
         });
@@ -144,17 +171,17 @@
       _updateBinding(bind) {
         if (!this._binds.hasOwnProperty(bind))
           return;
-        let value = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
-        if (value === void 0 && window && window.hasOwnProperty(bind))
-          value = window[bind];
-        if (value === void 0)
+        let value2 = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+        if (value2 === void 0 && window && window.hasOwnProperty(bind))
+          value2 = window[bind];
+        if (value2 === void 0)
           return;
         if (isArray(this._binds[bind]))
           this._binds[bind].forEach((el) => {
-            el.textContent = value;
+            el.textContent = value2;
           });
         else
-          this._binds[bind].textContent = value;
+          this._binds[bind].textContent = value2;
       }
       update(bind) {
         if (bind) {

@@ -6,7 +6,43 @@ import { isArray, isObject, shallowMerge, stringToPrimitive } from "book-of-spel
  * 
  * @todo dash-case attributes vs camelCase, check how it's resolved
  * @todo multiple event handlers separated by semicolon
+ * 
+ * Do this in a declarative way, each binding type should be a function and then call it by name
+ * bind="
+ *  variable.property:text;
+ *  variable2.property2:html, 
+ *  variable3.property3:value, 
+ *  variable4.property4:attribute#href
+ *"
+ * on="
+ * click:handlerName;
+ * mouseover:handlerName2
+ * "
  */
+
+/**
+ * getObjectValueByPath
+ * 
+ * @param {Object} obj
+ * @param {Array|String} path
+ * @returns {Any}
+ * 
+ * @example
+ * const obj = {
+ *  prop1: {
+ *    prop2: {
+ *      prop3: 'foo'
+ *    }
+ *  }
+ * }
+ * 
+ * getObjectValueByPath(obj, 'prop1.prop2.prop3') // 'foo'
+ */
+function getObjectValueByPath(obj, path) {
+  if (typeof path === 'string') path = path.split('.');
+  return path.reduce((acc, part) => acc[part], obj);
+}
+
 export default function salis(name, options) {
   this.name = name;
   this.options = {};
@@ -64,12 +100,40 @@ export default function salis(name, options) {
       if (el.closest(this.tagName) !== this) return;
       const bind = el.getAttribute('bind') || el.getAttribute('data-bind');
       if (!bind) return;
+      
       if (this._binds.hasOwnProperty(bind)) {
         if (isArray(this._binds[bind])) this._binds[bind].push(el);
         else this._binds[bind] = [this._binds[bind], el];
       } else {
         this._binds[bind] = el;
       }
+    }
+
+    //TODO: this
+    parseBindString(value) {
+      const parts = value.split(';');
+      const binds = {};
+      for (let part of parts) {
+        const entry = this.parseBindEntry(part);
+        if (binds.hasOwnProperty(entry.path[0])) {
+          if (isArray(binds[entry.path[0]])) binds[entry.path[0]].push(entry);
+          else binds[entry.path[0]] = [binds[entry.path[0]], entry];
+        } else {
+          binds[entry.path[0]] = entry;
+        }
+      }
+    }
+
+    //TODO: and this
+    parseBindEntry(entry) {
+      const parts = value.split(':');
+      const path = parts[0];
+      let type = parts[1];
+      const typeParts = type.split('#');
+      type = typeParts[0];
+      const attribute = typeParts[1];
+      const callback = parts[2];
+      return { path, type, attribute, callback };
     }
 
     _initializeHandlers() {

@@ -140,15 +140,21 @@
       // There should be a way to also add callbacks to the binding, so when it's updated, it calls a function.
       // You should be able to set multiple bindings separated by semicolon.
       // Something like attr2:textContent:callbackName;attr3:innerHTML:callbackName2
+      //Also what about properties of the object values? like obj.prop1, obj.prop2, etc.
       _updateBinding(bind) {
         if (!this._binds.hasOwnProperty(bind))
           return;
+        let value = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+        if (value === void 0 && window && window.hasOwnProperty(bind))
+          value = window[bind];
+        if (value === void 0)
+          return;
         if (isArray(this._binds[bind]))
           this._binds[bind].forEach((el) => {
-            el.textContent = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+            el.textContent = value;
           });
         else
-          this._binds[bind].textContent = this._attributes.hasOwnProperty(bind) ? this._attributes[bind] : this._properties[bind];
+          this._binds[bind].textContent = value;
       }
       update(bind) {
         if (bind) {

@@ -93,7 +93,7 @@
             this.handlers[handler] = this._options.handlers[handler];
           }
           this.querySelectorAll("[bind],[data-bind]").forEach((el) => {
-            if (el.closest(self.name).parentNode.closest(self.name) === this)
+            if (el.closest(self.name) !== this)
               return;
             const bind = el.getAttribute("bind") || el.getAttribute("data-bind");
             if (this._binds.hasOwnProperty(bind)) {
@@ -106,16 +106,16 @@
             }
           });
           this.querySelectorAll("[on],[data-on]").forEach((el) => {
-            if (el.closest(self.name).parentNode.closest(self.name) === this)
+            if (el.closest(self.name) !== this)
               return;
             const value = el.getAttribute("on") || el.getAttribute("data-on");
             const parts = value.split(":");
-            this.addEventListener(parts[0], (e) => {
-              this.executeHandler(parts[1], e);
+            el.addEventListener(parts[0], (e) => {
+              this._executeHandler(parts[1], e);
             });
           });
         }
-        executeHandler(name2, e) {
+        _executeHandler(name2, e) {
           if (this.handlers.hasOwnProperty(name2))
             this.handlers[name2](e, this);
         }
@@ -148,7 +148,10 @@
   elem.handlers.yell = (e, el) => {
     console.log("yell", e, el, void 0);
   };
+  var elem3 = document.querySelector('salis-element[test="bar"]');
+  elem3.attr2 = 78;
   var elem2 = document.querySelector('salis-element[test="foo"]');
   elem2.attr2 = 23;
+  console.log(elem2.handlers);
 })();
 //# sourceMappingURL=salis.js.map

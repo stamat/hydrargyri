@@ -15,6 +15,12 @@ layout: default
         34
       </div>
       <button on="click:yell">Yell</button>
+      <salis-element test="bar">
+        <div bind="attr2">
+          15
+        </div>
+        <button on="click:yell">Yell</button>
+      </salis-element>
     </salis-element>
   </salis-element>
 </div>

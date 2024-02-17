@@ -93,7 +93,7 @@
             this.handlers[handler] = this._options.handlers[handler];
           }
           this.querySelectorAll("[bind],[data-bind]").forEach((el) => {
-            if (el.closest(self.name) !== this)
+            if (el.closest(this.tagName) !== this)
               return;
             const bind = el.getAttribute("bind") || el.getAttribute("data-bind");
             if (this._binds.hasOwnProperty(bind)) {
@@ -106,7 +106,7 @@
             }
           });
           this.querySelectorAll("[on],[data-on]").forEach((el) => {
-            if (el.closest(self.name) !== this)
+            if (el.closest(this.tagName) !== this)
               return;
             const value = el.getAttribute("on") || el.getAttribute("data-on");
             const parts = value.split(":");

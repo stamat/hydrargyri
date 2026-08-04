@@ -26,7 +26,40 @@ for the person who wrote the code.
   custom elements spec forbids and which found nothing during parse; scanning now happens
   on connect, deferred to `DOMContentLoaded` while the document is still parsing.
   Disconnecting unhooks every listener; reconnecting rescans.
-- Jest suite covering the whole public surface, and a demo site with three live elements.
+- **Loud collisions.** An attribute or property whose name would shadow the salis API
+  (`update`), a platform native (`title`), or a subclass method warns and is skipped at
+  definition — instead of surfacing as a TypeError three calls from the cause.
+- **Components talk the platform way, documented and pinned.** `on` hears bubbling
+  custom events from descendants, a parent writes a child's observed attribute — no bus,
+  no store; the README section and two tests hold the guarantee.
+- **`actions` — Invoker Commands answered by name.** A button anywhere in the document
+  says `commandfor="cart" command="--add-item"`, and the element replies from
+  `actions: { '--add-item': (e, el) => {} }` — keyed by the exact command string, no name
+  transformation. The command counterpart of `handlers`, assignable at runtime the same
+  way. An unknown command warns only when actions are declared; an empty registry stays
+  silent so `on="command:name"` can keep handling commands its own way.
+- Jest suite covering the whole public surface.
+- **A documentation site.** `docs/` builds to `_site/` with
+  [poops-docs-theme](https://github.com/stamat/poops-docs-theme): a landing page and a
+  reference under `/docs/` — getting started, API, `bind`, `on`, composition, limits —
+  whose samples run live and editable on the page. Plus a search index, `llms.txt` and
+  `llms-full.txt` for agents, and a `pages.yml` workflow that deploys it on every push to
+  `main`.
+- **The [template](https://github.com/stamat/template) scaffolding.** `script/bootstrap`,
+  `script/lint` and `script/changelog` join the four scripts already here; CI runs lint,
+  test and build on Node 22 and 24; a tag triggers publishing over OIDC with no token
+  stored anywhere. Issue forms, a pull request template, a code of conduct, Dependabot,
+  `.editorconfig`, and `AGENTS.md` — symlinked as `CLAUDE.md` and
+  `.github/copilot-instructions.md`, so one file serves every tool.
+
+### Changed
+
+- **The demo page became the docs site.** `src/markup/` and the hand-rolled layout it used
+  are gone, along with `dist/site.*` and the `index.html` that sat in the repository root.
+  The demo elements moved to `src/scripts/demos.js` and are bundled to
+  `dist/salis-demos.min.js`, which is what every live preview loads.
+- **`package-lock.json` is committed**, because `script/bootstrap` and CI both run
+  `npm ci`, which needs one and will not write it.
 
 ### Removed
 

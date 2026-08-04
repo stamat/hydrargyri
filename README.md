@@ -13,22 +13,26 @@ script never loading leaves the page exactly as written:
 
 ```html
 <demo-counter count="0">
-  <button on="click:decrement">−</button>
+  <button on="click:decrement" aria-label="Decrement">−</button>
   <output bind="count">0</output>
-  <button on="click:increment">+</button>
+  <button on="click:increment" aria-label="Increment">+</button>
 </demo-counter>
 ```
 
 ```js
-import salis from 'salis'
+import salis from "salis";
 
-salis('demo-counter', {
-  attributes: ['count'],
+salis("demo-counter", {
+  attributes: ["count"],
   handlers: {
-    increment(e, el) { el.count += 1 },
-    decrement(e, el) { el.count -= 1 }
-  }
-})
+    increment(e, el) {
+      el.count += 1;
+    },
+    decrement(e, el) {
+      el.count -= 1;
+    },
+  },
+});
 ```
 
 No build step, no shadow DOM, no expression language — `bind` and `on` hold
@@ -44,17 +48,32 @@ where to go — those are fine tools and salis does not compete on their ground.
 
 ## Against the alternatives
 
-| | Keeps your markup | Custom elements | Build step | Logic in markup | Pick it when |
-|---|---|---|---|---|---|
-| [Catalyst](https://github.com/github/catalyst) | yes | yes | yes — TS decorators | no | you already build with TypeScript |
-| [Stimulus](https://stimulus.hotwired.dev) | yes | no — its own runtime | no | no | you want the mature ecosystem, especially around Rails |
-| [Alpine](https://alpinejs.dev) | yes | no | no | yes — JS expressions in attributes | you want logic inline and accept the CSP cost |
-| [Lit](https://lit.dev) | no — templates in JS | yes | no, but expected | no | you are building an app, not upgrading a page |
-| salis | yes | yes | no | no | the markup exists first and must survive without the script |
+|                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Pick it when                                                |
+| ---------------------------------------------- | -------------------- | -------------------- | ------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| [Catalyst](https://github.com/github/catalyst) | yes                  | yes                  | yes — TS decorators | no                                 | you already build with TypeScript                           |
+| [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | you want the mature ecosystem, especially around Rails      |
+| [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | you want logic inline and accept the CSP cost               |
+| [Lit](https://lit.dev)                         | no — templates in JS | yes                  | no, but expected    | no                                 | you are building an app, not upgrading a page               |
+| salis                                          | yes                  | yes                  | no                  | no                                 | the markup exists first and must survive without the script |
 
 Salis loses on features to every row above: no templating, no two-way binding,
 no deep reactivity, no plugin ecosystem. That is the trade — the whole API
 fits in the next section.
+
+Stimulus earns the honest footnote: same religion, different church. The same
+names-in-markup creed, the same CSP-cleanliness, near-identical event wiring
+and typed attribute-backed values. The doctrine splits on exactly two points —
+`bind` paints declaratively where Stimulus targets are refs you repaint by
+hand, and the component boundary is the platform's custom element instead of a
+runtime with a registry, which is also why salis is 2 kB where Stimulus is 12.
+If neither point matters to your project, go to their church; it is better run
+in every other respect.
+
+## Docs
+
+<https://stamat.github.io/salis/> — the same reference as below, with every
+sample running live and editable on the page, plus
+[`llms.txt`](https://stamat.github.io/salis/llms.txt) for the agents.
 
 ## Install
 
@@ -66,14 +85,14 @@ npm install salis
 ```
 
 ```js
-import salis, { SalisElement } from 'salis'
+import salis, { SalisElement } from "salis";
 ```
 
 Or straight from a CDN as a module, no install:
 
 ```html
 <script type="module">
-  import salis from 'https://cdn.jsdelivr.net/npm/salis/dist/salis.mjs'
+  import salis from "https://cdn.jsdelivr.net/npm/salis/dist/salis.mjs";
 </script>
 ```
 
@@ -84,13 +103,14 @@ Or straight from a CDN as a module, no install:
 Defines the custom element and returns its class. `options` as an array is
 shorthand for `{ attributes: [...] }`.
 
-| Option | Type | What it does |
-|---|---|---|
-| `attributes` | `Array` | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`. |
-| `properties` | `Array` | Reactive properties that live only in JS, never written to an attribute. |
-| `handlers` | `Object` | Named functions reachable from `on="event:name"`, called as `(event, element)`. |
-| `connected` | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`. |
-| `disconnected` | `Function` | Runs when the element leaves the DOM, as `(element)`. |
+| Option             | Type       | What it does                                                                                                                                                                                                    |
+| ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                            |
+| `properties`       | `Array`    | Reactive properties that live only in JS, never written to an attribute.                                                                                                                                        |
+| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`.                                                                                                                                 |
+| `actions`          | `Object`   | Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as `(event, element)`. Unknown commands warn only when actions are declared. Assignable at runtime: `el.actions['--x'] = fn`. |
+| `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                         |
+| `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                           |
 | `attributeChanged` | `Function` | Runs on observed attribute changes as `(name, oldValue, newValue)` — parsed values, not strings. Attributes arriving from the markup are initial state, not changes; this stays silent until after `connected`. |
 
 ### `SalisElement`
@@ -100,10 +120,12 @@ own. Declare the same surface as statics, define the element yourself:
 
 ```js
 class UserCard extends SalisElement {
-  static attributes = ['name']
-  greet(e) { this.name = 'clicked' }   // reachable from on="click:greet"
+  static attributes = ["name"];
+  greet(e) {
+    this.name = "clicked";
+  } // reachable from on="click:greet"
 }
-customElements.define('user-card', UserCard)
+customElements.define("user-card", UserCard);
 ```
 
 Override `connected`, `disconnected` and `attributeChanged` — not the
@@ -117,20 +139,33 @@ attribute as `null`. Setting `false` or `null` removes the attribute, `true`
 sets it valueless. The attribute is the only copy of the state — devtools
 edits and salis writes cannot disagree.
 
+Coercion is by value, not intent: `zip="01102"` reads back as the number
+`1102`. A value that must stay a string keeps a non-numeric character, or
+reads through `getAttribute` where salis never touches it.
+
+A name that already answers on the element is refused at definition, with a
+warning naming it, and the element keeps working without it — `update` and the
+rest of the salis API, natives like `title` or `hidden`, and any method your
+subclass declares. Failing there beats a `TypeError` three calls from the cause.
+
 ### `bind`
 
 `bind="path[:type[#attr]]"`, several entries separated by `;`. The path may
 reach into objects: `bind="user.name"`.
 
-| Type | Writes | Cleared by `null` |
-|---|---|---|
-| `text` (default) | `textContent` | empty string |
-| `html` | `innerHTML` — see the warning below | empty string |
-| `value` | `.value`, for form fields | empty string |
-| `attr#name` | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
+| Type             | Writes                                 | Cleared by `null`                                             |
+| ---------------- | -------------------------------------- | ------------------------------------------------------------- |
+| `text` (default) | `textContent`                          | empty string                                                  |
+| `html`           | `innerHTML` — see the warning below    | empty string                                                  |
+| `value`          | `.value`, for form fields              | empty string                                                  |
+| `attr#name`      | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
 
 A typo in a path or an unknown type warns in the console and skips that entry
 — the element's other binds keep painting.
+
+`data-bind` and `data-on` work identically to `bind` and `on` — for markup
+that must satisfy a validator, since the bare names are non-standard
+attributes. Where both sit on one element, the bare form wins.
 
 ### `on`
 
@@ -141,7 +176,7 @@ unknown name warns on first fire instead of throwing.
 ### `update(key)` / `update()`
 
 Repaints nodes bound to one key, or all of them. This is the escape hatch for
-the reactivity salis deliberately does not have: mutation *inside* an object
+the reactivity salis deliberately does not have: mutation _inside_ an object
 property hits no setter, so `el.user.name = 'x'` paints nothing until
 `el.update('user')`.
 
@@ -150,6 +185,73 @@ property hits no setter, so `el.user.name = 'x'` paints nothing until
 The element wears a `salis` attribute once initialized. `x-el:not([salis])`
 styles the not-yet-upgraded state — or hides nothing, since the markup
 underneath is the fallback by design.
+
+## Elements talking to each other
+
+Events up, attributes down — the platform's own protocol, and salis already
+speaks both halves. There is no bus, no store, no `$dispatch`: `on` listens to
+any event name, custom events included, and they bubble.
+
+```html
+<x-cart on="item-picked:refresh">
+  <x-item sku="7"><button on="click:pick">add</button></x-item>
+</x-cart>
+```
+
+```js
+salis('x-item', {
+  attributes: ['sku'],
+  handlers: {
+    pick(e, el) {
+      el.dispatchEvent(new CustomEvent('item-picked', { bubbles: true, detail: { sku: el.sku } }))
+    }
+  }
+})
+
+salis('x-cart', {
+  properties: ['count'],
+  handlers: {
+    refresh(e, el) { el.count = (el.count || 0) + 1 }
+  }
+})
+```
+
+The one footgun is the platform's: forget `bubbles: true` and the event
+reaches nobody, silently. The other direction is plainer still — a parent
+writes a child's observed attribute, and the child repaints and reacts on its
+own: `el.querySelector('x-item').sku = 9`. Siblings compose the two through
+their common ancestor. State shared wider than that belongs to the page, not
+to salis.
+
+For a trigger with no common ancestor at all, the platform now has
+[`commandfor`/`command`](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
+— a button targets any element by id, the browser fires a `command` event on
+the target, and `actions` answers it:
+
+```html
+<button commandfor="cart" command="--add-item">Add</button>
+<!-- …anywhere else in the document… -->
+<x-cart id="cart">…</x-cart>
+```
+
+```js
+salis('x-cart', {
+  attributes: ['count'],
+  actions: {
+    '--add-item': (e, el) => { el.count += 1 }
+  }
+})
+```
+
+`actions` is the command counterpart of `handlers`: command issued, action
+taken. Keys are the exact `command` strings, dashes and all — no name
+transformation to reason backwards through. An unknown command warns; an
+element with no actions declared stays silent, since `on="command:name"` can
+handle commands its own way instead.
+
+Baseline newly available (December 2025): older browsers leave the button
+inert — nothing breaks, nothing happens. A page that must work everywhere
+keeps the bubbling-event route above.
 
 ## What salis does not do
 
@@ -171,11 +273,16 @@ underneath is the fallback by design.
 ## Development
 
 ```bash
-script/server   # build + serve the demo with live reload, http://localhost:4040
-script/build    # compile dist/ and the demo site
-script/test     # jest
+script/bootstrap # npm ci, from a fresh clone
+script/server    # build + serve the docs with live reload, http://localhost:4040
+script/build     # compile dist/ and the docs site into _site/
+script/test      # jest
+script/lint      # eslint
 ```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) says what belongs here and what a pull
+request needs; [AGENTS.md](AGENTS.md) is the same for a coding agent.
 
 ## License
 
-[MIT](LICENSE) © [Nikola Stamatovic](https://github.com/stamat)
+[MIT](LICENSE) © [Stamat](https://github.com/stamat)

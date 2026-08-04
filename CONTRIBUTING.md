@@ -21,10 +21,11 @@ library.
 - **No two-way binding.** DOM to state goes through a handler the author
   wrote. A `value` bind that silently writes back is the kind of magic that
   pages one debugger at 3am.
-- **No deep reactivity.** Assignment triggers a repaint; mutation inside an
-  object needs `update(key)`. A Proxy watching every property is more
-  machinery than this library is worth — that trade is deliberate and
-  documented, not a bug to fix.
+- **No implicit deep reactivity.** Assignment triggers a repaint; mutation
+  inside a plain object needs `update(key)`. The one door is `reactive()`,
+  opt-in and by name: the author asks for the proxy and holds it. A salis
+  that wraps what you assign on its own — or grows dependency tracking,
+  computed values, effects — is a worse Vue.
 - **No dependencies** beyond [book-of-spells](https://github.com/stamat/book-of-spells).
 
 ## Threat model

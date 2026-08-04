@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: API
-description: salis(), SalisElement, typed attributes, reactive properties, the lifecycle hooks and update().
+description: salis(), SalisElement, typed attributes, reactive properties, the lifecycle hooks, update() and reactive().
 order: 1
 ---
 
@@ -81,6 +81,48 @@ page with its interval still running is a leak that keeps a reference to the
 element alive. Salis unhooks the listeners it added; the ones you started are
 yours to stop.
 
+Data that arrives late is the same story with an `await` in it: `connected`
+can be `async`, and the fallback between the tags — there before the script,
+there before the data — is the loading state, already written.
+
+<!-- demo -->
+
+```html
+<demo-lazy>
+  <p><strong bind="user.name">Loading…</strong> <span bind="user.role"></span></p>
+  <button on="click:reload">Reload</button>
+</demo-lazy>
+```
+
+```js demo
+const crew = [
+  { name: "Aja", role: "director of design" },
+  { name: "Ada", role: "engineer" },
+  { name: "Grace", role: "rear admiral" }
+];
+let turn = 0;
+const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
+  new Promise((resolve) => setTimeout(() => resolve(crew[turn++ % crew.length]), 1200));
+
+salis("demo-lazy", {
+  properties: ["user"],
+  async connected(el) {
+    el.user = await fetchUser();
+  },
+  handlers: {
+    async reload(e, el) {
+      el.user = await fetchUser();
+    }
+  }
+});
+```
+
+No spinner machinery: a path through `null` paints nothing, so the placeholder
+holds until assignment repaints it. Press **Reload** and the old name stays put
+while the new one is in flight — a missing branch never blanks a node, which
+is stale-while-refetching for free. Salis ignores the promise `connected`
+returns; a fetch that can fail is yours to `catch`.
+
 ## Lifecycle
 
 Three hooks, and the order is the part worth knowing.
@@ -121,11 +163,11 @@ so.
 salis("demo-profile", {
   properties: ["user"],
   connected(el) {
-    el.user = { name: "Ada", role: "engineer" };
+    el.user = { name: "Aja", role: "site design manager" };
   },
   handlers: {
     promote(e, el) {
-      el.user.role = "principal engineer";
+      el.user.role = "director of design";
       el.update("user"); // without this line, nothing moves
     }
   }
@@ -135,7 +177,61 @@ salis("demo-profile", {
 Delete the `update` call and the button does nothing visible while the data
 underneath it changes — which is the honest failure mode of a library that
 watches assignment and not mutation. A Proxy that watched everything would fix
-it, and is the kind of magic this library is built to avoid.
+it — [`reactive()`](#reactivemodel) is that proxy, opt-in and by name, for the
+models that earn it.
+
+## `reactive(model)`
+
+`update(key)` scales with one element and one mutation site. The moment one
+model feeds several elements — the same user on a card, in a header, behind a
+menu — every mutation site needs a reference to every element showing it.
+`reactive` inverts that: wrap the model once, assign it wherever, and mutation
+through the proxy repaints every element holding it.
+
+<!-- demo -->
+
+```html
+<demo-crew>
+  <p><strong bind="user.name">—</strong> — <span bind="user.role">—</span></p>
+  <button on="click:promote">Promote</button>
+</demo-crew>
+<demo-crew>
+  <p>Also watching: <span bind="user.role">—</span></p>
+</demo-crew>
+```
+
+```js demo
+const user = reactive({ name: "Aja", role: "site design manager" });
+
+salis("demo-crew", {
+  properties: ["user"],
+  connected(el) {
+    el.user = user;
+  },
+  handlers: {
+    promote(e, el) {
+      el.user.role = "director of design"; // no update() — both cards repaint
+    }
+  }
+});
+```
+
+The rules, and each is load-bearing:
+
+- **The proxy is the model.** `reactive` returns a deep proxy; mutating the
+  raw original notifies nobody. Create the model reactive and pass the proxy
+  around — never keep the raw.
+- **Only plain objects and arrays wrap.** A Map, a Date, a class instance
+  warns and comes back unwrapped — their methods reach for internal slots a
+  proxy does not have.
+- **Repaints are per key, not per path.** Any mutation inside the model
+  repaints everything bound to its key on each subscribed element. There is no
+  dependency tracking; at salis scale a repaint is a few `textContent` writes.
+- **Models do not merge.** A reactive model assigned inside another keeps its
+  own subscribers — mutation notifies the model it was mutated through.
+- **Assignment subscribes, disconnect unsubscribes.** An element removed from
+  the DOM stops repainting; reconnecting catches it up. Async data, reactive
+  models and element lifecycle compose without coordination code.
 
 ## `SalisElement`
 

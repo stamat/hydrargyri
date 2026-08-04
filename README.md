@@ -43,7 +43,7 @@ the framework evaporates. It sits on
 
 Like sulphuris, the value here is personal first: this is the wrapper I wanted
 to exist, and it transfers to whoever shares the taste for markup-first pages.
-If you want templating, deep reactivity, or an ecosystem, the table below says
+If you want templating, two-way binding, or an ecosystem, the table below says
 where to go — those are fine tools and salis does not compete on their ground.
 
 ## Against the alternatives
@@ -57,8 +57,8 @@ where to go — those are fine tools and salis does not compete on their ground.
 | salis                                          | yes                  | yes                  | no                  | no                                 | the markup exists first and must survive without the script |
 
 Salis loses on features to every row above: no templating, no two-way binding,
-no deep reactivity, no plugin ecosystem. That is the trade — the whole API
-fits in the next section.
+no plugin ecosystem. That is the trade — the whole API fits in the next
+section.
 
 Stimulus earns the honest footnote: same religion, different church. The same
 names-in-markup creed, the same CSP-cleanliness, near-identical event wiring
@@ -85,7 +85,7 @@ npm install salis
 ```
 
 ```js
-import salis, { SalisElement } from "salis";
+import salis, { SalisElement, reactive } from "salis";
 ```
 
 Or straight from a CDN as a module, no install:
@@ -176,9 +176,32 @@ unknown name warns on first fire instead of throwing.
 ### `update(key)` / `update()`
 
 Repaints nodes bound to one key, or all of them. This is the escape hatch for
-the reactivity salis deliberately does not have: mutation _inside_ an object
+the reactivity salis does not do implicitly: mutation _inside_ an object
 property hits no setter, so `el.user.name = 'x'` paints nothing until
-`el.update('user')`.
+`el.update('user')` — or until the model is `reactive()`.
+
+### `reactive(model)`
+
+The opt-in way out of `update(key)`: wrap a model once, assign it to any
+number of elements, and mutation through the proxy repaints them all — no
+element references at the mutation site.
+
+```js
+import salis, { reactive } from "salis";
+
+const user = reactive({ name: "Aja", role: "site design manager" });
+
+salis("user-card", { properties: ["user"] });
+document.querySelectorAll("user-card").forEach((el) => (el.user = user));
+
+user.role = "director of design"; // every card repaints
+```
+
+The proxy is the model: mutating the raw original notifies nobody. Only plain
+objects and arrays wrap — a Map or a class instance warns and comes back
+unwrapped, since their methods reach for internal slots a proxy does not have.
+Repaints are per key, with no dependency tracking; disconnecting an element
+unsubscribes it, reconnecting catches it up.
 
 ### `[salis]`
 
@@ -267,9 +290,11 @@ commands should not pay for one. Big salute to [@keithamus](https://github.com/k
 
 ## What salis does not do
 
-- **Deep reactivity.** Setters notice assignment, not mutation. `update(key)`
-  exists because a Proxy that watches everything is the kind of magic this
-  library is built to avoid.
+- **Implicit deep reactivity.** Setters notice assignment, not mutation —
+  `update(key)` repaints after mutating a plain object. `reactive(model)` is
+  the one exception, and it only opens by name: salis never wraps an object
+  you did not ask wrapped, and will not grow dependency tracking, computed
+  values or effects.
 - **Two-way binding.** DOM to state goes through a handler you wrote —
   `on="input:rename"` — never behind your back.
 - **Late DOM.** Binds and handlers are scanned when the element connects. A

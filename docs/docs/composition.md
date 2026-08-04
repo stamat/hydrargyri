@@ -72,6 +72,58 @@ That is not a salis API — it is a property on a custom element, set the way an
 property is set. The child's attribute changes, its binds repaint, and its
 `attributeChanged` runs. Nothing had to be registered for that to work.
 
+## Sideways
+
+Siblings never hear each other: an event travels up, not across. So the two
+halves above compose into the third — the common ancestor catches the bubbling
+event and writes the other sibling.
+
+<!-- demo -->
+
+```html
+<demo-mixer on="dose-picked:pour">
+  <demo-dose amount="1"><button on="click:pick">add 1</button></demo-dose>
+  <demo-dose amount="5"><button on="click:pick">add 5</button></demo-dose>
+  <demo-vessel amount="0">
+    <p>In the vessel: <output bind="amount">0</output></p>
+  </demo-vessel>
+</demo-mixer>
+```
+
+```js demo
+salis("demo-dose", {
+  attributes: ["amount"],
+  handlers: {
+    pick(e, el) {
+      el.dispatchEvent(
+        new CustomEvent("dose-picked", {
+          bubbles: true,
+          detail: { amount: el.amount },
+        }),
+      );
+    },
+  },
+});
+
+salis("demo-vessel", { attributes: ["amount"] });
+
+salis("demo-mixer", {
+  handlers: {
+    pour(e, el) {
+      el.querySelector("demo-vessel").amount += e.detail.amount;
+    },
+  },
+});
+```
+
+The relay writes a property, never the sibling's nodes. `bind="amount"` inside
+`demo-vessel` belongs to `demo-vessel` — binds go to the nearest salis ancestor,
+and a salis element is its own — so the mixer could not paint that `<output>`
+even if it tried. It sets the value; the vessel repaints itself.
+
+Which is also why the relay has to be a salis element: it needs an `on` of its
+own to catch the event. A plain `<div>` between two siblings relays nothing.
+
 ## No common ancestor at all
 
 A button in the header, the element it drives at the bottom of the page. The

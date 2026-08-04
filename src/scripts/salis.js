@@ -9,7 +9,21 @@ const BIND_TYPES = new Set(['text', 'html', 'value', 'attr'])
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — salis's own API and
 // natives like `title` — are caught by the `key in this` check at define time.
-const RESERVED = new Set(['handlers', 'actions', '_state', '_binds', '_listeners', '_reflected', '_initialized', '_deferredInit'])
+const RESERVED = new Set(['handlers', 'actions', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_initialized', '_deferredInit'])
+
+// Every proxy reactive() hands out maps to its model's subscriber set here —
+// which is also how the property setter tells a reactive model from a plain one.
+const reactiveSubs = new WeakMap()
+
+// Only plain objects and arrays wrap: class instances (Date, Map, elements)
+// break under a proxy because their methods reach for internal slots the
+// proxy does not have.
+function isPlainValue(value) {
+  if (value === null || typeof value !== 'object') return false
+  if (isArray(value)) return true
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
 
 // `null` attribute means absent, `''` means present-without-value — the HTML
 // boolean convention — so `<x-el active>` reads as `true`, not as an empty string.
@@ -47,6 +61,66 @@ function parseBinds(raw) {
 }
 
 /**
+ * Wrap a model in a deep proxy that repaints every salis element it is
+ * assigned to on any mutation — the opt-in alternative to calling
+ * `update(key)` after mutating a plain object.
+ *
+ * The proxy is the model: mutations to the raw original notify nobody.
+ * Create the model reactive and use the returned proxy everywhere.
+ *
+ * @param {Object|Array} obj A plain object or array. Anything else —
+ *   primitives, Maps, class instances — warns and comes back unwrapped.
+ * @returns {Proxy} The reactive model, or `obj` as given when it cannot wrap
+ *
+ * @example
+ * const user = reactive({ name: 'Aja' })
+ * document.querySelector('user-card').user = user
+ * user.name = 'Grace' // the card repaints
+ */
+export function reactive(obj) {
+  if (reactiveSubs.has(obj)) return obj
+  if (!isPlainValue(obj)) {
+    console.warn('salis: reactive() takes a plain object or array — returned the value as given')
+    return obj
+  }
+  const subs = new Set()
+  const notify = () => { for (const fn of subs) fn() }
+  // Per-model cache: a raw object reached twice through one model wraps once.
+  // An object shared between two models gets a proxy per model, and notifies
+  // only the model it was mutated through — the cost of having no dep tracking.
+  const wrapped = new WeakMap()
+  const wrap = (raw) => {
+    if (wrapped.has(raw)) return wrapped.get(raw)
+    const proxy = new Proxy(raw, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, receiver)
+        // A nested reactive model keeps its own subscribers rather than
+        // joining this model's — assigning one inside another does not merge them.
+        return isPlainValue(value) && !reactiveSubs.has(value) ? wrap(value) : value
+      },
+      set: (target, prop, value, receiver) => {
+        const prev = target[prop]
+        const ok = Reflect.set(target, prop, value, receiver)
+        // Same-value writes stay silent — an array push still notifies twice
+        // (index, then length), which is two cheap repaints, accepted.
+        if (ok && !Object.is(prev, value)) notify()
+        return ok
+      },
+      deleteProperty: (target, prop) => {
+        const had = Object.prototype.hasOwnProperty.call(target, prop)
+        const ok = Reflect.deleteProperty(target, prop)
+        if (ok && had) notify()
+        return ok
+      }
+    })
+    reactiveSubs.set(proxy, subs)
+    wrapped.set(raw, proxy)
+    return proxy
+  }
+  return wrap(obj)
+}
+
+/**
  * Base class behind every salis element. Extend it directly when the element
  * needs methods of its own; otherwise the `salis()` factory is shorter.
  *
@@ -76,6 +150,7 @@ export class SalisElement extends HTMLElement {
     this._binds = {}
     this._listeners = []
     this._reflected = {}
+    this._subscriptions = []
     this._initialized = false
     this._deferredInit = null
     this.handlers = Object.assign({}, this.constructor.handlers)
@@ -105,6 +180,7 @@ export class SalisElement extends HTMLElement {
     }
     if (!this._initialized) return
     this._teardownHandlers()
+    this._teardownSubscriptions()
     // Not permanent teardown: a reconnect re-scans, so a moved element keeps working.
     this._initialized = false
     if (typeof this.disconnected === 'function') this.disconnected(this)
@@ -177,7 +253,11 @@ export class SalisElement extends HTMLElement {
     } : {
       get: () => this._state[key],
       set: (value) => {
+        this._unsubscribe(key)
         this._state[key] = value
+        // Pre-init assignments subscribe in _init instead, so an element that
+        // never initializes is not pinned in memory by a model's subscriber set.
+        if (this._initialized) this._subscribe(key, value)
         this.update(key)
       }
     })
@@ -190,6 +270,9 @@ export class SalisElement extends HTMLElement {
     this._initialized = true
     // Styling hook for the upgraded state: x-el:not([salis]) hides unbound markup.
     this.setAttribute('salis', '')
+    // Reactive models assigned before init — including pre-upgrade presets —
+    // subscribe here; disconnect tears down, so a reconnect resubscribes.
+    for (const key in this._state) this._subscribe(key, this._state[key])
     this._scanBinds()
     this._scanHandlers()
     // Always wired, even with no actions declared: an action assigned at
@@ -261,6 +344,29 @@ export class SalisElement extends HTMLElement {
   _teardownHandlers() {
     for (const { el, event, listener } of this._listeners) el.removeEventListener(event, listener)
     this._listeners = []
+  }
+
+  _subscribe(key, value) {
+    const subs = reactiveSubs.get(value)
+    if (!subs) return
+    const fn = () => this.update(key)
+    subs.add(fn)
+    this._subscriptions.push({ key, subs, fn })
+  }
+
+  // Leaving a stale subscription behind on reassignment would keep the old
+  // model repainting this element — and keep the element alive — forever.
+  _unsubscribe(key) {
+    this._subscriptions = this._subscriptions.filter((sub) => {
+      if (sub.key !== key) return true
+      sub.subs.delete(sub.fn)
+      return false
+    })
+  }
+
+  _teardownSubscriptions() {
+    for (const { subs, fn } of this._subscriptions) subs.delete(fn)
+    this._subscriptions = []
   }
 
   // A method wins over the handlers registry, and only one runs — first

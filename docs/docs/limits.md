@@ -11,16 +11,19 @@ Each of these is a decision, not a gap waiting for a pull request. The
 reasoning is here so you can tell whether the trade is one you want, before you
 build on it.
 
-## Deep reactivity
+## Implicit deep reactivity
 
 Setters notice assignment, not mutation. `el.user = {…}` repaints;
-`el.user.name = 'x'` does not, until [`update('user')`](api.html#updatekey-update).
+`el.user.name = 'x'` does not, until [`update('user')`](api.html#updatekey-update)
+— or until the model came from [`reactive()`](api.html#reactivemodel), which is
+the one door, and it only opens by name.
 
-A Proxy watching every property would close it, and would mean every object you
-hand the element comes back wrapped in something that is not the object you gave
-it — identity checks fail, `instanceof` gets interesting, and a debugger shows
-you a membrane instead of your data. That is the magic this library exists to
-avoid, and one method call is the price.
+What stays refused is the implicit version: salis never wraps an object you
+assigned, and will not grow dependency tracking, computed values or effects. A
+proxy has a real cost — the thing in your debugger is a membrane, not your
+data, and identity checks against the raw original fail — so it is a cost you
+take on purpose, per model, never one the library spreads over everything you
+touch.
 
 ## Two-way binding
 

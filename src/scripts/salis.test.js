@@ -1,11 +1,11 @@
 // Covers the whole public surface: the factory, the SalisElement base class,
 // attribute↔property reflection, every bind type, handler wiring, nesting
-// scope, lifecycle hooks, deferred init during parse, and pre-upgrade
-// property capture. Deliberately not covered: dynamically inserted bind/on
-// nodes — binds are scanned at connect, and picking up later DOM is a
-// documented non-goal for v1 (reconnecting the element rescans).
+// scope, lifecycle hooks, deferred init during parse, pre-upgrade property
+// capture, and reactive models. Deliberately not covered: dynamically
+// inserted bind/on nodes — binds are scanned at connect, and picking up later
+// DOM is a documented non-goal for v1 (reconnecting the element rescans).
 import { jest } from '@jest/globals'
-import salis, { SalisElement } from './salis.js'
+import salis, { SalisElement, reactive } from './salis.js'
 
 let n = 0
 const tag = () => `x-t${++n}`
@@ -443,4 +443,109 @@ test('an action assigned at runtime routes without any re-wiring', () => {
   el.actions['--late'] = (e, el) => seen.push(el.tagName)
   el.dispatchEvent(commandEvent('--late'))
   expect(seen).toEqual([name.toUpperCase()])
+})
+
+test('a reactive model repaints every element it is assigned to, no update() in sight', () => {
+  const a = tag()
+  const b = tag()
+  salis(a, { properties: ['user'] })
+  salis(b, { properties: ['user'] })
+  const root = mount(`<${a}><span bind="user.name"></span></${a}><${b}><i bind="user.name"></i></${b}>`)
+  const user = reactive({ name: 'ada' })
+  root.querySelector(a).user = user
+  root.querySelector(b).user = user
+  user.name = 'grace'
+  expect(root.querySelector('span').textContent).toBe('grace')
+  expect(root.querySelector('i').textContent).toBe('grace')
+})
+
+test('mutation deep inside a reactive model repaints through the path bind', () => {
+  const name = tag()
+  salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.prefs.theme"></span></${name}>`)
+  const el = root.firstElementChild
+  el.user = reactive({ prefs: { theme: 'dark' } })
+  expect(el.querySelector('span').textContent).toBe('dark')
+  el.user.prefs.theme = 'light'
+  expect(el.querySelector('span').textContent).toBe('light')
+})
+
+test('mutating the raw original does nothing — the proxy is the contract', () => {
+  const name = tag()
+  salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  const el = root.firstElementChild
+  const raw = { name: 'ada' }
+  const user = reactive(raw)
+  el.user = user
+  raw.name = 'grace'
+  expect(el.querySelector('span').textContent).toBe('ada')
+  user.name = 'ida'
+  expect(el.querySelector('span').textContent).toBe('ida')
+})
+
+test('a disconnected element stops repainting, reconnecting catches it up', () => {
+  const name = tag()
+  salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  const el = root.firstElementChild
+  const user = reactive({ name: 'ada' })
+  el.user = user
+  el.remove()
+  user.name = 'grace'
+  expect(el.querySelector('span').textContent).toBe('ada')
+  root.appendChild(el)
+  expect(el.querySelector('span').textContent).toBe('grace')
+  user.name = 'ida'
+  expect(el.querySelector('span').textContent).toBe('ida')
+})
+
+test('a model assigned before upgrade still subscribes once the element initializes', () => {
+  const name = tag()
+  const el = document.createElement(name)
+  const user = reactive({ name: 'ada' })
+  el.user = user
+  el.innerHTML = '<span bind="user.name"></span>'
+  document.body.appendChild(el)
+  salis(name, { properties: ['user'] })
+  expect(el.querySelector('span').textContent).toBe('ada')
+  user.name = 'grace'
+  expect(el.querySelector('span').textContent).toBe('grace')
+})
+
+test('reassigning a property unsubscribes the old model', () => {
+  const name = tag()
+  salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  const el = root.firstElementChild
+  const old = reactive({ name: 'ada' })
+  el.user = old
+  el.user = reactive({ name: 'grace' })
+  const update = jest.spyOn(el, 'update')
+  old.name = 'ghost'
+  expect(update).not.toHaveBeenCalled()
+})
+
+test('an array push inside a reactive model repaints its binds', () => {
+  const name = tag()
+  salis(name, { properties: ['cart'] })
+  const root = mount(`<${name}><span bind="cart.length"></span></${name}>`)
+  const el = root.firstElementChild
+  const cart = reactive([])
+  el.cart = cart
+  expect(el.querySelector('span').textContent).toBe('0')
+  cart.push('salt')
+  expect(el.querySelector('span').textContent).toBe('1')
+})
+
+test('reactive is idempotent, and a non-plain value warns and comes back as given', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const user = reactive({ name: 'ada' })
+  expect(reactive(user)).toBe(user)
+  expect(warn).not.toHaveBeenCalled()
+  const map = new Map()
+  expect(reactive(map)).toBe(map)
+  expect(reactive(5)).toBe(5)
+  expect(reactive(null)).toBe(null)
+  expect(warn).toHaveBeenCalledTimes(3)
 })

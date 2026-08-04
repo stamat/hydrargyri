@@ -32,6 +32,12 @@ for the person who wrote the code.
 - **Components talk the platform way, documented and pinned.** `on` hears bubbling
   custom events from descendants, a parent writes a child's observed attribute — no bus,
   no store; the README section and two tests hold the guarantee.
+- **`reactive(model)` — the opt-in door out of `update(key)`.** Wrap a plain object or
+  array once, assign it to any number of elements, and every mutation through the proxy
+  repaints them all — no element references at the mutation site. The proxy is the model:
+  the raw original notifies nobody, non-plain values (Maps, class instances) warn and come
+  back unwrapped, and salis never wraps an object you did not ask wrapped. Disconnecting
+  an element unsubscribes it; reconnecting catches it up.
 - **`actions` — Invoker Commands answered by name.** A button anywhere in the document
   says `commandfor="cart" command="--add-item"`, and the element replies from
   `actions: { '--add-item': (e, el) => {} }` — keyed by the exact command string, no name

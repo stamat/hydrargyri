@@ -10,6 +10,7 @@
 // how salis is used, and `import salis from '../../dist/salis.min.mjs'` is a
 // fact about this repository's layout — a different line on every page, and the
 // wrong one for the reader copying it.
-import salis from './salis.js'
+import salis, { reactive } from './salis.js'
 
 window.salis = salis
+window.reactive = reactive

@@ -69,7 +69,9 @@ and the handler in the middle is the part you can put a breakpoint in.
 The path may reach into an object: `bind="user.name"` reads `el.user`, then
 `.name`. Only the first segment is the reactive key — `el.user = {…}` repaints
 it, `el.user.name = 'x'` does not, and
-[`update('user')`](api.html#updatekey-update) is the way back.
+[`update('user')`](api.html#updatekey-update) is the way back — unless the
+model came from [`reactive()`](api.html#reactivemodel), which watches its own
+mutations.
 
 Depth is not limited, and a segment that is missing anywhere along the way is
 `undefined`, which paints nothing. A path is a read, never a write: salis walks

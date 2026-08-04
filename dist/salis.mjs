@@ -34,7 +34,14 @@ function getObjectValueByPath(obj, path) {
 // src/scripts/salis.js
 var salisTags = /* @__PURE__ */ new Set();
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr"]);
-var RESERVED = /* @__PURE__ */ new Set(["handlers", "actions", "_state", "_binds", "_listeners", "_reflected", "_initialized", "_deferredInit"]);
+var RESERVED = /* @__PURE__ */ new Set(["handlers", "actions", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_initialized", "_deferredInit"]);
+var reactiveSubs = /* @__PURE__ */ new WeakMap();
+function isPlainValue(value) {
+  if (value === null || typeof value !== "object") return false;
+  if (isArray(value)) return true;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
 function parseAttributeValue(raw) {
   if (raw === null) return null;
   if (raw === "") return true;
@@ -64,6 +71,43 @@ function parseBinds(raw) {
   }
   return entries;
 }
+function reactive(obj) {
+  if (reactiveSubs.has(obj)) return obj;
+  if (!isPlainValue(obj)) {
+    console.warn("salis: reactive() takes a plain object or array \u2014 returned the value as given");
+    return obj;
+  }
+  const subs = /* @__PURE__ */ new Set();
+  const notify = () => {
+    for (const fn of subs) fn();
+  };
+  const wrapped = /* @__PURE__ */ new WeakMap();
+  const wrap = (raw) => {
+    if (wrapped.has(raw)) return wrapped.get(raw);
+    const proxy = new Proxy(raw, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, receiver);
+        return isPlainValue(value) && !reactiveSubs.has(value) ? wrap(value) : value;
+      },
+      set: (target, prop, value, receiver) => {
+        const prev = target[prop];
+        const ok = Reflect.set(target, prop, value, receiver);
+        if (ok && !Object.is(prev, value)) notify();
+        return ok;
+      },
+      deleteProperty: (target, prop) => {
+        const had = Object.prototype.hasOwnProperty.call(target, prop);
+        const ok = Reflect.deleteProperty(target, prop);
+        if (ok && had) notify();
+        return ok;
+      }
+    });
+    reactiveSubs.set(proxy, subs);
+    wrapped.set(raw, proxy);
+    return proxy;
+  };
+  return wrap(obj);
+}
 var SalisElement = class extends HTMLElement {
   static get observedAttributes() {
     return this.attributes;
@@ -75,6 +119,7 @@ var SalisElement = class extends HTMLElement {
     this._binds = {};
     this._listeners = [];
     this._reflected = {};
+    this._subscriptions = [];
     this._initialized = false;
     this._deferredInit = null;
     this.handlers = Object.assign({}, this.constructor.handlers);
@@ -99,6 +144,7 @@ var SalisElement = class extends HTMLElement {
     }
     if (!this._initialized) return;
     this._teardownHandlers();
+    this._teardownSubscriptions();
     this._initialized = false;
     if (typeof this.disconnected === "function") this.disconnected(this);
   }
@@ -149,7 +195,9 @@ var SalisElement = class extends HTMLElement {
     } : {
       get: () => this._state[key],
       set: (value) => {
+        this._unsubscribe(key);
         this._state[key] = value;
+        if (this._initialized) this._subscribe(key, value);
         this.update(key);
       }
     });
@@ -159,6 +207,7 @@ var SalisElement = class extends HTMLElement {
     this._deferredInit = null;
     this._initialized = true;
     this.setAttribute("salis", "");
+    for (const key in this._state) this._subscribe(key, this._state[key]);
     this._scanBinds();
     this._scanHandlers();
     const listener = (e) => this._act(e);
@@ -222,6 +271,26 @@ var SalisElement = class extends HTMLElement {
   _teardownHandlers() {
     for (const { el, event, listener } of this._listeners) el.removeEventListener(event, listener);
     this._listeners = [];
+  }
+  _subscribe(key, value) {
+    const subs = reactiveSubs.get(value);
+    if (!subs) return;
+    const fn = () => this.update(key);
+    subs.add(fn);
+    this._subscriptions.push({ key, subs, fn });
+  }
+  // Leaving a stale subscription behind on reassignment would keep the old
+  // model repainting this element — and keep the element alive — forever.
+  _unsubscribe(key) {
+    this._subscriptions = this._subscriptions.filter((sub) => {
+      if (sub.key !== key) return true;
+      sub.subs.delete(sub.fn);
+      return false;
+    });
+  }
+  _teardownSubscriptions() {
+    for (const { subs, fn } of this._subscriptions) subs.delete(fn);
+    this._subscriptions = [];
   }
   // A method wins over the handlers registry, and only one runs — first
   // match, so a registry entry cannot double-fire behind a subclass method.
@@ -293,6 +362,7 @@ function salis(name, options = {}) {
 }
 export {
   SalisElement,
-  salis as default
+  salis as default,
+  reactive
 };
 //# sourceMappingURL=salis.mjs.map

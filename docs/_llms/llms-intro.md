@@ -47,13 +47,19 @@ The API:
   (`.value`), `attr#name` (`setAttribute`). Entries separate with `;`; a path
   may reach into an object (`user.name`).
 - `update(key)` repaints one key, `update()` all of them. It is the escape
-  hatch for mutation inside an object, which no setter sees.
+  hatch for mutation inside a plain object, which no setter sees.
+- `reactive(model)` wraps a plain object or array in a deep proxy; assign it
+  to any number of elements and mutation through the proxy repaints them all.
+  The proxy is the model — the raw original notifies nobody — and non-plain
+  values (Maps, class instances) warn and come back unwrapped.
 - `data-bind` and `data-on` are accepted where a validator objects to the bare
   names.
 - The element wears a `salis` attribute once initialized, so
   `x-el:not([salis])` can style the not-yet-upgraded state.
 
-Deliberate non-goals: deep reactivity (assignment is watched, mutation is not),
+Deliberate non-goals: implicit deep reactivity (assignment is watched, mutation
+needs `update(key)` or an opt-in `reactive()` model — salis never wraps an
+object you did not ask wrapped),
 two-way binding (DOM to state goes through a handler you wrote), late DOM (binds
 are scanned on connect; reconnecting rescans), sanitizing (`:html` is
 `innerHTML` verbatim — bind your own state to it, never user input), templating,

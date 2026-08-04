@@ -52,7 +52,7 @@ the framework evaporates. It sits on
 
 Like sulphuris, the value here is personal first: this is the wrapper I wanted
 to exist, and it transfers to whoever shares the taste for markup-first pages.
-If you want templating, deep reactivity, or an ecosystem, the table says where
+If you want templating, two-way binding, or an ecosystem, the table says where
 to go — those are fine tools and salis does not compete on their ground.
 
 |                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Pick it when                                                |
@@ -64,9 +64,8 @@ to go — those are fine tools and salis does not compete on their ground.
 | salis                                          | yes                  | yes                  | no                  | no                                 | the markup exists first and must survive without the script |
 
 Salis loses on features to every row above: no templating, no two-way binding,
-no deep reactivity, no plugin ecosystem. That is the trade, and
-[Limits](docs/limits.html) is the page that spells it out rather than burying
-it.
+no plugin ecosystem. That is the trade, and [Limits](docs/limits.html) is the
+page that spells it out rather than burying it.
 
 Stimulus earns the honest footnote: same religion, different church. The same
 names-in-markup creed, the same CSP-cleanliness, near-identical event wiring and

@@ -1,5 +1,4 @@
 {
-  "private": true,
   "name": "salis",
   "version": "1.0.0",
   "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote",

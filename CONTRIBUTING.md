@@ -98,6 +98,5 @@ the tag triggers [publish.yml](.github/workflows/publish.yml), which publishes
 to npm via trusted publishing — OIDC, no tokens stored anywhere. The changelog
 entry becomes the body of the GitHub release verbatim.
 
-Nothing publishes while `package.json` says `private: true`, which it still
-does. Taking that off is the decision that makes salis a released package, and
-it is not a cleanup task.
+The package is public and the pushed tag is the whole release — there is no
+separate publish step to forget.

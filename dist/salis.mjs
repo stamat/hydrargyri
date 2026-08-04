@@ -34,6 +34,7 @@ function getObjectValueByPath(obj, path) {
 // src/scripts/salis.js
 var salisTags = /* @__PURE__ */ new Set();
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr"]);
+var RESERVED = /* @__PURE__ */ new Set(["handlers", "actions", "_state", "_binds", "_listeners", "_reflected", "_initialized", "_deferredInit"]);
 function parseAttributeValue(raw) {
   if (raw === null) return null;
   if (raw === "") return true;
@@ -77,6 +78,7 @@ var SalisElement = class extends HTMLElement {
     this._initialized = false;
     this._deferredInit = null;
     this.handlers = Object.assign({}, this.constructor.handlers);
+    this.actions = Object.assign({}, this.constructor.actions);
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr);
     for (const prop of this.constructor.properties) this._defineAccessor(prop, null);
   }
@@ -122,13 +124,21 @@ var SalisElement = class extends HTMLElement {
   }
   _defineAccessor(name, attribute) {
     const key = transformDashToCamelCase(name);
-    if (attribute) this._reflected[key] = attribute;
-    else if (!(key in this._state)) this._state[key] = null;
+    if (RESERVED.has(key)) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" is reserved by salis`);
+      return;
+    }
     let preset;
     if (Object.prototype.hasOwnProperty.call(this, key)) {
       preset = this[key];
       delete this[key];
     }
+    if (key in this) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" already exists on the element`);
+      return;
+    }
+    if (attribute) this._reflected[key] = attribute;
+    else if (!(key in this._state)) this._state[key] = null;
     Object.defineProperty(this, key, attribute ? {
       get: () => parseAttributeValue(this.getAttribute(attribute)),
       set: (value) => {
@@ -151,6 +161,9 @@ var SalisElement = class extends HTMLElement {
     this.setAttribute("salis", "");
     this._scanBinds();
     this._scanHandlers();
+    const listener = (e) => this._act(e);
+    this.addEventListener("command", listener);
+    this._listeners.push({ el: this, event: "command", listener });
     this.update();
     if (typeof this.connected === "function") this.connected(this);
   }
@@ -217,6 +230,17 @@ var SalisElement = class extends HTMLElement {
     if (typeof this.handlers[name] === "function") return this.handlers[name](e, this);
     console.warn(`salis: <${this.tagName.toLowerCase()}> has no handler "${name}"`);
   }
+  // Command issued, action taken. Keys are the exact command strings, dashes
+  // and all — no name transformation to reason backwards through. An empty
+  // registry stays silent, because commands may be handled by an `on` listener
+  // instead; only a populated one makes an unknown command a typo worth naming.
+  _act(e) {
+    const action = this.actions[e.command];
+    if (typeof action === "function") return action(e, this);
+    if (Object.keys(this.actions).length) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> has no action for command "${e.command}"`);
+    }
+  }
   _applyBinds(key) {
     const binds = this._binds[key];
     if (!binds) return;
@@ -251,6 +275,8 @@ __publicField(SalisElement, "attributes", []);
 __publicField(SalisElement, "properties", []);
 /** Named event handlers reachable from `on="event:name"`, shared by all instances. */
 __publicField(SalisElement, "handlers", {});
+/** Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as (event, element). */
+__publicField(SalisElement, "actions", {});
 function salis(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
   class Salis extends SalisElement {
@@ -258,6 +284,7 @@ function salis(name, options = {}) {
   __publicField(Salis, "attributes", options.attributes || []);
   __publicField(Salis, "properties", options.properties || []);
   __publicField(Salis, "handlers", options.handlers || {});
+  __publicField(Salis, "actions", options.actions || {});
   for (const hook of ["connected", "disconnected", "attributeChanged"]) {
     if (typeof options[hook] === "function") Salis.prototype[hook] = options[hook];
   }

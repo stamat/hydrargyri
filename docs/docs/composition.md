@@ -94,7 +94,16 @@ handle commands its own way instead.
 
 Baseline newly available (December 2025). Older browsers leave the button inert
 — nothing breaks and nothing happens, which is the failure mode to weigh before
-choosing it. A page that must work everywhere keeps the bubbling event above.
+choosing it. A page that must work everywhere keeps the bubbling event above,
+or loads [invokers-polyfill](https://github.com/keithamus/invokers-polyfill)
+itself — salis does not bundle it, since an element only listens and a page
+using no commands should not pay for one.
+
+[The proposal](https://open-ui.org/components/invokers.explainer/) and the
+polyfill both trace to [@keithamus](https://github.com/keithamus), with
+[@lukewarlow](https://github.com/lukewarlow) co-championing the spec — salute
+to the legend. `actions` exists because that work made commands worth
+answering.
 
 There is no live preview here for that reason: it would demonstrate one thing
 in a current browser and an empty box in an older one, without saying which you

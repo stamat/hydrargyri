@@ -103,15 +103,15 @@ Or straight from a CDN as a module, no install:
 Defines the custom element and returns its class. `options` as an array is
 shorthand for `{ attributes: [...] }`.
 
-| Option             | Type       | What it does                                                                                                                                                                                                    |
-| ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                            |
-| `properties`       | `Array`    | Reactive properties that live only in JS, never written to an attribute.                                                                                                                                        |
-| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`.                                                                                                                                 |
+| Option             | Type       | What it does                                                                                                                                                                                                          |
+| ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                                  |
+| `properties`       | `Array`    | Reactive properties that live only in JS, never written to an attribute.                                                                                                                                              |
+| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`.                                                                                                                                       |
 | `actions`          | `Object`   | Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as `(event, element)`. Unknown commands warn only when actions are declared. Assignable at runtime: `el.actions['--x'] = fn`. |
-| `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                         |
-| `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                           |
-| `attributeChanged` | `Function` | Runs on observed attribute changes as `(name, oldValue, newValue)` — parsed values, not strings. Attributes arriving from the markup are initial state, not changes; this stays silent until after `connected`. |
+| `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                               |
+| `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                                 |
+| `attributeChanged` | `Function` | Runs on observed attribute changes as `(name, oldValue, newValue)` — parsed values, not strings. Attributes arriving from the markup are initial state, not changes; this stays silent until after `connected`.       |
 
 ### `SalisElement`
 
@@ -199,21 +199,28 @@ any event name, custom events included, and they bubble.
 ```
 
 ```js
-salis('x-item', {
-  attributes: ['sku'],
+salis("x-item", {
+  attributes: ["sku"],
   handlers: {
     pick(e, el) {
-      el.dispatchEvent(new CustomEvent('item-picked', { bubbles: true, detail: { sku: el.sku } }))
-    }
-  }
-})
+      el.dispatchEvent(
+        new CustomEvent("item-picked", {
+          bubbles: true,
+          detail: { sku: el.sku },
+        }),
+      );
+    },
+  },
+});
 
-salis('x-cart', {
-  properties: ['count'],
+salis("x-cart", {
+  properties: ["count"],
   handlers: {
-    refresh(e, el) { el.count = (el.count || 0) + 1 }
-  }
-})
+    refresh(e, el) {
+      el.count = (el.count || 0) + 1;
+    },
+  },
+});
 ```
 
 The one footgun is the platform's: forget `bubbles: true` and the event
@@ -235,12 +242,14 @@ the target, and `actions` answers it:
 ```
 
 ```js
-salis('x-cart', {
-  attributes: ['count'],
+salis("x-cart", {
+  attributes: ["count"],
   actions: {
-    '--add-item': (e, el) => { el.count += 1 }
-  }
-})
+    "--add-item": (e, el) => {
+      el.count += 1;
+    },
+  },
+});
 ```
 
 `actions` is the command counterpart of `handlers`: command issued, action
@@ -251,7 +260,10 @@ handle commands its own way instead.
 
 Baseline newly available (December 2025): older browsers leave the button
 inert — nothing breaks, nothing happens. A page that must work everywhere
-keeps the bubbling-event route above.
+keeps the bubbling-event route above, or loads
+[invokers-polyfill](https://github.com/keithamus/invokers-polyfill) itself —
+salis does not bundle it, since an element only listens and a page using no
+commands should not pay for one. Big salute to [@keithamus](https://github.com/keithamus),the legend!
 
 ## What salis does not do
 

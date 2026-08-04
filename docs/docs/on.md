@@ -67,6 +67,16 @@ and not the page.
 `data-on` works identically, for markup that must satisfy a validator. Where
 both sit on one element the bare form wins.
 
+## `command` events
+
+`on="command:name"` hears
+[Invoker Commands](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
+like any other event, but they have a registry of their own: `actions`, keyed
+by the exact command string — see
+[composition](composition.html#no-common-ancestor-at-all). An element with
+`actions` declared warns on a command it does not know; one without stays
+silent, on the assumption an `on` listener like the above is handling them.
+
 ## What is scanned, and when
 
 Handlers are wired when the element connects, on itself and every descendant

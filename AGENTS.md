@@ -23,8 +23,9 @@ script/lint      # eslint (the authority; CI runs it)
 
 - The library is one file, `src/scripts/salis.js`. Its test sits beside it as
   `src/scripts/salis.test.js`.
-- `src/scripts/demos.js` defines the elements the docs pages demonstrate. It is
-  bundled to `dist/salis-demos.min.js` and loaded into every live preview.
+- `src/scripts/demos.js` is the bundle every live preview loads, compiled to
+  `dist/salis-demos.min.js`. It puts salis on the frame's `window` and defines
+  no elements — the demos define themselves.
 - `docs/` is the site source, `_site/` its output. `dist/` is committed;
   `_site/` is not.
 - `script/changelog` and `script/demos.js` are build tooling, not shipped.
@@ -52,9 +53,11 @@ Two things on a page are not prose:
   `script/demos.js` after the markup stage. A fence tagged ` ```js demo ` joins
   the group as a second tab. The fence stays the only source, so the code shown
   and the thing rendered cannot drift.
-- **A preview's element must exist in `src/scripts/demos.js`.** Every preview
-  loads the one bundle; a sample using a tag that is not defined there renders
-  as inert markup with no warning.
+- **The ` ```js demo ` fence runs.** code-preview inlines that pane into the
+  frame as a module, after `dist/salis-demos.min.js` has put `salis` on its
+  `window` — so the fence is where the demo's element is defined, and every
+  preview needs one. A sample whose tag nothing defines renders as inert markup
+  with no warning; defining the same tag twice throws.
 
 Rules:
 

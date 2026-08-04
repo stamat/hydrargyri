@@ -12,10 +12,8 @@ export default [
         document: 'readonly',
         console: 'readonly',
         HTMLElement: 'readonly',
-        CustomEvent: 'readonly',
         customElements: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly'
+        window: 'readonly'
       }
     }
   },

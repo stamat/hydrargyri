@@ -9,10 +9,11 @@
 // becomes a `<code-preview>` wrapping that same fence: the sample rendered in an
 // iframe above the code that produced it, and the code editable.
 //
-// Every preview loads one bundle, `dist/salis-demos.min.js` — salis plus every
-// element `src/scripts/demos.js` defines. Simpler than the per-element loading a
-// component library needs, and it is why the marker takes no arguments: there is
-// only one thing a salis demo could ask for.
+// Every preview loads one bundle, `dist/salis-demos.min.js`, which is salis on
+// the frame's `window` and nothing else. The elements come from the previews
+// themselves — a `demo` fence is inlined into the frame as a module and runs, so
+// the definition shown is the definition running. That is why the marker takes
+// no arguments: there is only one thing a salis demo could ask for.
 //
 // Post-markup rather than in the markdown, which is the point of the marker. The
 // fences stay fences in `docs/*.md`, so each one is still a block of real code to

@@ -2,9 +2,10 @@
 layout: poops-docs-theme/prose
 title: Salis
 description: Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.
+nav: false
 ---
 
-# <sup>🜔</sup> Salis
+# <span class="brand-mark">🜔</span> Salis
 
 Every reactive framework starts the same way: move your markup into our world.
 Templates in JS, decorators that need a build step, expressions interpreted out

@@ -1,0 +1,20 @@
+// The salt glyph's ink sits centred on its em box, far below the ink of text on
+// the same baseline, so the theme's `vertical-align: middle` leaves the mark
+// about half a glyph under the wordmark. Raised until the two ink centres meet —
+// measured in system-ui at 1.3rem beside 1.1rem, the topbar's sizes.
+//
+// A relative offset and not a `vertical-align` value: aligning it that way grows
+// the line box upward, and the topbar centres that box, so the whole brand drops
+// out of line with the Docs link and the icon buttons beside it.
+.brand-mark {
+  position: relative;
+  top: -0.36em;
+}
+
+// The landing page's title wears the same mark, so it wears it the same way: a
+// size up from the text beside it, which is what keeps the offset above right —
+// it holds for any text size as long as this ratio matches the topbar's.
+h1 .brand-mark {
+  font-size: 1.18em;
+  margin-inline-end: 0.15em;
+}

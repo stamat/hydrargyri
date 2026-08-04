@@ -54,9 +54,11 @@ script/lint      # eslint
 
 The library is one file, `src/scripts/salis.js`, with its test beside it.
 `docs/` is the site source and `_site/` its output; `dist/` is committed and
-`_site/` is not. A live preview on a docs page runs `dist/salis-demos.min.js`,
-built from `src/scripts/demos.js` — a sample using a tag that is not defined
-there renders as inert markup and says nothing about it.
+`_site/` is not. A live preview on a docs page loads `dist/salis-demos.min.js`,
+built from `src/scripts/demos.js`, which is what puts `salis` on the frame's
+`window`. The element itself comes from the preview's own ` ```js demo ` fence,
+which runs — a sample with no such fence renders as inert markup and says
+nothing about it.
 
 ## Reporting a bug
 

@@ -56,8 +56,9 @@ for the person who wrote the code.
 
 - **The demo page became the docs site.** `src/markup/` and the hand-rolled layout it used
   are gone, along with `dist/site.*` and the `index.html` that sat in the repository root.
-  The demo elements moved to `src/scripts/demos.js` and are bundled to
-  `dist/salis-demos.min.js`, which is what every live preview loads.
+  Every live preview loads `dist/salis-demos.min.js`, built from
+  `src/scripts/demos.js`, which puts `salis` on the frame's `window`; each demo's element
+  is defined by the ` ```js demo ` fence shown beside it, which is the code that runs.
 - **`package-lock.json` is committed**, because `script/bootstrap` and CI both run
   `npm ci`, which needs one and will not write it.
 

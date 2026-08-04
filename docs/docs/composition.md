@@ -26,17 +26,26 @@ salis("demo-item", {
   attributes: ["sku"],
   handlers: {
     pick(e, el) {
-      el.dispatchEvent(new CustomEvent("item-picked", { bubbles: true, detail: { sku: el.sku } }));
-    }
-  }
+      el.dispatchEvent(
+        new CustomEvent("item-picked", {
+          bubbles: true,
+          detail: { sku: el.sku },
+        }),
+      );
+    },
+  },
 });
 
 salis("demo-cart", {
   properties: ["count"],
-  connected(el) { el.count = 0 },
+  connected(el) {
+    el.count = 0;
+  },
   handlers: {
-    refresh(e, el) { el.count += 1 }
-  }
+    refresh(e, el) {
+      el.count += 1;
+    },
+  },
 });
 ```
 
@@ -81,8 +90,10 @@ that element**, and `actions` answers it.
 salis("x-cart", {
   attributes: ["count"],
   actions: {
-    "--add-item": (e, el) => { el.count += 1 }
-  }
+    "--add-item": (e, el) => {
+      el.count += 1;
+    },
+  },
 });
 ```
 
@@ -100,9 +111,8 @@ itself — salis does not bundle it, since an element only listens and a page
 using no commands should not pay for one.
 
 [The proposal](https://open-ui.org/components/invokers.explainer/) and the
-polyfill both trace to [@keithamus](https://github.com/keithamus), with
-[@lukewarlow](https://github.com/lukewarlow) co-championing the spec — salute
-to the legend. `actions` exists because that work made commands worth
+polyfill both trace to [@keithamus](https://github.com/keithamus) with
+[@lukewarlow](https://github.com/lukewarlow) co-championing the spec. `actions` exists because that work made commands worth
 answering.
 
 There is no live preview here for that reason: it would demonstrate one thing
@@ -111,13 +121,13 @@ were looking at.
 
 ## Scope, and where it stops
 
-| Between                        | Through                                               |
-| ------------------------------ | ----------------------------------------------------- |
-| child → ancestor               | a bubbling event, caught by the ancestor's `on`       |
-| parent → child                 | writing the child's observed attribute                |
-| sibling → sibling              | both of the above, via their common ancestor          |
-| any element → any element      | `commandfor`/`command`, where the browser is new enough |
-| anything wider                 | the page's job, not salis's                           |
+| Between                   | Through                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| child → ancestor          | a bubbling event, caught by the ancestor's `on`         |
+| parent → child            | writing the child's observed attribute                  |
+| sibling → sibling         | both of the above, via their common ancestor            |
+| any element → any element | `commandfor`/`command`, where the browser is new enough |
+| anything wider            | the page's job, not salis's                             |
 
 State shared across a whole page — a session, a router, a cart that outlives the
 markup around it — belongs to the page. Salis holds state on elements, and an

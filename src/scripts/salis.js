@@ -6,6 +6,11 @@ const salisTags = new Set()
 
 const BIND_TYPES = new Set(['text', 'html', 'value', 'attr'])
 
+// Instance fields the constructor assigns; an accessor over one of these would
+// dismantle the machinery it rides on. Prototype members — salis's own API and
+// natives like `title` — are caught by the `key in this` check at define time.
+const RESERVED = new Set(['handlers', 'actions', '_state', '_binds', '_listeners', '_reflected', '_initialized', '_deferredInit'])
+
 // `null` attribute means absent, `''` means present-without-value — the HTML
 // boolean convention — so `<x-el active>` reads as `true`, not as an empty string.
 function parseAttributeValue(raw) {
@@ -55,6 +60,8 @@ export class SalisElement extends HTMLElement {
   static properties = []
   /** Named event handlers reachable from `on="event:name"`, shared by all instances. */
   static handlers = {}
+  /** Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as (event, element). */
+  static actions = {}
 
   static get observedAttributes() {
     return this.attributes
@@ -72,6 +79,7 @@ export class SalisElement extends HTMLElement {
     this._initialized = false
     this._deferredInit = null
     this.handlers = Object.assign({}, this.constructor.handlers)
+    this.actions = Object.assign({}, this.constructor.actions)
 
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr)
     for (const prop of this.constructor.properties) this._defineAccessor(prop, null)
@@ -130,8 +138,13 @@ export class SalisElement extends HTMLElement {
 
   _defineAccessor(name, attribute) {
     const key = transformDashToCamelCase(name)
-    if (attribute) this._reflected[key] = attribute
-    else if (!(key in this._state)) this._state[key] = null
+    // Colliding names fail loud here, at definition — not as a TypeError three
+    // calls from the cause when `attributes: ['update']` has shadowed the API
+    // or a native like `title` has silently lost its platform behaviour.
+    if (RESERVED.has(key)) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> cannot observe "${name}" — "${key}" is reserved by salis`)
+      return
+    }
 
     // A property assigned before upgrade sits as an own property that would
     // shadow this accessor; capture it and replay it through the setter.
@@ -140,6 +153,16 @@ export class SalisElement extends HTMLElement {
       preset = this[key]
       delete this[key]
     }
+
+    // After the preset is lifted, anything still answering to the name lives
+    // on the prototype chain — salis API, subclass method, or platform native.
+    if (key in this) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> cannot observe "${name}" — "${key}" already exists on the element`)
+      return
+    }
+
+    if (attribute) this._reflected[key] = attribute
+    else if (!(key in this._state)) this._state[key] = null
 
     // Reflected values are read from the attribute every time — the DOM is
     // the only copy, so devtools edits and salis writes cannot disagree.
@@ -169,6 +192,12 @@ export class SalisElement extends HTMLElement {
     this.setAttribute('salis', '')
     this._scanBinds()
     this._scanHandlers()
+    // Always wired, even with no actions declared: an action assigned at
+    // runtime then routes without the author re-wiring anything. Registered
+    // in _listeners after _scanHandlers, so teardown unhooks it with the rest.
+    const listener = (e) => this._act(e)
+    this.addEventListener('command', listener)
+    this._listeners.push({ el: this, event: 'command', listener })
     this.update()
     if (typeof this.connected === 'function') this.connected(this)
   }
@@ -242,6 +271,18 @@ export class SalisElement extends HTMLElement {
     console.warn(`salis: <${this.tagName.toLowerCase()}> has no handler "${name}"`)
   }
 
+  // Command issued, action taken. Keys are the exact command strings, dashes
+  // and all — no name transformation to reason backwards through. An empty
+  // registry stays silent, because commands may be handled by an `on` listener
+  // instead; only a populated one makes an unknown command a typo worth naming.
+  _act(e) {
+    const action = this.actions[e.command]
+    if (typeof action === 'function') return action(e, this)
+    if (Object.keys(this.actions).length) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> has no action for command "${e.command}"`)
+    }
+  }
+
   _applyBinds(key) {
     const binds = this._binds[key]
     if (!binds) return
@@ -283,6 +324,7 @@ export class SalisElement extends HTMLElement {
  * @param {Array} [options.attributes] Observed attributes, reflected reactive properties
  * @param {Array} [options.properties] Reactive properties without an attribute
  * @param {Object} [options.handlers] Named handlers for `on="event:name"`, called as (event, element)
+ * @param {Object} [options.actions] Invoker Command responses keyed by the exact command string (`'--add-item'`), called as (event, element)
  * @param {Function} [options.connected] Runs once the element is upgraded, scanned and painted
  * @param {Function} [options.disconnected] Runs when the element leaves the DOM
  * @param {Function} [options.attributeChanged] Runs on observed attribute changes after init, as (name, oldValue, newValue)
@@ -300,6 +342,7 @@ export default function salis(name, options = {}) {
     static attributes = options.attributes || []
     static properties = options.properties || []
     static handlers = options.handlers || {}
+    static actions = options.actions || {}
   }
   for (const hook of ['connected', 'disconnected', 'attributeChanged']) {
     if (typeof options[hook] === 'function') Salis.prototype[hook] = options[hook]

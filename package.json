@@ -6,8 +6,16 @@
   "type": "module",
   "main": "src/scripts/salis.js",
   "exports": {
-    ".": "./src/scripts/salis.js"
+    ".": "./src/scripts/salis.js",
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
   },
+  "files": [
+    "src/scripts/salis.js",
+    "dist/salis.mjs",
+    "dist/salis.mjs.map",
+    "dist/salis.min.mjs"
+  ],
   "homepage": "https://stamat.github.io/salis/",
   "repository": {
     "type": "git",
@@ -29,19 +37,24 @@
   "scripts": {
     "dev": "poops",
     "build": "poops -b",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "prepack": "poops -b",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint ."
   },
   "jest": {
     "testEnvironment": "jsdom",
     "transform": {}
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "code-preview-element": "^3.0.0",
+    "eslint": "^10.8.0",
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0",
-    "poops": "^1.0.18"
+    "poops": "^2.0.0",
+    "poops-docs-theme": "^2.0.0"
   },
   "dependencies": {
-    "book-of-spells": "^1.0.22",
-    "sulphuris": "^1.0.5"
+    "book-of-spells": "^1.0.22"
   }
 }

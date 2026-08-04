@@ -327,3 +327,120 @@ test('a property set before the element upgrades replays through the accessor', 
   expect(el.getAttribute('count')).toBe('5')
   expect(el.count).toBe(5)
 })
+
+test('a name colliding with the salis API or a native warns and is skipped, the element survives', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  salis(name, ['update', 'title', 'count'])
+  const root = mount(`<${name} count="1"><span bind="count"></span></${name}>`)
+  const el = root.firstElementChild
+  expect(warn).toHaveBeenCalledTimes(2)
+  expect(typeof el.update).toBe('function')
+  expect(el.count).toBe(1)
+  expect(el.querySelector('span').textContent).toBe('1')
+})
+
+test('data-bind and data-on work where the bare attributes would offend a validator', () => {
+  const name = tag()
+  const seen = []
+  salis(name, {
+    attributes: ['count'],
+    handlers: { poke: () => seen.push('hit') }
+  })
+  const root = mount(
+    `<${name} count="3"><span data-bind="count"></span><button data-on="click:poke"></button></${name}>`
+  )
+  expect(root.querySelector('span').textContent).toBe('3')
+  root.querySelector('button').click()
+  expect(seen).toEqual(['hit'])
+})
+
+test('null removes an attr-bound attribute and empties an html bind', () => {
+  const name = tag()
+  salis(name, { properties: ['state', 'body'] })
+  const root = mount(`<${name}><i bind="state:attr#data-state"></i><div bind="body:html"></div></${name}>`)
+  const el = root.firstElementChild
+  el.state = 'on'
+  el.body = '<b>x</b>'
+  el.state = null
+  el.body = null
+  expect(el.querySelector('i').hasAttribute('data-state')).toBe(false)
+  expect(el.querySelector('div').innerHTML).toBe('')
+})
+
+test('a bubbling custom event from a child element reaches the parent salis handler', () => {
+  const parent = tag()
+  const child = tag()
+  const seen = []
+  salis(child, {
+    handlers: {
+      pick: (e, el) => el.dispatchEvent(new CustomEvent('picked', { bubbles: true, detail: { sku: 7 } }))
+    }
+  })
+  salis(parent, {
+    handlers: { heard: (e) => seen.push(e.detail.sku) }
+  })
+  const root = mount(
+    `<${parent} on="picked:heard"><${child}><button on="click:pick"></button></${child}></${parent}>`
+  )
+  root.querySelector('button').click()
+  expect(seen).toEqual([7])
+})
+
+test('a parent writing a child observed attribute repaints the child on its own', () => {
+  const parent = tag()
+  const child = tag()
+  salis(parent, [])
+  salis(child, ['sku'])
+  const root = mount(
+    `<${parent}><${child} sku="7"><span bind="sku"></span></${child}></${parent}>`
+  )
+  const childEl = root.querySelector(child)
+  childEl.sku = 9
+  expect(childEl.getAttribute('sku')).toBe('9')
+  expect(childEl.querySelector('span').textContent).toBe('9')
+})
+
+// jsdom has no CommandEvent yet, so command events are simulated as plain
+// events wearing a `command` property — the router only reads that field.
+function commandEvent(command) {
+  return Object.assign(new Event('command'), { command })
+}
+
+test('a command routes to the action wearing its exact name, with the event and the element', () => {
+  const name = tag()
+  const seen = []
+  salis(name, {
+    attributes: ['count'],
+    actions: {
+      '--add-item': (e, el) => seen.push([e.command, el.tagName])
+    }
+  })
+  const root = mount(`<${name} count="0"></${name}>`)
+  root.firstElementChild.dispatchEvent(commandEvent('--add-item'))
+  expect(seen).toEqual([['--add-item', name.toUpperCase()]])
+})
+
+test('an unknown command warns when actions are declared, and stays silent when none are', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const quiet = tag()
+  const loud = tag()
+  salis(quiet, [])
+  salis(loud, { actions: { '--known': () => {} } })
+  const root = mount(`<${quiet}></${quiet}><${loud}></${loud}>`)
+  root.querySelector(quiet).dispatchEvent(commandEvent('--whatever'))
+  expect(warn).not.toHaveBeenCalled()
+  root.querySelector(loud).dispatchEvent(commandEvent('--typo'))
+  expect(warn).toHaveBeenCalledTimes(1)
+})
+
+test('an action assigned at runtime routes without any re-wiring', () => {
+  const name = tag()
+  const seen = []
+  salis(name, [])
+  const root = mount(`<${name}></${name}>`)
+  const el = root.firstElementChild
+  el.actions['--late'] = (e, el) => seen.push(el.tagName)
+  el.dispatchEvent(commandEvent('--late'))
+  expect(seen).toEqual([name.toUpperCase()])
+})

@@ -1,7 +1,17 @@
 {
   "scripts": [{
     "in": "src/scripts/salis.js",
-    "out": "dist/salis.js",
+    "out": "dist/salis.mjs",
+    "options": {
+      "sourcemap": true,
+      "minify": true,
+      "justMinified": false,
+      "format": "esm",
+      "target": "es2019"
+    }
+  }, {
+    "in": "src/scripts/site.js",
+    "out": "dist/site.js",
     "options": {
       "sourcemap": true,
       "minify": true,
@@ -21,11 +31,11 @@
   }],
   "markup": {
     "in": "src/markup",
-    "out": "/",
+    "out": ".",
     "options": {
       "site": {
         "title": "Salis",
-        "description": "Web components",
+        "description": "Reactive web components in the light DOM",
         "url": "https://stamat.github.io/salis"
       },
       "data": [

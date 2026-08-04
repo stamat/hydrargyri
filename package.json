@@ -2,16 +2,23 @@
   "private": true,
   "name": "salis",
   "version": "1.0.0",
-  "description": "Web components",
-  "main": "src/scripts/script.js",
+  "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote",
+  "type": "module",
+  "main": "src/scripts/salis.js",
+  "exports": {
+    ".": "./src/scripts/salis.js"
+  },
   "homepage": "https://stamat.github.io/salis/",
   "repository": {
     "type": "git",
     "url": "https://github.com/stamat/salis.git"
   },
   "keywords": [
-    "web",
-    "components"
+    "web-components",
+    "custom-elements",
+    "reactive",
+    "light-dom",
+    "data-binding"
   ],
   "author": "Nikola Stamatovic <@stamat>",
   "contributors": [],
@@ -21,9 +28,16 @@
   },
   "scripts": {
     "dev": "poops",
-    "build": "poops -b"
+    "build": "poops -b",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "transform": {}
   },
   "devDependencies": {
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
     "poops": "^1.0.18"
   },
   "dependencies": {

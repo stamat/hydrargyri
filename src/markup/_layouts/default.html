@@ -32,14 +32,12 @@
   {% endif %}   
 
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 </head>
 <body>
   <div class="container">
     {% block content %} {% endblock %}
   </div>
-  <script>hljs.highlightAll();</script>
-  <script async type="text/javascript" src="{{ relativePathPrefix }}dist/salis.js"></script>
+  <script defer type="text/javascript" src="{{ relativePathPrefix }}dist/site.js"></script>
 
   {% if livereload_port %}
     <script>

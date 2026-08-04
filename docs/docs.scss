@@ -1,0 +1,11 @@
+// The reference pages' bundle: the poops-docs-theme docs layout (shell, sidebar,
+// prose), which links exactly one stylesheet, css/docs.min.css. It already
+// contains everything prose.min.css has — the landing page loads that one
+// instead, never both.
+@use "poops-docs-theme/scss/docs";
+
+// The live previews on these pages. Plain css from the package, loaded here for
+// the same reason.
+@use "code-preview-element/src/code-preview.css";
+
+@use "palette";

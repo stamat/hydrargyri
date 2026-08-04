@@ -1,0 +1,12 @@
+// Salt is brown in the alchemical plates, and it is where the old demo page's
+// palette came from. Overrides the theme's tokens, so it is used after it.
+:root,
+:root[data-theme="light"] {
+  --accent: #824f2d;
+  --link: #6f4326;
+}
+
+:root[data-theme="dark"] {
+  --accent: #dcc8ac;
+  --link: #dcc8ac;
+}

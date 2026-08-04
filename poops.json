@@ -10,52 +10,99 @@
       "target": "es2019"
     }
   }, {
-    "in": "src/scripts/site.js",
-    "out": "dist/site.js",
+    "in": "src/scripts/demos.js",
+    "out": "dist/salis-demos.js",
     "options": {
-      "sourcemap": true,
       "minify": true,
-      "justMinified": false,
+      "justMinified": true,
+      "format": "iife",
+      "target": "es2019"
+    }
+  }, {
+    "in": "node_modules/poops-docs-theme/src/docs.ts",
+    "out": "_site/js/docs.js",
+    "options": {
+      "minify": true,
+      "justMinified": true,
+      "format": "iife",
+      "target": "es2019"
+    }
+  }, {
+    "in": "node_modules/poops-docs-theme/src/prose.ts",
+    "out": "_site/js/prose.js",
+    "options": {
+      "minify": true,
+      "justMinified": true,
       "format": "iife",
       "target": "es2019"
     }
   }],
   "styles": [{
-    "in": "src/styles/site.scss",
-    "out": "dist/site.css",
+    "in": "docs/docs.scss",
+    "out": "_site/css/docs.css",
     "options": {
-      "sourcemap": true,
       "minify": true,
-      "justMinified": false
+      "justMinified": true
+    }
+  }, {
+    "in": "docs/prose.scss",
+    "out": "_site/css/prose.css",
+    "options": {
+      "minify": true,
+      "justMinified": true
     }
   }],
   "markup": {
-    "in": "src/markup",
-    "out": ".",
+    "in": "docs",
+    "out": "_site",
     "options": {
+      "nav": "nav.json",
+      "searchIndex": "search-index.json",
+      "llms": {
+        "out": "llms.txt",
+        "intro": "docs/_llms/llms-intro.md",
+        "full": true,
+        "fullIntro": "docs/_llms/llms-intro-full.md"
+      },
+      "robots": "robots.txt",
       "site": {
         "title": "Salis",
-        "description": "Reactive web components in the light DOM",
-        "url": "https://stamat.github.io/salis"
-      },
-      "data": [
-        "_data/fonts.yaml"
-      ],
-      "includePaths": [
-        "_layouts",
-        "_partials"
-      ],
-      "timeDateFormat": "MMM D, YYYY"
+        "brand": "salis",
+        "brandMark": "🜔",
+        "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.",
+        "lang": "en",
+        "url": "https://stamat.github.io/salis",
+        "repo": "https://github.com/stamat/salis",
+        "branch": "main",
+        "links": [
+          { "title": "Docs", "url": "docs/" }
+        ],
+        "jsonld": { "@type": "TechArticle" }
+      }
     }
   },
+  "copy": [
+    {
+      "in": "dist",
+      "out": "_site"
+    },
+    {
+      "in": "node_modules/code-preview-element/dist/code-preview-hljs.min.js",
+      "out": "_site/js"
+    }
+  ],
+  "exec": {
+    "markup": "node script/demos.js"
+  },
   "banner": "/* {{ name }} v{{ version }} | {{ homepage }} | {{ license }} License */",
-  "serve" : {
-    "port": 4040,
-    "base": "/"
+  "serve": {
+    "port": 4040
   },
   "livereload": true,
   "watch": [
-    "src"
+    "src",
+    "docs",
+    "dist"
   ],
   "includePaths": [
     "node_modules"

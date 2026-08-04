@@ -1,0 +1,9 @@
+// The landing page's bundle: the poops-docs-theme prose layout, which links
+// exactly one stylesheet, css/prose.min.css. Same palette as docs.scss and the
+// same preview styles, because the landing page carries a live sample too.
+//
+// Not a subset loaded alongside the docs bundle — the two are alternatives, and
+// a page loads one of them.
+@use "poops-docs-theme/scss/prose-only";
+@use "code-preview-element/src/code-preview.css";
+@use "palette";

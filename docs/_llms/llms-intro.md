@@ -85,8 +85,8 @@ are scanned on connect; reconnecting rescans), sanitizing (`:html` is
 element before `customElements.define` binds like authored markup, since the
 scan happens at connect; list rendering lives in the separate
 [hydrargyri-each](https://github.com/stamat/hydrargyri-each) package, whose `<hg-each>`
-clones an author-written `<template>` per item with the same bind grammar),
-virtual DOM, routing and stores.
+clones an author-written `<template>` per item with the same bind grammar — the
+`hg-each` page here covers it), virtual DOM, routing and stores.
 
 Elements compose through the platform: bubbling custom events upward, writing a
 child's observed attribute downward, and `commandfor`/`command` where there is

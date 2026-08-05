@@ -11,6 +11,15 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Added
+
+- **An `hg-each` docs page.** List rendering had one sentence in _Limits_ and a link to
+  another repository; the page now carries the shape, the `items` contract, how binds
+  resolve into an item, and the handler and condition fall-through to the closest hydrargyri
+  ancestor. Its samples do not run live — `<hg-each>` ships in
+  [hydrargyri-each](https://github.com/stamat/hydrargyri-each), which this site does not
+  bundle.
+
 ## [1.0.0] - 2026-08-05
 
 ### Added

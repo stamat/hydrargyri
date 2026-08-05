@@ -82,7 +82,7 @@ The one door lives outside the house:
 [hydrargyri-each](https://github.com/stamat/hydrargyri-each) is a separate package whose
 `<hg-each>` clones an author-written `<template>` once per item of an array —
 the same bind grammar, names never code, and this refusal here stands
-unamended.
+unamended. [The `hg-each` page](each.html) covers it.
 
 ## What it does instead of failing
 

@@ -77,6 +77,9 @@
         "links": [
           { "title": "Docs", "url": "docs/" }
         ],
+        "iconLinks": [
+          { "title": "npm", "url": "https://www.npmjs.com/package/hydrargyri", "icon": "npm" }
+        ],
         "jsonld": { "@type": "TechArticle" }
       }
     }

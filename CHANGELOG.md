@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-05
+
 ### Added
 
 - **The library, finished from the 2024 prototype.** `hg(name, options)` defines a

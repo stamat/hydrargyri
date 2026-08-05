@@ -48,13 +48,13 @@ where to go — those are fine tools and salis does not compete on their ground.
 
 ## Against the alternatives
 
-|                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Pick it when                                                |
-| ---------------------------------------------- | -------------------- | -------------------- | ------------------- | ---------------------------------- | ----------------------------------------------------------- |
-| [Catalyst](https://github.com/github/catalyst) | yes                  | yes                  | yes — TS decorators | no                                 | you already build with TypeScript                           |
-| [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | you want the mature ecosystem, especially around Rails      |
-| [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | you want logic inline and accept the CSP cost               |
-| [Lit](https://lit.dev)                         | no — templates in JS | yes                  | no, but expected    | no                                 | you are building an app, not upgrading a page               |
-| salis                                          | yes                  | yes                  | no                  | no                                 | the markup exists first and must survive without the script |
+|                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Conditionals                  | Pick it when                                                |
+| ---------------------------------------------- | -------------------- | -------------------- | ------------------- | ---------------------------------- | ----------------------------- | ----------------------------------------------------------- |
+| [Catalyst](https://github.com/github/catalyst) | yes                  | yes                  | yes — TS decorators | no                                 | no — you write DOM code       | you already build with TypeScript                           |
+| [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | no — controller code toggles  | you want the mature ecosystem, especially around Rails      |
+| [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | yes — `x-if`, evaluated       | you want logic inline and accept the CSP cost               |
+| [Lit](https://lit.dev)                         | no — templates in JS | yes                  | no, but expected    | no                                 | yes — ternaries in JS templates | you are building an app, not upgrading a page               |
+| salis                                          | yes                  | yes                  | no                  | no                                 | named predicates, never eval  | the markup exists first and must survive without the script |
 
 Salis loses on features to every row above: no templating, no two-way binding,
 no plugin ecosystem. That is the trade — the whole API fits in the next
@@ -65,7 +65,7 @@ names-in-markup creed, the same CSP-cleanliness, near-identical event wiring
 and typed attribute-backed values. The doctrine splits on exactly two points —
 `bind` paints declaratively where Stimulus targets are refs you repaint by
 hand, and the component boundary is the platform's custom element instead of a
-runtime with a registry, which is also why salis is 2 kB where Stimulus is 12.
+runtime with a registry, which is also why salis is 3 kB where Stimulus is 12.
 If neither point matters to your project, go to their church; it is better run
 in every other respect.
 

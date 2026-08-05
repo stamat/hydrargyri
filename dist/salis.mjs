@@ -258,11 +258,22 @@ var SalisElement = class extends HTMLElement {
           console.warn(`salis: unknown handler "${trimmed}" \u2014 expected event:name`);
           continue;
         }
-        const event = trimmed.slice(0, colon).trim();
+        let event = trimmed.slice(0, colon).trim();
         const name = trimmed.slice(colon + 1).trim();
+        let target = el;
+        const at = event.lastIndexOf("@");
+        if (at !== -1) {
+          const where = event.slice(at + 1);
+          target = where === "window" ? window : where === "document" ? document : null;
+          if (!target) {
+            console.warn(`salis: unknown handler target "${trimmed}" \u2014 expected event@window or event@document`);
+            continue;
+          }
+          event = event.slice(0, at);
+        }
         const listener = (e) => this._handle(name, e);
-        el.addEventListener(event, listener);
-        this._listeners.push({ el, event, listener });
+        target.addEventListener(event, listener);
+        this._listeners.push({ el: target, event, listener });
       }
     };
     collect(this);

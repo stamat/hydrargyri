@@ -330,11 +330,25 @@ export class SalisElement extends HTMLElement {
           console.warn(`salis: unknown handler "${trimmed}" — expected event:name`)
           continue
         }
-        const event = trimmed.slice(0, colon).trim()
+        let event = trimmed.slice(0, colon).trim()
         const name = trimmed.slice(colon + 1).trim()
+        // resize@window / click@document put the listener on the global while
+        // the handler stays this element's; stored in _listeners like any
+        // other, so disconnect unhooks it and nothing can leak.
+        let target = el
+        const at = event.lastIndexOf('@')
+        if (at !== -1) {
+          const where = event.slice(at + 1)
+          target = where === 'window' ? window : where === 'document' ? document : null
+          if (!target) {
+            console.warn(`salis: unknown handler target "${trimmed}" — expected event@window or event@document`)
+            continue
+          }
+          event = event.slice(0, at)
+        }
         const listener = (e) => this._handle(name, e)
-        el.addEventListener(event, listener)
-        this._listeners.push({ el, event, listener })
+        target.addEventListener(event, listener)
+        this._listeners.push({ el: target, event, listener })
       }
     }
     collect(this)

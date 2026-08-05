@@ -19,7 +19,7 @@ shorthand for `{ attributes: [...] }`, which is the shape most elements need.
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                            |
 | `properties`       | `Array`    | Reactive properties that live only in JS, never written to an attribute.                                                                                                                                        |
-| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`.                                                                                                                                 |
+| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)` — `event@window` / `event@document` for [global events](on.html#window-and-document).                                             |
 | `actions`          | `Object`   | [Invoker Command](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) responses, keyed by the exact `command` string (`'--add-item'`), called as `(event, element)`. An unknown command warns only when actions are declared — an empty registry stays silent, since `on="command:name"` may be handling commands instead. Assignable at runtime: `el.actions['--x'] = fn`. |
 | `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                         |
 | `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                           |
@@ -80,48 +80,6 @@ salis("demo-clock", {
 page with its interval still running is a leak that keeps a reference to the
 element alive. Salis unhooks the listeners it added; the ones you started are
 yours to stop.
-
-Data that arrives late is the same story with an `await` in it: `connected`
-can be `async`, and the fallback between the tags — there before the script,
-there before the data — is the loading state, already written.
-
-<!-- demo -->
-
-```html
-<demo-lazy>
-  <p><strong bind="user.name">Loading…</strong> <span bind="user.role"></span></p>
-  <button on="click:reload">Reload</button>
-</demo-lazy>
-```
-
-```js demo
-const crew = [
-  { name: "Aja", role: "director of design" },
-  { name: "Ada", role: "engineer" },
-  { name: "Grace", role: "rear admiral" }
-];
-let turn = 0;
-const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
-  new Promise((resolve) => setTimeout(() => resolve(crew[turn++ % crew.length]), 1200));
-
-salis("demo-lazy", {
-  properties: ["user"],
-  async connected(el) {
-    el.user = await fetchUser();
-  },
-  handlers: {
-    async reload(e, el) {
-      el.user = await fetchUser();
-    }
-  }
-});
-```
-
-No spinner machinery: a path through `null` paints nothing, so the placeholder
-holds until assignment repaints it. Press **Reload** and the old name stays put
-while the new one is in flight — a missing branch never blanks a node, which
-is stale-while-refetching for free. Salis ignores the promise `connected`
-returns; a fetch that can fail is yours to `catch`.
 
 ## Lifecycle
 
@@ -205,16 +163,77 @@ const user = reactive({ name: "Aja", role: "site design manager" });
 
 salis("demo-crew", {
   properties: ["user"],
+  handlers: {
+    promote() {
+      user.role = "director of design"; // no update(), no element in sight — both cards repaint
+    }
+  }
+});
+
+// The handshake: assignment is what ties a model to an element — nothing is
+// wired by name, so two crews could hold two different users.
+document.querySelectorAll("demo-crew").forEach((el) => (el.user = user));
+```
+
+A `querySelectorAll` sweep is a snapshot — an element added to the page later
+misses it. When the element class knows its one model, invert the handshake:
+`connected(el) { el.user = user }` runs per instance on every connect, clones
+and late arrivals included, and that is a broadcast with no registry — the
+platform already tracks upgrades so salis does not have to. Keep the sweep for
+the other case, where the app decides which element gets which model.
+
+The pull composes with data that is not there yet. A reactive model separates
+two events a promise usually glues together — *subscribed* and *filled*: create
+the model empty, so its identity exists before its contents, pull it in
+`connected`, and let one fetch fill it through the proxy.
+
+<!-- demo -->
+
+```html
+<demo-lazy>
+  <p><strong bind="user.name">Loading…</strong> <span bind="user.role"></span></p>
+  <button on="click:reload">Reload</button>
+</demo-lazy>
+<demo-lazy>
+  <p>Same model, second card: <strong bind="user.name">…</strong></p>
+</demo-lazy>
+```
+
+```js demo
+const crew = [
+  { name: "Aja", role: "director of design" },
+  { name: "Ada", role: "engineer" },
+  { name: "Grace", role: "rear admiral" }
+];
+let turn = 0;
+const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
+  new Promise((resolve) => setTimeout(() => resolve(crew[turn++ % crew.length]), 1200));
+
+const user = reactive({});                              // identity exists now
+fetchUser().then((data) => Object.assign(user, data));  // one fetch, module scope
+
+salis("demo-lazy", {
+  properties: ["user"],
   connected(el) {
-    el.user = user;
+    el.user = user; // subscribes immediately — nothing to await
   },
   handlers: {
-    promote(e, el) {
-      el.user.role = "director of design"; // no update() — both cards repaint
+    async reload() {
+      Object.assign(user, await fetchUser()); // no element references — the model is the hub
     }
   }
 });
 ```
+
+Nothing here awaits inside `connected`, and no spinner machinery exists: the
+placeholder between the tags is the loading state, already written, and a path
+through a missing branch paints nothing until `Object.assign` lands through
+the proxy — then every card repaints, connected before the data or added
+after. Press **Reload** and the old name holds while the new one is in flight
+— stale-while-refetching for free. The refetch writes into the *same* model:
+identity outlives contents, so new data never means a new handshake. A fetch
+that can fail is yours to `catch` — salis ignores what hooks and handlers
+return.
 
 The rules, and each is load-bearing:
 

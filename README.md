@@ -173,6 +173,11 @@ attributes. Where both sit on one element, the bare form wins.
 The name resolves to a method on the element first, then to `handlers`. An
 unknown name warns on first fire instead of throwing.
 
+`event@window` and `event@document` put the listener on the global instead —
+for `resize`, Escape, click-outside — with the handler still the element's and
+the listener still unhooked on disconnect, so the usual leak writes itself
+out of the pattern.
+
 ### `update(key)` / `update()`
 
 Repaints nodes bound to one key, or all of them. This is the escape hatch for

@@ -67,6 +67,54 @@ and not the page.
 `data-on` works identically, for markup that must satisfy a validator. Where
 both sit on one element the bare form wins.
 
+## `@window` and `@document`
+
+`on="resize@window:relayout"` and `on="click@document:close"` put the listener
+on the global instead of the element, for the events that never reach it —
+`resize` fires on `window`, a click that should close this menu happens
+somewhere else entirely. The handler still belongs to the element, still gets
+`(event, element)`, and the listener is unhooked on disconnect like every
+other one salis added — the leak that pattern usually costs is the part you
+stop writing.
+
+<!-- demo -->
+
+```html
+<demo-menu on="click@document:close">
+  <button on="click:toggle">Menu</button>
+  <p>The menu is <strong bind="state">closed</strong>. Click anywhere else in
+  this preview to close it.</p>
+</demo-menu>
+```
+
+```js demo
+salis("demo-menu", {
+  properties: ["state"],
+  connected(el) {
+    el.state = "closed";
+  },
+  handlers: {
+    toggle(e, el) {
+      e.stopPropagation(); // or the click closes what it just opened
+      el.state = el.state === "open" ? "closed" : "open";
+    },
+    close(e, el) {
+      el.state = "closed";
+    }
+  }
+});
+```
+
+The `stopPropagation` is the pattern's one moving part, and it is the
+platform's, not salis's: the opening click bubbles to `document` too, and
+without the stop it closes the menu in the same breath.
+
+An `@` pointing anywhere else — `click@body` — warns and is skipped, and the
+entry's neighbours still wire. For an event many elements share, a global
+listener per element is the wrong shape anyway: one module-scope listener
+writing into a [`reactive()`](api.html#reactivemodel) model fans out to every
+element holding it, and the elements carry no listeners at all.
+
 ## `command` events
 
 `on="command:name"` hears

@@ -52,6 +52,9 @@ The API:
   to any number of elements and mutation through the proxy repaints them all.
   The proxy is the model — the raw original notifies nobody — and non-plain
   values (Maps, class instances) warn and come back unwrapped.
+- `on` may target the globals: `on="resize@window:name"` and
+  `on="click@document:name"` register the listener on `window` or `document` —
+  the handler stays the element's, and disconnect unhooks it with the rest.
 - `data-bind` and `data-on` are accepted where a validator objects to the bare
   names.
 - The element wears a `salis` attribute once initialized, so

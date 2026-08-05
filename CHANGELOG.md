@@ -32,6 +32,11 @@ for the person who wrote the code.
 - **Components talk the platform way, documented and pinned.** `on` hears bubbling
   custom events from descendants, a parent writes a child's observed attribute — no bus,
   no store; the README section and two tests hold the guarantee.
+- **`on="event@window:name"` and `@document` — global events, element-owned.** `resize`,
+  Escape, click-outside: the listener registers on the global the event actually fires on,
+  the handler stays the element's, and disconnect unhooks it with every other listener
+  salis added — the removal boilerplate that pattern usually leaks is gone. An unknown
+  target (`click@body`) warns and is skipped without taking the entry's neighbours.
 - **`reactive(model)` — the opt-in door out of `update(key)`.** Wrap a plain object or
   array once, assign it to any number of elements, and every mutation through the proxy
   repaints them all — no element references at the mutation site. The proxy is the model:

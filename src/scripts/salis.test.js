@@ -445,6 +445,31 @@ test('an action assigned at runtime routes without any re-wiring', () => {
   expect(seen).toEqual([name.toUpperCase()])
 })
 
+test('an @window or @document event reaches the handler from outside the element, and disconnect unhooks both', () => {
+  const name = tag()
+  const seen = []
+  salis(name, { handlers: { note: (e, el) => seen.push([e.type, el.tagName]) } })
+  const root = mount(`<${name} on="ping@window:note;pong@document:note"></${name}>`)
+  window.dispatchEvent(new Event('ping'))
+  document.dispatchEvent(new Event('pong'))
+  expect(seen).toEqual([['ping', name.toUpperCase()], ['pong', name.toUpperCase()]])
+  root.firstElementChild.remove()
+  window.dispatchEvent(new Event('ping'))
+  document.dispatchEvent(new Event('pong'))
+  expect(seen).toEqual([['ping', name.toUpperCase()], ['pong', name.toUpperCase()]])
+})
+
+test('an unknown @target warns and is skipped while its neighbours still wire', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  const seen = []
+  salis(name, { handlers: { poke: () => seen.push('hit') } })
+  const root = mount(`<${name} on="click@body:poke;click:poke"></${name}>`)
+  expect(warn).toHaveBeenCalledTimes(1)
+  root.firstElementChild.click()
+  expect(seen).toEqual(['hit'])
+})
+
 test('a reactive model repaints every element it is assigned to, no update() in sight', () => {
   const a = tag()
   const b = tag()

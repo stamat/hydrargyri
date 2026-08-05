@@ -1,4 +1,4 @@
-# <sup>☿</sup> Hydrargyri
+# ☿ Hydrargyri [![npm version](https://img.shields.io/npm/v/hydrargyri)](https://www.npmjs.com/package/hydrargyri) [![ci](https://img.shields.io/github/actions/workflow/status/stamat/hydrargyri/ci.yml?branch=main&label=ci)](https://github.com/stamat/hydrargyri/actions/workflows/ci.yml) [![license mit](https://img.shields.io/badge/license-MIT-green)](https://github.com/stamat/hydrargyri/blob/main/LICENSE)
 
 > Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.
 
@@ -58,13 +58,13 @@ where to go — those are fine tools and hydrargyri does not compete on their gr
 
 ## Against the alternatives
 
-|                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Conditionals                  | Pick it when                                                |
-| ---------------------------------------------- | -------------------- | -------------------- | ------------------- | ---------------------------------- | ----------------------------- | ----------------------------------------------------------- |
-| [Catalyst](https://github.com/github/catalyst) | yes                  | yes                  | yes — TS decorators | no                                 | no — you write DOM code       | you already build with TypeScript                           |
-| [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | no — controller code toggles  | you want the mature ecosystem, especially around Rails      |
-| [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | yes — `x-if`, evaluated       | you want logic inline and accept the CSP cost               |
+|                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Conditionals                    | Pick it when                                                |
+| ---------------------------------------------- | -------------------- | -------------------- | ------------------- | ---------------------------------- | ------------------------------- | ----------------------------------------------------------- |
+| [Catalyst](https://github.com/github/catalyst) | yes                  | yes                  | yes — TS decorators | no                                 | no — you write DOM code         | you already build with TypeScript                           |
+| [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | no — controller code toggles    | you want the mature ecosystem, especially around Rails      |
+| [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | yes — `x-if`, evaluated         | you want logic inline and accept the CSP cost               |
 | [Lit](https://lit.dev)                         | no — templates in JS | yes                  | no, but expected    | no                                 | yes — ternaries in JS templates | you are building an app, not upgrading a page               |
-| hydrargyri                                          | yes                  | yes                  | no                  | no                                 | named predicates, never eval  | the markup exists first and must survive without the script |
+| hydrargyri                                     | yes                  | yes                  | no                  | no                                 | named predicates, never eval    | the markup exists first and must survive without the script |
 
 Hydrargyri loses on features to every row above: no templating, no two-way binding,
 no plugin ecosystem. That is the trade, and [what hydrargyri does not
@@ -106,14 +106,14 @@ Or straight from a CDN as a module, no install:
 editable. There is no second copy of the reference: this README is the pitch,
 the site is the manual.
 
-| Page                                                        | What it covers                                                                                     |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [Getting started](https://stamat.github.io/hydrargyri/docs/)     | the three parts of a hydrargyri element, in one screen                                                  |
-| [API](https://stamat.github.io/hydrargyri/docs/api.html)         | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
-| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `prop#name`, `class#name`, `if` / `unless`, and paths into objects |
-| [on](https://stamat.github.io/hydrargyri/docs/on.html)           | what fires: event names, handler resolution, the `(event, element)` signature                      |
-| [Composition](https://stamat.github.io/hydrargyri/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                        |
-| [Limits](https://stamat.github.io/hydrargyri/docs/limits.html)   | what hydrargyri will not do, and the threat model for `:html`                                           |
+| Page                                                                     | What it covers                                                                                                              |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [Getting started](https://stamat.github.io/hydrargyri/docs/)             | the three parts of a hydrargyri element, in one screen                                                                      |
+| [API](https://stamat.github.io/hydrargyri/docs/api.html)                 | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()`                         |
+| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)               | where state lands: `text`, `html`, `value`, `attr#name`, `prop#name`, `class#name`, `if` / `unless`, and paths into objects |
+| [on](https://stamat.github.io/hydrargyri/docs/on.html)                   | what fires: event names, handler resolution, the `(event, element)` signature                                               |
+| [Composition](https://stamat.github.io/hydrargyri/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                                                         |
+| [Limits](https://stamat.github.io/hydrargyri/docs/limits.html)           | what hydrargyri will not do, and the threat model for `:html`                                                               |
 
 Agents: [`llms.txt`](https://stamat.github.io/hydrargyri/llms.txt) is the link index,
 [`llms-full.txt`](https://stamat.github.io/hydrargyri/llms-full.txt) the whole thing

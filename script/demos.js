@@ -9,11 +9,12 @@
 // becomes a `<code-preview>` wrapping that same fence: the sample rendered in an
 // iframe above the code that produced it, and the code editable.
 //
-// Every preview loads one bundle, `dist/hydrargyri-demos.min.js`, which is hydrargyri on
-// the frame's `window` and nothing else. The elements come from the previews
-// themselves — a `demo` fence is inlined into the frame as a module and runs, so
-// the definition shown is the definition running. That is why the marker takes
-// no arguments: there is only one thing a hydrargyri demo could ask for.
+// Every preview loads one bundle, `dist/hydrargyri-demos.min.js`: hydrargyri on the
+// frame's `window`, plus `<hg-each>` from hydrargyri-each, which is a library
+// element and so has no fence to define it. Every other element comes from the
+// preview itself — a `demo` fence is inlined into the frame as a module and
+// runs, so the definition shown is the definition running. That is why the
+// marker takes no arguments: there is only one thing a hydrargyri demo could ask for.
 //
 // Post-markup rather than in the markdown, which is the point of the marker. The
 // fences stay fences in `docs/*.md`, so each one is still a block of real code to

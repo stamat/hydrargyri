@@ -54,9 +54,18 @@ for the person who wrote the code.
 - **An `hg-each` docs page.** List rendering had one sentence in _Limits_ and a link to
   another repository; the page now carries the shape, the `items` contract, how binds
   resolve into an item, and the handler and condition fall-through to the closest hydrargyri
-  ancestor. Its samples do not run live — `<hg-each>` ships in
-  [hydrargyri-each](https://github.com/stamat/hydrargyri-each), which this site does not
-  bundle.
+  ancestor. Its samples run live: `hydrargyri-each` reached npm, so the docs bundle
+  loads it beside hydrargyri and the page carries two editable previews — the shape,
+  and a roster whose rows dismiss themselves through the owning element's
+  handlers.
+
+- **A warning in _`on`_ that the platform's own methods win a name.** A handler is
+  looked up as a method before it is looked up in `handlers`, and an element already
+  answers to `remove`, `focus`, `blur` and `click` — so `on="click:remove"` deletes
+  the node it fired from and never reaches the `handlers` entry of that name, with
+  nothing warning, because a method was found. Behaviour is unchanged; it was
+  undocumented, and the `hg-each` page's own row-removal sample was written against
+  it.
 
 ## [1.0.0] - 2026-08-05
 

@@ -24,8 +24,12 @@ script/lint      # eslint (the authority; CI runs it)
 - The library is one file, `src/scripts/hydrargyri.js`. Its test sits beside it as
   `src/scripts/hydrargyri.test.js`.
 - `src/scripts/demos.js` is the bundle every live preview loads, compiled to
-  `dist/hydrargyri-demos.min.js`. It puts hydrargyri on the frame's `window` and defines
-  no elements — the demos define themselves.
+  `dist/hydrargyri-demos.min.js`. It puts hydrargyri on the frame's `window` and
+  defines only `<hg-each>`, by importing hydrargyri-each — a library element has no
+  fence to define it, every other element the demos define themselves. That
+  import's `hydrargyri` peer is aliased to `src/scripts/hydrargyri.js` in
+  `poops.json`, or npm's copy of the published package makes it two hydrargyris
+  that cannot see each other's elements; CI greps the bundle for the second copy.
 - `docs/` is the site source, `_site/` its output. `dist/` is committed;
   `_site/` is not.
 - `script/changelog` and `script/demos.js` are build tooling, not shipped.

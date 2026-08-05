@@ -58,5 +58,10 @@ jobs:
           # Every preview's js fence calls a bare `hg(...)`, so the bundle
           # losing the global is a page of ReferenceErrors and a green build.
           grep -q 'window.hg=' dist/hydrargyri-demos.min.js
+          # hydrargyri-each's peer pulls the published hydrargyri into node_modules,
+          # so a lost alias bundles two copies — which share no element registry
+          # and no reactive subscribers, and cost the hg-each previews their
+          # binds and repaints without failing anything.
+          test "$(grep -c -o 'has no attribute or property' dist/hydrargyri-demos.min.js)" -eq 1
           test -s _site/index.html
           test -s _site/llms.txt

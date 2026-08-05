@@ -13,6 +13,9 @@
     "in": "src/scripts/demos.js",
     "out": "dist/hydrargyri-demos.js",
     "options": {
+      "alias": {
+        "hydrargyri": "./src/scripts/hydrargyri.js"
+      },
       "minify": true,
       "justMinified": true,
       "format": "iife",

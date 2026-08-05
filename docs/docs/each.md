@@ -18,12 +18,9 @@ author-written `<template>` once per item, painting the clone with the same
 `bind` grammar hydrargyri parses — [`parseBinds`](api.html#parsebindsraw) is exported
 for exactly this, so the grammar cannot fork.
 
-**The samples on this page do not run.** Every other preview on this site loads
-the library and defines its own element; `<hg-each>` ships in a package this
-site does not bundle, so what follows is markup to copy rather than a frame to
-edit.
-
 ## The shape
+
+<!-- demo -->
 
 ```html
 <hg-each>
@@ -36,9 +33,7 @@ edit.
 </hg-each>
 ```
 
-```js
-import "hydrargyri-each";
-
+```js demo
 document.querySelector("hg-each").items = [
   { name: "Ada", role: "admin" },
   { name: "Grace" }
@@ -49,17 +44,37 @@ That `<li>Ada — admin</li>` is not an example of the output, it is the page
 working before the script arrives. A `<template>` renders nothing by itself, so
 a reader without JavaScript keeps the server's rows, and the first assignment of
 `items` replaces them — the same guarantee the rest of hydrargyri makes, kept the
-same way.
+same way. Grace carries no `role`, so that row keeps the word the template was
+authored with.
 
 ## Install
 
-Not on npm yet. The package is written and has a test suite; nothing is
-published, so the install lines in [its
-README](https://github.com/stamat/hydrargyri-each#install) describe the shape of the
-release rather than something to pull today. One thing worth knowing before it
-lands: its `dist/` keeps `hydrargyri` external, so a CDN setup needs an import map
-naming the one shared copy — two copies of hydrargyri cannot see each other's
-elements.
+```bash
+npm install hydrargyri hydrargyri-each
+```
+
+```js
+import "hydrargyri-each"; // defines <hg-each>; hydrargyri is a peer, installed beside it
+```
+
+From a CDN its `dist/` keeps `hydrargyri` external, so an import map names the one
+shared copy:
+
+```html
+<script type="importmap">
+  { "imports": { "hydrargyri": "https://cdn.jsdelivr.net/npm/hydrargyri/dist/hydrargyri.mjs" } }
+</script>
+<script type="module">
+  import "https://cdn.jsdelivr.net/npm/hydrargyri-each/dist/hydrargyri-each.mjs";
+</script>
+```
+
+Two copies of hydrargyri cannot see each other's elements, and the failure is
+quiet rather than loud: an `<hg-each>` inside another hydrargyri element loses its
+own binds to that element, and a [`reactive()`](api.html#reactivemodel) model
+assigned to `items` never repaints. The previews on this page run with one copy
+of each package already on the frame, which is why their fences carry no import
+line.
 
 ## `items`, and what a value paints
 
@@ -157,16 +172,8 @@ nothing above it, an inner hg-each's rows never see the outer item, and any
 other `$` name warns rather than resolving to nothing. The same coordinates
 reach the DOM on the root element — `hg-row="0"`, the position, also a styling
 hook, and the position even over an object, where the key stays in `$key` — with
-the item itself as an `hgItem` property:
-
-```js
-handlers: {
-  remove(e, el) {
-    const row = e.target.closest("[hg-row]");
-    el.list.splice(+row.getAttribute("hg-row"), 1); // a reactive() list repaints
-  }
-}
-```
+the item itself as an `hgItem` property. `hg-row` is how a button inside a row
+says which row fired it, [below](#handlers-and-conditions-fall-through).
 
 ## `key`, and rows that keep their nodes
 
@@ -194,12 +201,66 @@ reads where the row is now.
 ## Handlers and conditions fall through
 
 `<hg-each>` declares no handlers of its own, and the element holding the data
-usually owns what its rows do. So `on="click:remove"` inside a row asks hg-each
+usually owns what its rows do. So `on="click:dismiss"` inside a row asks hg-each
 first and then the closest hydrargyri ancestor, and the handler runs with the
 element it was found on as its second argument — the [`(event, element)`
 signature](on.html#the-signature) unchanged. Named conditions
 (`bind="done:if#overdue"`) resolve the same way. A name nothing answers warns,
 as it does [on any element](on.html#how-a-name-resolves).
+
+<!-- demo -->
+
+```html
+<demo-roster>
+  <hg-each>
+    <ul>
+      <template>
+        <li><b bind="name"></b> — <span bind="role">member</span>
+          <button on="click:dismiss">Dismiss</button></li>
+      </template>
+      <li><b>Ada</b> — <span>admin</span></li>
+    </ul>
+    <p bind="items.length:unless">Nobody left.</p>
+  </hg-each>
+  <button on="click:hire">Hire</button>
+</demo-roster>
+```
+
+```js demo
+const crew = reactive([
+  { name: "Ada", role: "admin" },
+  { name: "Grace" }
+]);
+const bench = ["Katherine", "Dorothy", "Margaret", "Mary"];
+
+hg("demo-roster", {
+  connected(el) {
+    el.querySelector("hg-each").items = crew;
+  },
+  handlers: {
+    hire() { crew.push({ name: bench[crew.length % bench.length] }) },
+    dismiss(e) {
+      crew.splice(+e.target.closest("[hg-row]").getAttribute("hg-row"), 1);
+    }
+  }
+});
+```
+
+Neither button is hg-each's. **Hire** sits on `<demo-roster>` and fires there;
+**Dismiss** sits in a row, finds no `dismiss` on hg-each, and walks up to the
+same element — which is why one `handlers` object serves both. The list is
+[`reactive()`](api.html#reactivemodel), so `push` and `splice` repaint with no
+call to `update`, and `<hg-each>` never learns about the data twice: `connected`
+hands it the array once.
+
+The name is `dismiss` and not `remove` because [a method on the element
+wins](on.html#how-a-name-resolves), and every element already has `remove()` —
+`on="click:remove"` deletes the node it fired from instead of reaching your
+`handlers`.
+
+Dismiss the last row and **Nobody left** appears. That `<p>` is inside
+`<hg-each>` and outside the `<ul>`, so it survives every repaint, and
+`items.length` is hg-each's own property — the empty state needs nothing new.
 
 ## What it does not do
 

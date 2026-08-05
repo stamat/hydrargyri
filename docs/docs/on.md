@@ -62,6 +62,13 @@ double-fire behind a subclass method of the same name. An unknown name warns
 when the event first fires rather than throwing, so a typo costs you a feature
 and not the page.
 
+Step 1 is every method the element has, the platform's included: `remove`,
+`focus`, `blur`, `click`, `scrollIntoView`. `on="click:remove"` calls
+`Element.remove()` and the node vanishes — your `handlers.remove` is never
+reached, and nothing warns, because a method was found. Name a handler for what
+it does to your state (`dismiss`, `reset`) rather than for what the DOM already
+answers to.
+
 ## `data-on`
 
 `data-on` works identically, for markup that must satisfy a validator. Where

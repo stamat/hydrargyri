@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-05
+
 ### Added
 
 - **A `class#name` bind — `bind="active:class#is-active"`.** Toggles one named class on

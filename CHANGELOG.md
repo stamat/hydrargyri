@@ -13,6 +13,17 @@ for the person who wrote the code.
 
 ### Added
 
+- **Formatters — `bind="price|money:currency"`.** A named function from the new
+  `formatters` registry shapes a value on its way into the node, called as
+  `(value, element, ...args)` — the answer to one key needing to be raw in an input
+  and formatted in a sentence, which used to mean two properties and a sync
+  obligation at every write site. Arguments are property paths resolved on the
+  element, never literals, and naming one registers the bind under that key too —
+  change `currency` and the price repaints, still with nothing tracked and nothing
+  evaluated. One formatter per entry, no chaining; a missing name warns and paints
+  the raw value; `if` and `unless` keep taking conditions. `parseBinds` entries
+  grow a `format` field, `null` when there is no formatter.
+
 - **An `hg-each` docs page.** List rendering had one sentence in _Limits_ and a link to
   another repository; the page now carries the shape, the `items` contract, how binds
   resolve into an item, and the handler and condition fall-through to the closest hydrargyri

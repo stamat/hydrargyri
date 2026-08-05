@@ -7,9 +7,10 @@ order: 2
 
 # `bind`
 
-`bind="path[:type[#attr]]"`, several entries separated by `;`. The attribute
-holds a **name**, never an expression — there is nothing in it to evaluate, so
-nothing to sanitize and nothing for a Content Security Policy to object to.
+`bind="path[:type[#attr]][|formatter[:arg…]]"`, several entries separated by
+`;`. The attribute holds **names**, never an expression — there is nothing in
+it to evaluate, so nothing to sanitize and nothing for a Content Security
+Policy to object to.
 
 ```html
 <span bind="name"></span>
@@ -122,6 +123,73 @@ the markup carries only its name.
 yours to use, but `unless#isLow` is a double negation the next reader unpicks
 at their own expense — naming the positive (`if#inStock`) reads better.
 
+## Formatters
+
+A bind paints the value as it holds it. A formatter is the named function that
+shapes it on the way to the node — declared beside `handlers` and `conditions`,
+named from the markup after a `|`, never evaluated:
+
+<!-- demo -->
+
+```html
+<demo-price price="1499.99" currency="USD">
+  <label>Price <input type="number" step="0.01" on="input:reprice" bind="price:value"></label>
+  <p>Shown as <strong bind="price|money:currency"></strong></p>
+  <button on="click:swap">Switch currency</button>
+</demo-price>
+```
+
+```js demo
+hg("demo-price", {
+  attributes: ["price", "currency"],
+  handlers: {
+    reprice(e, el) { el.price = e.target.value || 0 },
+    swap(e, el) { el.currency = el.currency === "USD" ? "EUR" : "USD" }
+  },
+  formatters: {
+    money: (v, el, currency) =>
+      new Intl.NumberFormat(undefined, { style: "currency", currency }).format(v)
+  }
+});
+```
+
+The input and the `<strong>` read the same key: the `value` bind gets the raw
+number to edit, the piped bind paints the shaped one. Without the pipe those
+are two properties and a sync obligation at every write site. A formatter is
+called as `(value, element, ...args)` on every paint of its key, and what it
+returns is what lands in the node — through any of the value-painting types,
+so `price:attr#data-price|money` shapes an attribute the same way.
+
+Arguments after the name are **property paths, never literals** —
+`money:currency` hands over the element's `currency`, and `money:settings.locale`
+walks into an object like a bind path does. A literal would need parse rules —
+is `2` a number, is `USD` a string? — and parse rules are the micro-syntax that
+turns an attribute into a language. The place for a constant is a property or
+an attribute, where it already has a type and devtools can see it; the place
+for a baked-in one is JS, where `money` can close over it.
+
+Naming an argument does one more thing: the bind registers under that key too.
+Press **Switch currency** above — `price` never changes, yet the price repaints,
+because `currency` is named in the bind. The markup declares its own
+dependencies, which is why hydrargyri still tracks none.
+
+The edges, each deliberate:
+
+- **A formatter owns every value its key can hold** — the initial `null` of an
+  unassigned property included, same contract as a condition. `undefined` is
+  the one value it never sees: a path into an object that has not arrived
+  paints nothing, formatter and all — and returning `undefined` paints nothing
+  too, for the formatter that decides to leave the node alone.
+- **One formatter per entry.** `price|a|b` warns and is skipped. Chaining in
+  markup is the first step toward a pipeline language; a composition is one
+  more named formatter in JS, where it can be tested.
+- **`if` and `unless` take conditions, not formatters** — a toggle paints no
+  value to shape. `count:if|pretty` warns and toggles on the raw truthiness.
+- **A missing name warns at paint and paints the raw value** — never a wrong-
+  looking blank over a typo. Warned at paint rather than scan because
+  `formatters` is assignable at runtime — `el.formatters.money = fn` answers
+  on the next repaint, like a condition does.
+
 ## Paths
 
 The path may reach into an object: `bind="user.name"` reads `el.user`, then
@@ -145,13 +213,18 @@ entry, and is skipped. The element's **other** binds keep painting.
 | `bind="cout"` — a typo in the key    | warns that the element has no attribute or property by that name       |
 | `bind="name:txt"` — unknown type     | warns with the list of types it expected                              |
 | `bind="url:attr"` — `attr` with no `#name` | same warning; there is no attribute to write                    |
+| `bind="price\|money:tax"` — an argument naming nothing the element owns | warns like a typo in the key, and the entry is skipped |
+| `bind="price\|a\|b"` — a second `\|` | warns; one formatter per entry, chaining is not supported             |
 | `bind="user.name"` before `user` exists | nothing painted, no warning — a path is allowed to be empty for now |
 | `bind="count:if#missing"` — no condition by that name | warns at paint and leaves the node as authored — content is never hidden over a typo |
+| `bind="price\|missing"` — no formatter by that name | warns at paint and paints the raw value |
 
-The first three are author errors, caught at scan time. The fourth is a state
-of the world, and warning about it every second of a page's life would be noise.
-The fifth is caught at paint rather than scan, because `conditions` is
-assignable at runtime and may be filled in later.
+Scan time catches what the author wrote: the typo'd key, the unknown type, the
+argument naming nothing, the chained formatter. The missing condition and the
+missing formatter are caught at paint instead, because both registries are
+assignable at runtime and may be filled in later. And the path through a
+missing branch warns never — that is a state of the world, and warning about
+it every second of a page's life would be noise.
 
 ## `data-bind`
 

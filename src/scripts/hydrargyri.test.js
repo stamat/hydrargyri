@@ -1,7 +1,7 @@
 // Covers the whole public surface: the factory, the HgElement base class,
-// attribute↔property reflection, every bind type, handler wiring, nesting
-// scope, lifecycle hooks, deferred init during parse, pre-upgrade property
-// capture, reactive models, and markup stamped from a template before
+// attribute↔property reflection, every bind type, formatters, handler wiring,
+// nesting scope, lifecycle hooks, deferred init during parse, pre-upgrade
+// property capture, reactive models, and markup stamped from a template before
 // define. Deliberately not covered: dynamically
 // inserted bind/on nodes — binds are scanned at connect, and picking up later
 // DOM is a documented non-goal for v1 (reconnecting the element rescans).
@@ -552,6 +552,126 @@ test('a condition assigned at runtime answers on the next repaint', () => {
   expect(el.querySelector('p').hasAttribute('hidden')).toBe(false)
 })
 
+test('a formatter shapes what is painted while a value bind on the same key stays raw', () => {
+  const name = tag()
+  hg(name, {
+    attributes: ['price'],
+    formatters: { money: (v) => v === null ? '' : `$${Number(v).toFixed(2)}` }
+  })
+  const root = mount(`<${name} price="9.5"><input bind="price:value"><span bind="price|money"></span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('input').value).toBe('9.5')
+  expect(el.querySelector('span').textContent).toBe('$9.50')
+  el.price = 12
+  expect(el.querySelector('input').value).toBe('12')
+  expect(el.querySelector('span').textContent).toBe('$12.00')
+})
+
+test('a formatter argument names a property, and changing that property repaints the formatted bind', () => {
+  const name = tag()
+  hg(name, {
+    attributes: ['price', 'currency'],
+    formatters: { money: (v, el, currency) => `${currency} ${Number(v).toFixed(2)}` }
+  })
+  const root = mount(`<${name} price="9.5" currency="USD"><span bind="price|money:currency"></span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('span').textContent).toBe('USD 9.50')
+  el.currency = 'EUR'
+  expect(el.querySelector('span').textContent).toBe('EUR 9.50')
+})
+
+test('a formatter argument may be a path, walked like a bind path', () => {
+  const name = tag()
+  hg(name, {
+    attributes: ['price'],
+    properties: ['settings'],
+    formatters: { money: (v, el, currency) => `${currency} ${v}` }
+  })
+  const root = mount(`<${name} price="5"><span bind="price|money:settings.currency"></span></${name}>`)
+  const el = root.firstElementChild
+  el.settings = { currency: 'JPY' }
+  expect(el.querySelector('span').textContent).toBe('JPY 5')
+})
+
+test('a formatter owns every value the key can hold, the initial null included', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    properties: ['due'],
+    formatters: {
+      human: (v) => {
+        seen.push(v)
+        return v === null ? 'sometime' : `by ${v}`
+      }
+    }
+  })
+  const root = mount(`<${name}><span bind="due|human"></span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('span').textContent).toBe('sometime')
+  el.due = 'Friday'
+  expect(el.querySelector('span').textContent).toBe('by Friday')
+  expect(seen).toEqual([null, 'Friday'])
+})
+
+test('a formatter never sees undefined — a missing path leaves the node alone', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    properties: ['user'],
+    formatters: {
+      shout: (v) => {
+        seen.push(v)
+        return String(v).toUpperCase()
+      }
+    }
+  })
+  const root = mount(`<${name}><span bind="user.name|shout">as authored</span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('span').textContent).toBe('as authored')
+  expect(seen).toEqual([])
+  el.user = { name: 'ada' }
+  expect(el.querySelector('span').textContent).toBe('ADA')
+  expect(seen).toEqual(['ada'])
+})
+
+test('an unknown formatter warns and paints the raw value', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, ['price'])
+  const root = mount(`<${name} price="9.5"><span bind="price|missing"></span></${name}>`)
+  expect(warn).toHaveBeenCalledTimes(1)
+  expect(root.querySelector('span').textContent).toBe('9.5')
+})
+
+test('a formatter assigned at runtime answers on the next repaint', () => {
+  const name = tag()
+  hg(name, ['price'])
+  const root = mount(`<${name} price="2"><span bind="price|double"></span></${name}>`)
+  const el = root.firstElementChild
+  jest.spyOn(console, 'warn').mockImplementation(() => {})
+  el.formatters.double = (v) => v * 2
+  el.update('price')
+  expect(el.querySelector('span').textContent).toBe('4')
+})
+
+test('a formatter argument that names nothing the element owns warns at scan and skips the entry', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, { attributes: ['price'], formatters: { money: (v) => v } })
+  const root = mount(`<${name} price="1"><span bind="price|money:nope">kept</span></${name}>`)
+  expect(warn).toHaveBeenCalledTimes(1)
+  expect(root.querySelector('span').textContent).toBe('kept')
+})
+
+test('a formatter on an if or unless bind warns and the toggle still follows the value', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, { attributes: ['count'], formatters: { pretty: (v) => `#${v}` } })
+  const root = mount(`<${name} count="1"><p bind="count:if|pretty">shown</p></${name}>`)
+  expect(warn).toHaveBeenCalledTimes(1)
+  expect(root.querySelector('p').hasAttribute('hidden')).toBe(false)
+})
+
 test('an @window or @document event reaches the handler from outside the element, and disconnect unhooks both', () => {
   const name = tag()
   const seen = []
@@ -806,9 +926,21 @@ test('reactive is idempotent, and a non-plain value warns and comes back as give
 test('parseBinds is exported and parses the grammar an ecosystem package paints with', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   expect(parseBinds('user.name; count:attr#value')).toEqual([
-    { path: ['user', 'name'], type: 'text', attr: null },
-    { path: ['count'], type: 'attr', attr: 'value' }
+    { path: ['user', 'name'], type: 'text', attr: null, format: null },
+    { path: ['count'], type: 'attr', attr: 'value', format: null }
   ])
-  expect(parseBinds('x:nope; y:html')).toEqual([{ path: ['y'], type: 'html', attr: null }])
+  expect(parseBinds('x:nope; y:html')).toEqual([{ path: ['y'], type: 'html', attr: null, format: null }])
   expect(warn).toHaveBeenCalledTimes(1)
+})
+
+test('parseBinds carries the formatter name and its argument paths, and refuses chaining', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  expect(parseBinds('price:value|money:currency; total|sum:cart.items:tax')).toEqual([
+    { path: ['price'], type: 'value', attr: null, format: { name: 'money', args: [['currency']] } },
+    { path: ['total'], type: 'text', attr: null, format: { name: 'sum', args: [['cart', 'items'], ['tax']] } }
+  ])
+  expect(parseBinds('x|; y|a|b; z|ok')).toEqual([
+    { path: ['z'], type: 'text', attr: null, format: { name: 'ok', args: [] } }
+  ])
+  expect(warn).toHaveBeenCalledTimes(2)
 })

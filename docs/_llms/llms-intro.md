@@ -7,9 +7,9 @@ own, so a page renders without it and keeps rendering if the script never
 loads.
 
 Two attributes carry the whole declarative surface, and both hold **names, never
-code**: `bind="path[:type[#attr]]"` says where state lands, `on="event:name"`
-says what fires. Nothing in either is evaluated, so there is nothing to
-sanitize and nothing for a Content Security Policy to object to.
+code**: `bind="path[:type[#attr]][|formatter[:arg…]]"` says where state lands,
+`on="event:name"` says what fires. Nothing in either is evaluated, so there is
+nothing to sanitize and nothing for a Content Security Policy to object to.
 
 ```html
 <demo-counter count="0">
@@ -34,9 +34,9 @@ hg("demo-counter", {
 The API:
 
 - `hg(name, options)` defines a custom element and returns its class.
-  `options` takes `attributes`, `properties`, `handlers`, `conditions`, and
-  the `connected` / `disconnected` / `attributeChanged` hooks; an array is
-  shorthand for `attributes`.
+  `options` takes `attributes`, `properties`, `handlers`, `conditions`,
+  `formatters`, and the `connected` / `disconnected` / `attributeChanged`
+  hooks; an array is shorthand for `attributes`.
 - `HgElement` is the exported base class, for elements that need methods of
   their own. A method outranks a `handlers` entry of the same name.
 - Observed attributes become typed camelCase properties reflected to the DOM —
@@ -53,6 +53,15 @@ The API:
   shows), `unless` / `unless#condition` (the same toggle inverted — `if` and
   `unless` on sibling nodes are a full if/else with no JS). Entries separate
   with `;`; a path may reach into an object (`user.name`).
+- A `|formatter` after the type runs the named function from `formatters` as
+  `(value, element, ...args)` — the return value is what lands in the node:
+  `bind="price|money:currency"`. Args are property paths resolved on the
+  element, never literals, and naming one registers the bind under that key
+  too, so changing it repaints. A formatter sees every value its key can hold,
+  the initial `null` included, but never `undefined` — a missing path paints
+  nothing, and returning `undefined` paints nothing. One formatter per entry
+  (no chaining); a missing name warns and paints the raw value; `if`/`unless`
+  take conditions instead.
 - `update(key)` repaints one key, `update()` all of them. It is the escape
   hatch for mutation inside a plain object, which no setter sees. Reassignment
   needs no call: `el.user = { ...el.user, name: 'x' }` fires the setter.
@@ -69,7 +78,7 @@ The API:
   the handler stays the element's, and disconnect unhooks it with the rest.
 - `data-bind` and `data-on` are accepted where a validator objects to the bare
   names.
-- `parseBinds(raw)` parses a `bind` attribute into `{ path, type, attr }`
+- `parseBinds(raw)` parses a `bind` attribute into `{ path, type, attr, format }`
   entries — exported for ecosystem packages painting with the same grammar
   (hydrargyri-each); an element on hydrargyri alone never needs it.
 - The element wears an `hg` attribute once initialized, so

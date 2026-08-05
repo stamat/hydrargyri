@@ -9,7 +9,7 @@ const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'if', 'unless'])
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — hydrargyri's own API and
 // natives like `title` — are caught by the `key in this` check at define time.
-const RESERVED = new Set(['handlers', 'conditions', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
+const RESERVED = new Set(['handlers', 'conditions', 'formatters', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
 
 // Every proxy reactive() hands out maps to its model's subscriber set here —
 // which is also how the property setter tells a reactive model from a plain one.
@@ -48,29 +48,49 @@ function parseAttributeValue(raw) {
 }
 
 /**
- * Parse a `bind` attribute — `path[:type[#attr]][;more]`, type defaulting to
- * text. A malformed entry warns and is skipped, so one typo does not kill the
- * element's other binds.
+ * Parse a `bind` attribute — `path[:type[#attr]][|formatter[:arg…]][;more]`,
+ * type defaulting to text. A malformed entry warns and is skipped, so one typo
+ * does not kill the element's other binds.
+ *
+ * A formatter's arguments are property paths resolved on the element at paint,
+ * never literals — the attribute carries names, and names only.
  *
  * Exported for ecosystem packages that paint with the same grammar — the
  * parser lives here so the grammar cannot fork.
  *
  * @param {String} raw The attribute value
- * @returns {Array} Entries of `{ path, type, attr }` — path split on `.`
+ * @returns {Array} Entries of `{ path, type, attr, format }` — paths split on
+ *   `.`, format `{ name, args }` or null
  *
  * @example
- * parseBinds('user.name; count:attr#value')
- * // [{ path: ['user', 'name'], type: 'text', attr: null },
- * //  { path: ['count'], type: 'attr', attr: 'value' }]
+ * parseBinds('user.name; price:value|money:currency')
+ * // [{ path: ['user', 'name'], type: 'text', attr: null, format: null },
+ * //  { path: ['price'], type: 'value', attr: null,
+ * //    format: { name: 'money', args: [['currency']] } }]
  */
 export function parseBinds(raw) {
   const entries = []
   for (const part of raw.split(';')) {
     const trimmed = part.trim()
     if (!trimmed) continue
-    const colon = trimmed.indexOf(':')
-    const pathPart = colon === -1 ? trimmed : trimmed.slice(0, colon)
-    const typePart = colon === -1 ? '' : trimmed.slice(colon + 1)
+    const pipes = trimmed.split('|')
+    if (pipes.length > 2) {
+      console.warn(`hydrargyri: unknown bind "${trimmed}" — one |formatter per entry, chaining is not supported`)
+      continue
+    }
+    let format = null
+    if (pipes.length === 2) {
+      const segments = pipes[1].split(':').map((s) => s.trim())
+      if (segments.some((s) => !s)) {
+        console.warn(`hydrargyri: unknown bind "${trimmed}" — expected |formatter[:arg[:arg]]`)
+        continue
+      }
+      format = { name: segments[0], args: segments.slice(1).map((arg) => arg.split('.')) }
+    }
+    const bindPart = pipes[0].trim()
+    const colon = bindPart.indexOf(':')
+    const pathPart = colon === -1 ? bindPart : bindPart.slice(0, colon)
+    const typePart = colon === -1 ? '' : bindPart.slice(colon + 1)
     const path = pathPart.trim().split('.')
     let type = 'text'
     let attr = null
@@ -83,7 +103,13 @@ export function parseBinds(raw) {
       console.warn(`hydrargyri: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name|if#condition|unless#condition]`)
       continue
     }
-    entries.push({ path, type, attr })
+    // An if/unless bind paints nothing a formatter could shape — predicates on
+    // the value are what conditions are for. The toggle still works.
+    if (format && (type === 'if' || type === 'unless')) {
+      console.warn(`hydrargyri: bind "${trimmed}" — a formatter cannot shape an ${type} bind, that is a condition's job; formatter ignored`)
+      format = null
+    }
+    entries.push({ path, type, attr, format })
   }
   return entries
 }
@@ -164,6 +190,8 @@ export class HgElement extends HTMLElement {
   static handlers = {}
   /** Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`. */
   static conditions = {}
+  /** Named formatters for `bind="key|name[:arg…]"`, called as (value, element, ...args) at paint — the return value is what lands in the node. Args are property paths resolved on the element, never literals. */
+  static formatters = {}
 
   static get observedAttributes() {
     return this.attributes
@@ -225,6 +253,7 @@ export class HgElement extends HTMLElement {
     this._deferredInit = null
     this.handlers = Object.assign({}, this.constructor.handlers)
     this.conditions = Object.assign({}, this.constructor.conditions)
+    this.formatters = Object.assign({}, this.constructor.formatters)
 
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr)
     for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null)
@@ -391,14 +420,21 @@ export class HgElement extends HTMLElement {
       const raw = el.getAttribute('bind') || el.getAttribute('data-bind')
       if (!raw) return
       for (const entry of parseBinds(raw)) {
-        const key = entry.path[0]
-        if (!this._owns(key)) {
-          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${key}" for bind "${raw}"`)
+        // A formatter argument names a dependency the same way the bind key
+        // does, so the entry registers under every named key — repainting any
+        // of them re-renders the node, with no dependency tracking anywhere.
+        const keys = new Set([entry.path[0]])
+        if (entry.format) for (const arg of entry.format.args) keys.add(arg[0])
+        const unknown = [...keys].find((key) => !this._owns(key))
+        if (unknown !== undefined) {
+          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${unknown}" for bind "${raw}"`)
           continue
         }
         entry.el = el
-        if (!this._binds[key]) this._binds[key] = []
-        this._binds[key].push(entry)
+        for (const key of keys) {
+          if (!this._binds[key]) this._binds[key] = []
+          this._binds[key].push(entry)
+        }
       }
     }
     collect(this)
@@ -499,16 +535,33 @@ export class HgElement extends HTMLElement {
     const binds = this._binds[key]
     if (!binds) return
     for (const bind of binds) {
-      let value = this[key]
-      if (bind.path.length > 1) value = getObjectValueByPath(value, bind.path.slice(1))
-      this._render(bind, value)
+      // The repaint may arrive under a formatter argument's key; the painted
+      // value always comes from the bind's own path.
+      this._render(bind, this._resolve(bind.path))
     }
   }
 
-  _render({ el, type, attr }, value) {
+  _resolve(path) {
+    const value = this[path[0]]
+    return path.length > 1 ? getObjectValueByPath(value, path.slice(1)) : value
+  }
+
+  _render({ el, type, attr, format }, value) {
     // undefined means a path into an object that is not there yet — leave the
     // node alone. null is a real value and clears.
     if (value === undefined) return
+    if (format) {
+      const formatter = this.formatters[format.name]
+      // A missing formatter warns and paints the raw value — never hide state
+      // over a typo. Warned at paint, not scan, because `formatters` is
+      // assignable at runtime and may be filled in later.
+      if (typeof formatter !== 'function') {
+        console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no formatter "${format.name}"`)
+      } else {
+        value = formatter(value, this, ...format.args.map((arg) => this._resolve(arg)))
+        if (value === undefined) return
+      }
+    }
     switch (type) {
       case 'text':
         el.textContent = value === null ? '' : value
@@ -553,6 +606,7 @@ export class HgElement extends HTMLElement {
  * @param {Array|Object} [options.properties] Reactive properties without an attribute — an array of names, or an object of name → class-wide default (define-time share)
  * @param {Object} [options.handlers] Named handlers for `on="event:name"`, called as (event, element); a key that is an exact command string (`'--add-item'`) also answers that Invoker Command
  * @param {Object} [options.conditions] Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`
+ * @param {Object} [options.formatters] Named formatters for `bind="key|name[:arg…]"`, called as (value, element, ...args) at paint — the return value is what lands in the node; args are property paths resolved on the element, never literals
  * @param {Function} [options.connected] Runs once the element is upgraded, scanned and painted
  * @param {Function} [options.disconnected] Runs when the element leaves the DOM
  * @param {Function} [options.attributeChanged] Runs on observed attribute changes after init, as (name, oldValue, newValue)
@@ -571,6 +625,7 @@ export default function hg(name, options = {}) {
     static properties = options.properties || []
     static handlers = options.handlers || {}
     static conditions = options.conditions || {}
+    static formatters = options.formatters || {}
   }
   for (const hook of ['connected', 'disconnected', 'attributeChanged']) {
     if (typeof options[hook] === 'function') Hg.prototype[hook] = options[hook]

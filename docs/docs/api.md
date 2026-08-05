@@ -30,6 +30,7 @@ import { hydrargyri } from "hydrargyri";
 | `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time [`share()`](#sharevalues): `properties: { user: model, draft: null }`. |
 | `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)` — `event@window` / `event@document` for [global events](on.html#window-and-document). A key that is an exact [Invoker Command](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) string (`'--add-item'`) also answers that command. An unknown command warns only when a `--` key is declared — otherwise the element stays silent, since `on="command:name"` may be handling commands instead. Assignable at runtime: `el.handlers['--x'] = fn`. |
 | `conditions`       | `Object`   | Named predicates for [`if` and `unless` binds](bind.html#conditions) (`bind="items:if#isEmpty"`), called as `(value, element)` on every paint of the key — the initial `null` included. Truthy shows the node under `if`, hides it under `unless`. A missing condition warns and leaves the node as authored. Assignable at runtime: `el.conditions.isEmpty = fn`. |
+| `formatters`       | `Object`   | Named functions for [formatted binds](bind.html#formatters) (`bind="price\|money:currency"`), called as `(value, element, ...args)` on every paint of the key — the return value is what lands in the node. Args are property paths resolved on the element, never literals, and the bind repaints when they change. A missing formatter warns and paints the raw value. Assignable at runtime: `el.formatters.money = fn`. |
 | `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                         |
 | `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                           |
 | `attributeChanged` | `Function` | Runs on observed attribute changes as `(name, oldValue, newValue)` — parsed values, not strings. Attributes arriving from the markup are initial state, not changes; this stays silent until after `connected`. |
@@ -326,9 +327,10 @@ paint with the same grammar — [hydrargyri-each](https://github.com/stamat/hydr
 is the consumer. It lives here so the grammar cannot fork.
 
 ```js
-parseBinds("user.name; count:attr#value");
-// [{ path: ['user', 'name'], type: 'text', attr: null },
-//  { path: ['count'], type: 'attr', attr: 'value' }]
+parseBinds("user.name; price:value|money:currency");
+// [{ path: ['user', 'name'], type: 'text', attr: null, format: null },
+//  { path: ['price'], type: 'value', attr: null,
+//    format: { name: 'money', args: [['currency']] } }]
 ```
 
 A malformed entry warns and is skipped, the rest of the attribute parses — the

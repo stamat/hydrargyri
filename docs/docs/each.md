@@ -79,13 +79,15 @@ Assign a [`reactive()`](api.html#reactivemodel) array and mutation repaints:
 
 ## The rows region
 
-The template's element siblings, inside the template's parent, are hg-each's to
-clear and repaint — fallback rows before the first paint, clones after. Anything
-that must survive goes outside that parent:
+Everything beside the template, inside the template's parent, is hg-each's to
+clear and repaint — elements, text and comments alike, fallback rows before the
+first paint and clones after. Anything that must survive goes outside that
+parent:
 
 ```html
 <hg-each>
   <p bind="items.length">3</p>   <!-- hg-each's own bind, safe here -->
+  <p bind="items.length:unless">Nothing here yet</p>
   <ul>
     <template><li bind="."></li></template>
     <li>fallback</li>            <!-- rows region: replaced at the first paint -->
@@ -93,13 +95,19 @@ that must survive goes outside that parent:
 </hg-each>
 ```
 
+The second bind is the empty state, and it takes nothing new: `items.length` is
+hg-each's own property, so [`unless`](bind.html) hides the node while the list
+has items and shows it while it does not.
+
 `<template>` is script-supporting content, valid directly inside `<ul>`,
 `<tbody>` and `<select>` — which is why `<hg-each>` wraps the list container
 instead of sitting between `<ul>` and its `<li>`s, where no element is allowed.
 
-An `<hg-each>` with no `<template>` child warns and leaves the markup as
+An `<hg-each>` with no `<template>` child — or one holding text with no element
+to clone, which no row bind could reach — warns and leaves the markup as
 authored, the same [warn and keep
-working](limits.html#what-it-does-instead-of-failing) the core does.
+working](limits.html#what-it-does-instead-of-failing) the core does. A broken
+list degrades to the server-rendered one, never to an empty container.
 
 ## Binds resolve into the item
 
@@ -146,6 +154,11 @@ as it does [on any element](on.html#how-a-name-resolves).
 - **Sorting, filtering, pagination.** The array is yours: transform it in
   JavaScript and assign the result. The alternative is a query language growing
   inside an attribute.
+- **Nested lists, declaratively.** A [bind](bind.html) writes text, markup, a
+  form field's `value` or an attribute — never an arbitrary property, and
+  `items` is one. So an `<hg-each>` inside a row is handed its list in
+  JavaScript, through the row's `hgItem`; no bind carries an item's array into
+  the inner element.
 - **Sanitizing.** `:html` in a row is `innerHTML`, verbatim — [the same threat
   model](limits.html#sanitizing), so bind your own state to it and never user
   input.

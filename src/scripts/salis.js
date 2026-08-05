@@ -4,12 +4,12 @@ import { isArray, stringToPrimitive, transformDashToCamelCase, getObjectValueByP
 // nested salis element owns a node: the nearest salis ancestor, whatever its tag.
 const salisTags = new Set()
 
-const BIND_TYPES = new Set(['text', 'html', 'value', 'attr'])
+const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'if'])
 
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — salis's own API and
 // natives like `title` — are caught by the `key in this` check at define time.
-const RESERVED = new Set(['handlers', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
+const RESERVED = new Set(['handlers', 'conditions', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
 
 // Every proxy reactive() hands out maps to its model's subscriber set here —
 // which is also how the property setter tells a reactive model from a plain one.
@@ -66,7 +66,7 @@ function parseBinds(raw) {
       attr = hash === -1 ? null : typePart.slice(hash + 1).trim()
     }
     if (!BIND_TYPES.has(type) || (type === 'attr' && !attr)) {
-      console.warn(`salis: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name]`)
+      console.warn(`salis: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name|if#condition]`)
       continue
     }
     entries.push({ path, type, attr })
@@ -148,6 +148,8 @@ export class SalisElement extends HTMLElement {
   static properties = []
   /** Named event handlers reachable from `on="event:name"`, shared by all instances. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command, called as (event, element). */
   static handlers = {}
+  /** Named predicates for `bind="key:if#name"`, called as (value, element) at paint — truthy shows the node, falsy sets `hidden`. */
+  static conditions = {}
 
   static get observedAttributes() {
     return this.attributes
@@ -208,6 +210,7 @@ export class SalisElement extends HTMLElement {
     this._initialized = false
     this._deferredInit = null
     this.handlers = Object.assign({}, this.constructor.handlers)
+    this.conditions = Object.assign({}, this.constructor.conditions)
 
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr)
     for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null)
@@ -506,6 +509,21 @@ export class SalisElement extends HTMLElement {
         if (value === null || value === false) el.removeAttribute(attr)
         else el.setAttribute(attr, value === true ? '' : value)
         break
+      case 'if': {
+        if (!attr) {
+          el.toggleAttribute('hidden', !value)
+          break
+        }
+        const condition = this.conditions[attr]
+        // A missing condition warns and leaves the node as authored — hiding
+        // content over a typo would be the silent kind of wrong.
+        if (typeof condition !== 'function') {
+          console.warn(`salis: <${this.tagName.toLowerCase()}> has no condition "${attr}"`)
+          break
+        }
+        el.toggleAttribute('hidden', !condition(value, this))
+        break
+      }
     }
   }
 }
@@ -519,6 +537,7 @@ export class SalisElement extends HTMLElement {
  * @param {Array} [options.attributes] Observed attributes, reflected reactive properties
  * @param {Array|Object} [options.properties] Reactive properties without an attribute — an array of names, or an object of name → class-wide default (define-time share)
  * @param {Object} [options.handlers] Named handlers for `on="event:name"`, called as (event, element); a key that is an exact command string (`'--add-item'`) also answers that Invoker Command
+ * @param {Object} [options.conditions] Named predicates for `bind="key:if#name"`, called as (value, element) at paint — truthy shows the node, falsy sets `hidden`
  * @param {Function} [options.connected] Runs once the element is upgraded, scanned and painted
  * @param {Function} [options.disconnected] Runs when the element leaves the DOM
  * @param {Function} [options.attributeChanged] Runs on observed attribute changes after init, as (name, oldValue, newValue)
@@ -536,6 +555,7 @@ export default function salis(name, options = {}) {
     static attributes = options.attributes || []
     static properties = options.properties || []
     static handlers = options.handlers || {}
+    static conditions = options.conditions || {}
   }
   for (const hook of ['connected', 'disconnected', 'attributeChanged']) {
     if (typeof options[hook] === 'function') Salis.prototype[hook] = options[hook]

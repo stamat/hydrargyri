@@ -27,6 +27,7 @@ nothing to sanitize and nothing for a Content Security Policy to object to.
 | `html`           | `innerHTML` — see [Limits](limits.html) | empty string                                                  |
 | `value`          | `.value`, for form fields              | empty string                                                  |
 | `attr#name`      | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
+| `if` / `if#condition` | toggles `hidden` — see [Conditions](#conditions) | `null` is falsy: hidden, unless the condition says otherwise |
 
 `undefined` is not a value and paints nothing — it is what a path into an object
 that has not arrived yet returns, and leaving the node alone is the only right
@@ -64,6 +65,52 @@ Typing in the field writes state through `relabel`, and the `value` bind writes
 it back into the field. That is not two-way binding — it is one direction twice,
 and the handler in the middle is the part you can put a breakpoint in.
 
+## Conditions
+
+An `if` bind toggles the platform's `hidden` attribute instead of writing a
+value. Bare, it follows truthiness — the node shows while the key holds
+something:
+
+```html
+<p bind="items:if">…</p>
+```
+
+With a name after `#` it asks a predicate from `conditions` — defined like a
+handler, named from the markup, never evaluated:
+
+<!-- demo -->
+
+```html
+<demo-stock items="3">
+  <label>Items <input type="number" min="0" on="input:restock" bind="items:value"></label>
+  <p bind="items:if">In stock: <span bind="items"></span></p>
+  <p bind="items:if#isOut">Sold out.</p>
+</demo-stock>
+```
+
+```js demo
+salis("demo-stock", {
+  attributes: ["items"],
+  handlers: {
+    restock(e, el) { el.items = e.target.value || 0 }
+  },
+  conditions: {
+    isOut: (n) => !n
+  }
+});
+```
+
+Type the stock down to zero: the count line hides on its own truthiness, and
+`isOut` shows the other. The condition is called as `(value, element)` on
+every paint of its key — the initial paint included, where an unassigned
+property is `null`, so a condition owns every value the key can hold.
+
+The dependency is named in the bind itself. That is why salis needs no
+dependency tracking to know when to re-run a condition: repaint `items` and
+`isOut` runs, and nothing else does. It is also the whole difference from an
+evaluated `x-show` — the logic sits in a JS file where it can be tested, and
+the markup carries only its name.
+
 ## Paths
 
 The path may reach into an object: `bind="user.name"` reads `el.user`, then
@@ -88,9 +135,12 @@ entry, and is skipped. The element's **other** binds keep painting.
 | `bind="name:txt"` — unknown type     | warns with the list of types it expected                              |
 | `bind="url:attr"` — `attr` with no `#name` | same warning; there is no attribute to write                    |
 | `bind="user.name"` before `user` exists | nothing painted, no warning — a path is allowed to be empty for now |
+| `bind="count:if#missing"` — no condition by that name | warns at paint and leaves the node as authored — content is never hidden over a typo |
 
 The first three are author errors, caught at scan time. The fourth is a state
 of the world, and warning about it every second of a page's life would be noise.
+The fifth is caught at paint rather than scan, because `conditions` is
+assignable at runtime and may be filled in later.
 
 ## `data-bind`
 

@@ -32,8 +32,8 @@ salis("demo-counter", {
 The API:
 
 - `salis(name, options)` defines a custom element and returns its class.
-  `options` takes `attributes`, `properties`, `handlers`, and the
-  `connected` / `disconnected` / `attributeChanged` hooks; an array is
+  `options` takes `attributes`, `properties`, `handlers`, `conditions`, and
+  the `connected` / `disconnected` / `attributeChanged` hooks; an array is
   shorthand for `attributes`.
 - `SalisElement` is the exported base class, for elements that need methods of
   their own. A method outranks a `handlers` entry of the same name.
@@ -45,8 +45,11 @@ The API:
   arrays, timer handles. As an object, `properties: { user: model }` maps
   name → class-wide default: the define-time form of `share()`.
 - `bind` types: `text` (default, `textContent`), `html` (`innerHTML`), `value`
-  (`.value`), `attr#name` (`setAttribute`). Entries separate with `;`; a path
-  may reach into an object (`user.name`).
+  (`.value`), `attr#name` (`setAttribute`), `if` / `if#condition` (toggles
+  `hidden` — bare follows truthiness, `#name` runs the named predicate from
+  `conditions`, called as `(value, element)` on every paint of the key, truthy
+  shows). Entries separate with `;`; a path may reach into an object
+  (`user.name`).
 - `update(key)` repaints one key, `update()` all of them. It is the escape
   hatch for mutation inside a plain object, which no setter sees.
 - `reactive(model)` wraps a plain object or array in a deep proxy; assign it

@@ -59,6 +59,12 @@ for the person who wrote the code.
   way. Custom commands must start with `--`, so command keys cannot collide with handler
   names. An unknown command warns only when a `--` key is declared; an element without one
   stays silent so `on="command:name"` can keep handling commands its own way.
+- **`if` binds — conditions without an expression.** `bind="items:if"` toggles the
+  platform's `hidden` attribute on the value's truthiness; `bind="items:if#isEmpty"` asks
+  the named predicate in `conditions` instead, called as `(value, element)` on every paint
+  of the key — the initial `null` included. The dependency is named in the bind itself, so
+  nothing is tracked and nothing is evaluated. A missing condition warns and leaves the
+  node as authored, and `conditions` is assignable at runtime like `handlers`.
 - Jest suite covering the whole public surface.
 - **A documentation site.** `docs/` builds to `_site/` with
   [poops-docs-theme](https://github.com/stamat/poops-docs-theme): a landing page and a

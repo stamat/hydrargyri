@@ -108,6 +108,7 @@ shorthand for `{ attributes: [...] }`.
 | `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                                  |
 | `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time `share()`: `properties: { user: model, draft: null }`.              |
 | `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command; unknown commands warn only when a `--` key is declared. Assignable at runtime: `el.handlers['--x'] = fn`. |
+| `conditions`       | `Object`   | Named predicates for `if` binds (`bind="items:if#isEmpty"`), called as `(value, element)` on every paint of the key — the initial `null` included. Truthy shows the node, falsy sets `hidden`. Assignable at runtime: `el.conditions.isEmpty = fn`. |
 | `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                               |
 | `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                                 |
 | `attributeChanged` | `Function` | Runs on observed attribute changes as `(name, oldValue, newValue)` — parsed values, not strings. Attributes arriving from the markup are initial state, not changes; this stays silent until after `connected`.       |
@@ -158,6 +159,12 @@ reach into objects: `bind="user.name"`.
 | `html`           | `innerHTML` — see the warning below    | empty string                                                  |
 | `value`          | `.value`, for form fields              | empty string                                                  |
 | `attr#name`      | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
+| `if` / `if#condition` | toggles `hidden` — bare follows truthiness, `#name` asks the named predicate in `conditions` | `null` is falsy: hidden, unless the condition says otherwise |
+
+An `if` bind is the conditional without an expression: `bind="items:if#isEmpty"`
+runs `conditions.isEmpty(value, el)` on every paint of `items` — the dependency
+is named in the bind, so nothing is tracked and nothing is evaluated. A missing
+condition warns and leaves the node as authored.
 
 A typo in a path or an unknown type warns in the console and skips that entry
 — the element's other binds keep painting.

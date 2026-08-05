@@ -33,8 +33,8 @@ function getObjectValueByPath(obj, path) {
 
 // src/scripts/salis.js
 var salisTags = /* @__PURE__ */ new Set();
-var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr"]);
-var RESERVED = /* @__PURE__ */ new Set(["handlers", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
+var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr", "if"]);
+var RESERVED = /* @__PURE__ */ new Set(["handlers", "conditions", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
 function propertyNames(properties) {
   return isArray(properties) ? properties : Object.keys(properties);
@@ -72,7 +72,7 @@ function parseBinds(raw) {
       attr = hash === -1 ? null : typePart.slice(hash + 1).trim();
     }
     if (!BIND_TYPES.has(type) || type === "attr" && !attr) {
-      console.warn(`salis: unknown bind "${trimmed}" \u2014 expected path[:text|html|value|attr#name]`);
+      console.warn(`salis: unknown bind "${trimmed}" \u2014 expected path[:text|html|value|attr#name|if#condition]`);
       continue;
     }
     entries.push({ path, type, attr });
@@ -169,6 +169,7 @@ var SalisElement = class extends HTMLElement {
     this._initialized = false;
     this._deferredInit = null;
     this.handlers = Object.assign({}, this.constructor.handlers);
+    this.conditions = Object.assign({}, this.constructor.conditions);
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr);
     for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null);
   }
@@ -407,6 +408,19 @@ var SalisElement = class extends HTMLElement {
         if (value === null || value === false) el.removeAttribute(attr);
         else el.setAttribute(attr, value === true ? "" : value);
         break;
+      case "if": {
+        if (!attr) {
+          el.toggleAttribute("hidden", !value);
+          break;
+        }
+        const condition = this.conditions[attr];
+        if (typeof condition !== "function") {
+          console.warn(`salis: <${this.tagName.toLowerCase()}> has no condition "${attr}"`);
+          break;
+        }
+        el.toggleAttribute("hidden", !condition(value, this));
+        break;
+      }
     }
   }
 };
@@ -416,6 +430,8 @@ __publicField(SalisElement, "attributes", []);
 __publicField(SalisElement, "properties", []);
 /** Named event handlers reachable from `on="event:name"`, shared by all instances. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command, called as (event, element). */
 __publicField(SalisElement, "handlers", {});
+/** Named predicates for `bind="key:if#name"`, called as (value, element) at paint — truthy shows the node, falsy sets `hidden`. */
+__publicField(SalisElement, "conditions", {});
 function salis(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
   class Salis extends SalisElement {
@@ -423,6 +439,7 @@ function salis(name, options = {}) {
   __publicField(Salis, "attributes", options.attributes || []);
   __publicField(Salis, "properties", options.properties || []);
   __publicField(Salis, "handlers", options.handlers || {});
+  __publicField(Salis, "conditions", options.conditions || {});
   for (const hook of ["connected", "disconnected", "attributeChanged"]) {
     if (typeof options[hook] === "function") Salis.prototype[hook] = options[hook];
   }

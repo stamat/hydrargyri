@@ -460,6 +460,61 @@ test('a command handler assigned at runtime routes without any re-wiring', () =>
   expect(seen).toEqual([name.toUpperCase()])
 })
 
+test('an if bind shows the node while the named condition holds, and hides it when it stops', () => {
+  const name = tag()
+  const seen = []
+  salis(name, {
+    properties: ['items'],
+    conditions: {
+      // Runs on the initial paint too, where an unassigned property is null —
+      // a condition owns every value the key can hold.
+      isEmpty: (items, el) => {
+        seen.push(el.tagName)
+        return !items?.length
+      }
+    }
+  })
+  const root = mount(`<${name}><p bind="items:if#isEmpty">empty</p></${name}>`)
+  const el = root.firstElementChild
+  el.items = []
+  expect(el.querySelector('p').hasAttribute('hidden')).toBe(false)
+  el.items = [1]
+  expect(el.querySelector('p').hasAttribute('hidden')).toBe(true)
+  expect(seen).toEqual([name.toUpperCase(), name.toUpperCase(), name.toUpperCase()])
+})
+
+test('a bare if bind follows truthiness with no condition declared', () => {
+  const name = tag()
+  salis(name, ['done'])
+  const root = mount(`<${name}><span bind="done:if">done!</span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('span').hasAttribute('hidden')).toBe(true)
+  el.done = true
+  expect(el.querySelector('span').hasAttribute('hidden')).toBe(false)
+})
+
+test('an unknown condition warns and leaves the node as authored', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  salis(name, ['count'])
+  const root = mount(`<${name} count="1"><p bind="count:if#missing">kept</p></${name}>`)
+  expect(warn).toHaveBeenCalledTimes(1)
+  expect(root.querySelector('p').hasAttribute('hidden')).toBe(false)
+})
+
+test('a condition assigned at runtime answers on the next repaint', () => {
+  const name = tag()
+  salis(name, ['count'])
+  const root = mount(`<${name} count="3"><p bind="count:if#isEven">even</p></${name}>`)
+  const el = root.firstElementChild
+  jest.spyOn(console, 'warn').mockImplementation(() => {})
+  el.conditions.isEven = (n) => n % 2 === 0
+  el.update('count')
+  expect(el.querySelector('p').hasAttribute('hidden')).toBe(true)
+  el.count = 4
+  expect(el.querySelector('p').hasAttribute('hidden')).toBe(false)
+})
+
 test('an @window or @document event reaches the handler from outside the element, and disconnect unhooks both', () => {
   const name = tag()
   const seen = []

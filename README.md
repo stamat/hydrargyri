@@ -196,10 +196,10 @@ import salis, { reactive } from "salis";
 
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-salis("user-card", { properties: ["user"] });
-document.querySelectorAll("user-card").forEach((el) => (el.user = user));
+const Card = salis("user-card", { properties: ["user"] });
+Card.share({ user });
 
-user.role = "director of design"; // every card repaints
+user.role = "director of design"; // every card repaints — current and future alike
 ```
 
 The proxy is the model: mutating the raw original notifies nobody. Only plain
@@ -207,6 +207,18 @@ objects and arrays wrap — a Map or a class instance warns and comes back
 unwrapped, since their methods reach for internal slots a proxy does not have.
 Repaints are per key, with no dependency tracking; disconnecting an element
 unsubscribes it, reconnecting catches it up.
+
+### `share(values)`
+
+A static on every salis class — the tag-wide form of `el.user = user`, called
+once, never per change. Present instances get each value on the spot, future
+ones as they connect; shared with a `reactive()` model it is a standing
+broadcast. An instance assignment outranks `share` on that instance, forever
+— reconnects included — so `share` fills elements the app said nothing about
+and never overwrites one it did. Property keys only: an attribute-backed key
+warns and is refused, since the attribute is the markup's per-instance state.
+No registry behind it — the class reference is the capability, and
+`querySelectorAll` at call time is the instance list.
 
 ### `[salis]`
 

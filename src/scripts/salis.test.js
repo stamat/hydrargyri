@@ -563,6 +563,75 @@ test('an array push inside a reactive model repaints its binds', () => {
   expect(el.querySelector('span').textContent).toBe('1')
 })
 
+test('share reaches every existing instance and every future one', () => {
+  const name = tag()
+  const Cls = salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}><${name}><i bind="user.name"></i></${name}>`)
+  Cls.share({ user: { name: 'ada' } })
+  expect(root.querySelector('span').textContent).toBe('ada')
+  expect(root.querySelector('i').textContent).toBe('ada')
+  const late = document.createElement(name)
+  late.innerHTML = '<b bind="user.name"></b>'
+  document.body.appendChild(late)
+  expect(late.querySelector('b').textContent).toBe('ada')
+})
+
+test('an instance assignment outranks share, and reconnecting cannot stomp it', () => {
+  const name = tag()
+  const Cls = salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}><${name}><i bind="user.name"></i></${name}>`)
+  const mine = root.firstElementChild
+  mine.user = { name: 'mine' }
+  Cls.share({ user: { name: 'shared' } })
+  expect(mine.querySelector('span').textContent).toBe('mine')
+  expect(root.querySelector('i').textContent).toBe('shared')
+  mine.remove()
+  root.appendChild(mine)
+  expect(mine.querySelector('span').textContent).toBe('mine')
+})
+
+test('share with a reactive model is a live broadcast to every instance, late ones included', () => {
+  const name = tag()
+  const Cls = salis(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  const model = reactive({ name: 'ada' })
+  Cls.share({ user: model })
+  expect(root.querySelector('span').textContent).toBe('ada')
+  const late = document.createElement(name)
+  late.innerHTML = '<b bind="user.name"></b>'
+  document.body.appendChild(late)
+  model.name = 'grace'
+  expect(root.querySelector('span').textContent).toBe('grace')
+  expect(late.querySelector('b').textContent).toBe('grace')
+})
+
+test('sharing null releases the model everywhere share put it, and spares direct assignments', () => {
+  const name = tag()
+  const Cls = salis(name, { properties: ['user'] })
+  const root = mount(`<${name}></${name}><${name}></${name}>`)
+  const [mine, theirs] = root.children
+  const model = reactive({ name: 'ada' })
+  Cls.share({ user: model })
+  mine.user = model
+  Cls.share({ user: null })
+  expect(mine.user).toBe(model)
+  expect(theirs.user).toBe(null)
+  const late = document.createElement(name)
+  document.body.appendChild(late)
+  expect(late.user).toBe(null)
+})
+
+test('share refuses an attribute-backed or undeclared key with a warning, and the rest still lands', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  const Cls = salis(name, { attributes: ['count'], properties: ['user'] })
+  const root = mount(`<${name} count="1"><span bind="user.name"></span></${name}>`)
+  Cls.share({ count: 9, nope: true, user: { name: 'ada' } })
+  expect(warn).toHaveBeenCalledTimes(2)
+  expect(root.firstElementChild.getAttribute('count')).toBe('1')
+  expect(root.querySelector('span').textContent).toBe('ada')
+})
+
 test('reactive is idempotent, and a non-plain value warns and comes back as given', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const user = reactive({ name: 'ada' })

@@ -9,7 +9,7 @@ const BIND_TYPES = new Set(['text', 'html', 'value', 'attr'])
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — salis's own API and
 // natives like `title` — are caught by the `key in this` check at define time.
-const RESERVED = new Set(['handlers', 'actions', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_initialized', '_deferredInit'])
+const RESERVED = new Set(['handlers', 'actions', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
 
 // Every proxy reactive() hands out maps to its model's subscriber set here —
 // which is also how the property setter tells a reactive model from a plain one.
@@ -141,16 +141,49 @@ export class SalisElement extends HTMLElement {
     return this.attributes
   }
 
+  /**
+   * Hand a value to every instance of this element, present and future —
+   * the tag-wide form of `el.key = value`. Share a `reactive()` model and
+   * every mutation reaches every instance from then on.
+   *
+   * Property keys only: an attribute-backed key is refused, because the
+   * attribute is the markup's state, per instance by design. An instance
+   * assignment outranks share on that instance, forever — reconnects included.
+   *
+   * @param {Object} values Map of property key → value
+   *
+   * @example
+   * const Crew = salis('user-card', { properties: ['user'] })
+   * Crew.share({ user: reactive({ name: 'Ada' }) })
+   */
+  static share(values) {
+    const owned = new Set(this.properties.map(transformDashToCamelCase))
+    const accepted = {}
+    for (const key in values) {
+      if (owned.has(key)) accepted[key] = values[key]
+      else console.warn(`salis: share() takes declared properties — "${key}" ignored`)
+    }
+    this._shared = Object.assign({}, this._shared, accepted)
+    if (!this._tag) return
+    document.querySelectorAll(this._tag).forEach((el) => {
+      if (typeof el._applyShared === 'function') el._applyShared(accepted)
+    })
+  }
+
   constructor() {
     super()
     // Lowercase, because selector matching against an uppercase custom
     // element tagName is not reliable everywhere (jsdom rejects it).
     salisTags.add(this.tagName.toLowerCase())
+    // The class learns its tag from its first instance — share() sweeps by it.
+    // Before any instance exists there is nothing in the document to sweep.
+    this.constructor._tag = this.tagName.toLowerCase()
     this._state = {}
     this._binds = {}
     this._listeners = []
     this._reflected = {}
     this._subscriptions = []
+    this._assigned = new Set()
     this._initialized = false
     this._deferredInit = null
     this.handlers = Object.assign({}, this.constructor.handlers)
@@ -255,6 +288,10 @@ export class SalisElement extends HTMLElement {
       set: (value) => {
         this._unsubscribe(key)
         this._state[key] = value
+        // The mark is what lets an instance assignment outrank share() —
+        // _applyShared erases it right after its own writes, so only the
+        // author's assignments carry it.
+        this._assigned.add(key)
         // Pre-init assignments subscribe in _init instead, so an element that
         // never initializes is not pinned in memory by a model's subscriber set.
         if (this._initialized) this._subscribe(key, value)
@@ -265,8 +302,22 @@ export class SalisElement extends HTMLElement {
     if (preset !== undefined) this[key] = preset
   }
 
+  // Runs through the property setters, then erases the assigned mark they
+  // leave — share-applied values must stay overwritable by the next share().
+  _applyShared(values) {
+    for (const key in values) {
+      if (!(key in this._state)) continue
+      if (this._assigned.has(key)) continue
+      this[key] = values[key]
+      this._assigned.delete(key)
+    }
+  }
+
   _init() {
     this._deferredInit = null
+    // Before _initialized: the setters store without subscribing, and the
+    // subscribe scan below picks the models up exactly once.
+    if (this.constructor._shared) this._applyShared(this.constructor._shared)
     this._initialized = true
     // Styling hook for the upgraded state: x-el:not([salis]) hides unbound markup.
     this.setAttribute('salis', '')

@@ -161,7 +161,7 @@ through the proxy repaints every element holding it.
 ```js demo
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-salis("demo-crew", {
+const Crew = salis("demo-crew", {
   properties: ["user"],
   handlers: {
     promote() {
@@ -170,22 +170,21 @@ salis("demo-crew", {
   }
 });
 
-// The handshake: assignment is what ties a model to an element — nothing is
-// wired by name, so two crews could hold two different users.
-document.querySelectorAll("demo-crew").forEach((el) => (el.user = user));
+// The handshake, tag-wide: every crew card gets the model, existing and
+// future alike. Per-instance assignment — el.user = other — still works,
+// and outranks this wherever both happened.
+Crew.share({ user });
 ```
 
-A `querySelectorAll` sweep is a snapshot — an element added to the page later
-misses it. When the element class knows its one model, invert the handshake:
-`connected(el) { el.user = user }` runs per instance on every connect, clones
-and late arrivals included, and that is a broadcast with no registry — the
-platform already tracks upgrades so salis does not have to. Keep the sweep for
-the other case, where the app decides which element gets which model.
+The model must still meet its elements once — a mutation names no tags, so
+nothing can wire itself. [`share()`](#sharevalues) below is that handshake for
+a whole class; assignment per instance (`el.user = user`) is the form for the
+other case, where the app decides which element holds which model.
 
-The pull composes with data that is not there yet. A reactive model separates
-two events a promise usually glues together — *subscribed* and *filled*: create
-the model empty, so its identity exists before its contents, pull it in
-`connected`, and let one fetch fill it through the proxy.
+`share` composes with data that is not there yet. A reactive model separates
+two events a promise usually glues together — *shared* and *filled*: create
+the model empty, so its identity exists before its contents, share it, and
+let one fetch fill it through the proxy.
 
 <!-- demo -->
 
@@ -212,28 +211,27 @@ const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
 const user = reactive({});                              // identity exists now
 fetchUser().then((data) => Object.assign(user, data));  // one fetch, module scope
 
-salis("demo-lazy", {
+const Lazy = salis("demo-lazy", {
   properties: ["user"],
-  connected(el) {
-    el.user = user; // subscribes immediately — nothing to await
-  },
   handlers: {
     async reload() {
       Object.assign(user, await fetchUser()); // no element references — the model is the hub
     }
   }
 });
+
+Lazy.share({ user });
 ```
 
-Nothing here awaits inside `connected`, and no spinner machinery exists: the
-placeholder between the tags is the loading state, already written, and a path
-through a missing branch paints nothing until `Object.assign` lands through
-the proxy — then every card repaints, connected before the data or added
-after. Press **Reload** and the old name holds while the new one is in flight
-— stale-while-refetching for free. The refetch writes into the *same* model:
-identity outlives contents, so new data never means a new handshake. A fetch
-that can fail is yours to `catch` — salis ignores what hooks and handlers
-return.
+Nothing here awaits anywhere near an element, and no spinner machinery
+exists: the placeholder between the tags is the loading state, already
+written, and a path through a missing branch paints nothing until
+`Object.assign` lands through the proxy — then every card repaints, shared
+before the data or added after. Press **Reload** and the old name holds while
+the new one is in flight — stale-while-refetching for free. The refetch
+writes into the *same* model: identity outlives contents, so new data never
+means a new handshake. A fetch that can fail is yours to `catch` — salis
+ignores what hooks and handlers return.
 
 The rules, and each is load-bearing:
 
@@ -251,6 +249,39 @@ The rules, and each is load-bearing:
 - **Assignment subscribes, disconnect unsubscribes.** An element removed from
   the DOM stops repainting; reconnecting catches it up. Async data, reactive
   models and element lifecycle compose without coordination code.
+
+## `share(values)`
+
+A static on every salis class: `Crew.share({ user: model })` hands each value
+to every instance of the element — the tag-wide form of `el.user = model`,
+called once, never per change. Present instances get it on the spot; future
+ones pick it up as they connect. Share a `reactive()` model and the pair is a
+standing broadcast: mutate the model anywhere, every instance repaints, no
+element references at the mutation site and no re-`share` ever.
+
+The precedence rule keeps it safe to mix with assignment: **an instance
+assignment outranks share on that instance, forever** — including across
+disconnects and reconnects, and across later `share` calls. `share` fills
+elements the app has said nothing about; it never overwrites one it has.
+
+Property keys only. An attribute-backed key warns and is refused: the
+attribute is the markup's state, per instance by design, and a tag-wide write
+would put one value in every instance's markup while claiming each instance
+still owns its own. A key the element does not declare warns and is skipped,
+and the entry's neighbours still land.
+
+There is no registry behind this — the class reference is the whole
+capability, and `document.querySelectorAll` is the instance list, consulted at
+the moment of the call. An element class nobody calls `share` on pays
+nothing.
+
+Releasing is the same call: `Crew.share({ user: null })` replaces the stored
+reference — instances that got the model from `share` get the `null` with the
+same sweep, and ones connecting later start with it. Only instances the app
+assigned directly keep theirs, by the precedence rule above. Share what the
+page has one of — the current user, the cart, the viewport; a noun that
+pluralizes per instance is assignment's, and the app's loop knows which is
+whose.
 
 ## `SalisElement`
 

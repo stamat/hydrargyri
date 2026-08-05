@@ -32,6 +32,13 @@ for the person who wrote the code.
 - **Components talk the platform way, documented and pinned.** `on` hears bubbling
   custom events from descendants, a parent writes a child's observed attribute — no bus,
   no store; the README section and two tests hold the guarantee.
+- **`share(values)` — one handshake for a whole tag.** A static on every salis class:
+  `Cls.share({ user: model })` hands each value to every instance, present and future,
+  called once and never per change — with a `reactive()` model it is a standing broadcast.
+  An instance assignment outranks share on that instance, forever, reconnects included.
+  Property keys only: an attribute-backed key warns and is refused, because the attribute
+  is the markup's per-instance state; an undeclared key warns and is skipped. No registry —
+  the class reference is the capability.
 - **`on="event@window:name"` and `@document` — global events, element-owned.** `resize`,
   Escape, click-outside: the listener registers on the global the event actually fires on,
   the handler stays the element's, and disconnect unhooks it with every other listener

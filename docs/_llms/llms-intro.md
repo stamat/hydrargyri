@@ -52,6 +52,10 @@ The API:
   to any number of elements and mutation through the proxy repaints them all.
   The proxy is the model — the raw original notifies nobody — and non-plain
   values (Maps, class instances) warn and come back unwrapped.
+- `share(values)` is a static on every salis class: `Cls.share({ user: model })`
+  hands each value to every instance, present and future — called once, never
+  per change. An instance assignment outranks share on that instance, forever.
+  Property keys only; attribute-backed keys warn and are refused.
 - `on` may target the globals: `on="resize@window:name"` and
   `on="click@document:name"` register the listener on `window` or `document` —
   the handler stays the element's, and disconnect unhooks it with the rest.

@@ -13,6 +13,18 @@ for the person who wrote the code.
 
 ### Added
 
+- **A `prop#name` bind — `bind="quarters:prop#series"`.** Assigns the value to the named
+  property, `el.name = value`, and it is the only type that can carry an array or an object
+  to another element: an attribute holds a string, so anything else bound through `attr#`
+  arrives as `[object Object]`. That left every custom element taking structured state —
+  a chart's series, a combobox's options, a nested list's items — reachable only from
+  JavaScript, however well the markup already knew the value. `value` was already a
+  property write hardcoded to one name; this is its general form. `null` writes `null`,
+  because a property has no removed state, and `undefined` still paints nothing. The
+  property need not be declared and nothing is coerced, so `prop#innerHTML` is `:html`
+  under another name and the same threat model applies. A `prop` with no `#name` warns
+  and is skipped, exactly as `attr` does.
+
 - **Formatters — `bind="price|money:currency"`.** A named function from the new
   `formatters` registry shapes a value on its way into the node, called as
   `(value, element, ...args)` — the answer to one key needing to be raw in an input

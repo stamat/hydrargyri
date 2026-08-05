@@ -47,7 +47,9 @@ The API:
   arrays, timer handles. As an object, `properties: { user: model }` maps
   name → class-wide default: the define-time form of `share()`.
 - `bind` types: `text` (default, `textContent`), `html` (`innerHTML`), `value`
-  (`.value`), `attr#name` (`setAttribute`), `if` / `if#condition` (toggles
+  (`.value`), `attr#name` (`setAttribute`), `prop#name` (`el.name = value`, the
+  only type that carries an array or an object to another element, since an
+  attribute holds a string; `null` writes `null`), `if` / `if#condition` (toggles
   `hidden` — bare follows truthiness, `#name` runs the named predicate from
   `conditions`, called as `(value, element)` on every paint of the key, truthy
   shows), `unless` / `unless#condition` (the same toggle inverted — `if` and

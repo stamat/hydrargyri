@@ -108,6 +108,39 @@ test('a value bind fills the input, an attr bind sets the named attribute, an ht
   expect(el.querySelector('div').querySelector('b')).not.toBe(null)
 })
 
+test('a prop bind writes the value itself onto the node, which is the only way an array reaches another element', () => {
+  const name = tag()
+  hg(name, { properties: ['rows'] })
+  const root = mount(`<${name}><ul bind="rows:prop#items"></ul></${name}>`)
+  const el = root.firstElementChild
+  const rows = [{ id: 1 }, { id: 2 }]
+  el.rows = rows
+  expect(el.querySelector('ul').items).toBe(rows)
+  expect(el.querySelector('ul').hasAttribute('items')).toBe(false)
+})
+
+test('null through a prop bind is the value null — removing is what an attr bind does', () => {
+  const name = tag()
+  hg(name, { properties: ['rows'] })
+  const root = mount(`<${name}><ul bind="rows:prop#items"></ul></${name}>`)
+  const el = root.firstElementChild
+  const ul = el.querySelector('ul')
+  el.rows = ['salt']
+  el.rows = null
+  expect(ul.items).toBe(null)
+  expect('items' in ul).toBe(true)
+})
+
+test('a prop bind with no name after the hash is refused at the parse, exactly as an attr bind is', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  expect(parseBinds('rows:prop')).toEqual([])
+  expect(parseBinds('rows:prop#')).toEqual([])
+  expect(parseBinds('rows:prop#items')).toEqual([
+    { path: ['rows'], type: 'prop', attr: 'items', format: null }
+  ])
+  expect(warn).toHaveBeenCalledTimes(2)
+})
+
 test('a false value removes a bound attribute, true sets it empty', () => {
   const name = tag()
   hg(name, { properties: ['busy'] })

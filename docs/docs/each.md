@@ -212,11 +212,13 @@ as it does [on any element](on.html#how-a-name-resolves).
 - **Sorting, filtering, pagination.** The array is yours: transform it in
   JavaScript and assign the result. The alternative is a query language growing
   inside an attribute.
-- **Nested lists, declaratively.** A [bind](bind.html) writes text, markup, a
-  form field's `value` or an attribute — never an arbitrary property, and
-  `items` is one. So an `<hg-each>` inside a row is handed its list in
-  JavaScript, through the row's `hgItem`; no bind carries an item's array into
-  the inner element.
+- **Nested lists, declaratively.** A row can hand its data to an ordinary
+  custom element — `<my-chart bind="quarters:prop#series">` — because
+  [`prop#name`](bind.html#the-types) writes the value itself. It cannot hand it
+  to another `<hg-each>`: a bind on a hydrargyri element's own root [belongs to
+  that element](bind.html#what-is-scanned-and-when), so the inner list would
+  resolve `items` against its own state rather than the outer row's item. A
+  nested `<hg-each>` is still fed in JavaScript, through the row's `hgItem`.
 - **Sanitizing.** `:html` in a row is `innerHTML`, verbatim — [the same threat
   model](limits.html#sanitizing), so bind your own state to it and never user
   input.

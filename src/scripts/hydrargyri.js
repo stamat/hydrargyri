@@ -4,7 +4,10 @@ import { isArray, stringToPrimitive, transformDashToCamelCase, getObjectValueByP
 // nested hydrargyri element owns a node: the nearest hydrargyri ancestor, whatever its tag.
 const hgTags = new Set()
 
-const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'if', 'unless'])
+const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'prop', 'if', 'unless'])
+
+// Types that name the thing they write into, and mean nothing without it.
+const NAMED_BIND_TYPES = new Set(['attr', 'prop'])
 
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — hydrargyri's own API and
@@ -99,8 +102,8 @@ export function parseBinds(raw) {
       type = (hash === -1 ? typePart : typePart.slice(0, hash)).trim()
       attr = hash === -1 ? null : typePart.slice(hash + 1).trim()
     }
-    if (!BIND_TYPES.has(type) || (type === 'attr' && !attr)) {
-      console.warn(`hydrargyri: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name|if#condition|unless#condition]`)
+    if (!BIND_TYPES.has(type) || (NAMED_BIND_TYPES.has(type) && !attr)) {
+      console.warn(`hydrargyri: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name|prop#name|if#condition|unless#condition]`)
       continue
     }
     // An if/unless bind paints nothing a formatter could shape — predicates on
@@ -575,6 +578,12 @@ export class HgElement extends HTMLElement {
       case 'attr':
         if (value === null || value === false) el.removeAttribute(attr)
         else el.setAttribute(attr, value === true ? '' : value)
+        break
+      // No coercion and no absent state: an attribute can only hold a string,
+      // which is why an array or an object reaching another element has to come
+      // this way. `null` writes null, because a property has no "removed".
+      case 'prop':
+        el[attr] = value
         break
       case 'if':
       case 'unless': {

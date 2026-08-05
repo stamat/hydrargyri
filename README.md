@@ -101,7 +101,7 @@ the site is the manual.
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | [Getting started](https://stamat.github.io/hydrargyri/docs/)     | the three parts of a hydrargyri element, in one screen                                                  |
 | [API](https://stamat.github.io/hydrargyri/docs/api.html)         | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
-| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects   |
+| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `prop#name`, `if` / `unless`, and paths into objects |
 | [on](https://stamat.github.io/hydrargyri/docs/on.html)           | what fires: event names, handler resolution, the `(event, element)` signature                      |
 | [Composition](https://stamat.github.io/hydrargyri/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                        |
 | [Limits](https://stamat.github.io/hydrargyri/docs/limits.html)   | what hydrargyri will not do, and the threat model for `:html`                                           |

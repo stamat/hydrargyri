@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: bind
-description: Where state lands — text, html, value, attr#name, if and unless binds, paths into objects, and what a typo does.
+description: Where state lands — text, html, value, attr#name, prop#name, if and unless binds, paths into objects, and what a typo does.
 order: 2
 ---
 
@@ -28,12 +28,29 @@ Policy to object to.
 | `html`           | `innerHTML` — see [Limits](limits.html) | empty string                                                  |
 | `value`          | `.value`, for form fields              | empty string                                                  |
 | `attr#name`      | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
+| `prop#name`      | the named property, `el.name = value`  | written as `null` — a property has no removed state          |
 | `if` / `if#condition` | toggles `hidden` — see [Conditions](#conditions) | `null` is falsy: hidden, unless the condition says otherwise |
 | `unless` / `unless#condition` | the else leg — `if` inverted, same toggle | `null` is falsy: shown |
 
 `undefined` is not a value and paints nothing — it is what a path into an object
 that has not arrived yet returns, and leaving the node alone is the only right
 answer there. `null` is a real value and clears.
+
+`prop#name` is the one that carries something an attribute cannot. An attribute
+holds a string, so an array or an object bound through `attr#` arrives as
+`[object Object]`; `prop#` assigns the value itself, which is how another custom
+element gets handed its data from markup that already has it:
+
+```html
+<sales-report>
+  <my-chart bind="quarters:prop#series"></my-chart>
+</sales-report>
+```
+
+It writes what it is given and checks nothing — the property need not be
+declared, and `bind="x:prop#innerHTML"` is `:html` wearing another name, under
+the same [threat model](limits.html#sanitizing): bind your own state, never
+user input.
 
 Three types on one element, doing three different jobs:
 
@@ -231,6 +248,7 @@ entry, and is skipped. The element's **other** binds keep painting.
 | `bind="cout"` — a typo in the key    | warns that the element has no attribute or property by that name       |
 | `bind="name:txt"` — unknown type     | warns with the list of types it expected                              |
 | `bind="url:attr"` — `attr` with no `#name` | same warning; there is no attribute to write                    |
+| `bind="rows:prop"` — `prop` with no `#name` | same warning; there is no property to write                    |
 | `bind="price\|money:tax"` — an argument naming nothing the element owns | warns like a typo in the key, and the entry is skipped |
 | `bind="price\|a\|b"` — a second `\|` | warns; one formatter per entry, chaining is not supported             |
 | `bind="user.name"` before `user` exists | nothing painted, no warning — a path is allowed to be empty for now |

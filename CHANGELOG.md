@@ -70,8 +70,8 @@ for the person who wrote the code.
 - Jest suite covering the whole public surface.
 - **A documentation site.** `docs/` builds to `_site/` with
   [poops-docs-theme](https://github.com/stamat/poops-docs-theme): a landing page and a
-  reference under `/docs/` — getting started, API, `bind`, `on`, composition, limits —
-  whose samples run live and editable on the page. Plus a search index, `llms.txt` and
+  reference under `/docs/` — getting started, API, `bind`, `on`, composition, examples,
+  limits — whose samples run live and editable on the page. Plus a search index, `llms.txt` and
   `llms-full.txt` for agents, and a `pages.yml` workflow that deploys it on every push to
   `main`.
 - **The [template](https://github.com/stamat/template) scaffolding.** `script/bootstrap`,

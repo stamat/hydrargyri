@@ -75,8 +75,10 @@ needs `update(key)` or an opt-in `reactive()` model — salis never wraps an
 object you did not ask wrapped),
 two-way binding (DOM to state goes through a handler you wrote), late DOM (binds
 are scanned on connect; reconnecting rescans), sanitizing (`:html` is
-`innerHTML` verbatim — bind your own state to it, never user input), templating,
-virtual DOM, routing and stores.
+`innerHTML` verbatim — bind your own state to it, never user input), templating
+(salis never stamps a `<template>` itself — but markup your code clones into an
+element before `customElements.define` binds like authored markup, since the
+scan happens at connect), virtual DOM, routing and stores.
 
 Elements compose through the platform: bubbling custom events upward, writing a
 child's observed attribute downward, and `commandfor`/`command` where there is

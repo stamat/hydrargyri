@@ -1,7 +1,8 @@
 // Covers the whole public surface: the factory, the SalisElement base class,
 // attribute↔property reflection, every bind type, handler wiring, nesting
 // scope, lifecycle hooks, deferred init during parse, pre-upgrade property
-// capture, and reactive models. Deliberately not covered: dynamically
+// capture, reactive models, and markup stamped from a template before
+// define. Deliberately not covered: dynamically
 // inserted bind/on nodes — binds are scanned at connect, and picking up later
 // DOM is a documented non-goal for v1 (reconnecting the element rescans).
 import { jest } from '@jest/globals'
@@ -631,6 +632,18 @@ test('a model assigned before upgrade still subscribes once the element initiali
   el.innerHTML = '<span bind="user.name"></span>'
   document.body.appendChild(el)
   salis(name, { properties: ['user'] })
+  expect(el.querySelector('span').textContent).toBe('ada')
+  user.name = 'grace'
+  expect(el.querySelector('span').textContent).toBe('grace')
+})
+
+test('markup stamped from a template before define binds like authored markup', () => {
+  const name = tag()
+  const root = mount(`<template><span bind="user.name">…</span></template><${name}></${name}>`)
+  const el = root.querySelector(name)
+  el.append(root.querySelector('template').content.cloneNode(true))
+  const user = reactive({ name: 'ada' })
+  salis(name, { properties: { user } })
   expect(el.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
   expect(el.querySelector('span').textContent).toBe('grace')

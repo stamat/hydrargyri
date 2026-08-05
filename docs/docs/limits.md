@@ -2,7 +2,7 @@
 layout: poops-docs-theme/docs
 title: Limits
 description: What salis will not do, why each refusal is deliberate, and the threat model for :html binds.
-order: 5
+order: 6
 ---
 
 # What salis does not do
@@ -69,6 +69,14 @@ no plugin ecosystem. Salis writes values into nodes that already exist; it never
 creates, reorders, or diffs them. If you need a page built out of data, you
 need one of the tools on the [comparison table](../index.html#against-the-alternatives),
 and that is not a defeat.
+
+The line sits exactly at *who creates the nodes*. Your code cloning a platform
+[`<template>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template)
+into an element **before it is defined** is fine — by the time salis scans on
+connect, the clone is authored markup like any other, and the [examples
+page](examples.html#stamp-an-html-template-into-a-custom-element) shows the
+pattern with a reactive model bound through it. What stays refused is salis
+doing the stamping.
 
 ## What it does instead of failing
 

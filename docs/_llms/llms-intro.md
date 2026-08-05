@@ -49,7 +49,10 @@ The API:
 - `bind` types: `text` (default, `textContent`), `html` (`innerHTML`), `value`
   (`.value`), `attr#name` (`setAttribute`), `prop#name` (`el.name = value`, the
   only type that carries an array or an object to another element, since an
-  attribute holds a string; `null` writes `null`), `if` / `if#condition` (toggles
+  attribute holds a string; `null` writes `null`), `class#name`
+  (`classList.toggle` on truthiness — one named class, never the whole
+  attribute, so authored classes survive and nothing is remembered between
+  paints; `attr#class` would replace the list instead), `if` / `if#condition` (toggles
   `hidden` — bare follows truthiness, `#name` runs the named predicate from
   `conditions`, called as `(value, element)` on every paint of the key, truthy
   shows), `unless` / `unless#condition` (the same toggle inverted — `if` and

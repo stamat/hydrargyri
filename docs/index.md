@@ -44,6 +44,15 @@ are what run through it. It sits on
 [book-of-spells](https://github.com/stamat/book-of-spells), same shelf as
 [sulphuris](https://github.com/stamat/sulphuris) 🜍.
 
+[Catalyst](https://github.com/github/catalyst) is where this started — markup
+first, custom elements, names in attributes; the shape was already right. What
+it charges for that shape is a build step — decorators and TypeScript are the
+path it is written for, even though a plain function call exists. Hydrargyri
+is the same idea attempted with nothing but the platform underneath: plain ES
+modules, plain classes, attributes a browser already parses. Whether that trade
+is worth losing Catalyst's type safety is a taste question, and the table below
+is the honest version of it.
+
 **[Read the docs →](docs/)**
 
 ## Against the alternatives
@@ -104,7 +113,7 @@ elements. You call it once per tag, and the tag upgrades wherever it appears.
 | ------------------------------------ | ---------------------------------------------------------------------------------- |
 | [Getting started](docs/)             | the three parts of a hydrargyri element, in one screen                                  |
 | [API](docs/api.html)                 | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
-| [bind](docs/bind.html)               | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects |
+| [bind](docs/bind.html)               | where state lands: `text`, `html`, `value`, `attr#name`, `prop#name`, `class#name`, `if` / `unless`, and paths into objects |
 | [on](docs/on.html)                   | what fires: event names, handler resolution, the `(event, element)` signature      |
 | [Composition](docs/composition.html) | elements talking to each other — events up, attributes down, no bus                |
 | [Limits](docs/limits.html)           | what hydrargyri will not do, and the threat model for `:html`                           |

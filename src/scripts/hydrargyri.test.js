@@ -141,6 +141,82 @@ test('a prop bind with no name after the hash is refused at the parse, exactly a
   expect(warn).toHaveBeenCalledTimes(2)
 })
 
+test('a class bind toggles its named class and never touches the ones the author wrote', () => {
+  const name = tag()
+  hg(name, { properties: ['active'] })
+  const root = mount(`<${name}><span bind="active:class#is-active" class="switch big"></span></${name}>`)
+  const el = root.firstElementChild
+  const span = el.querySelector('span')
+  el.active = true
+  expect(span.className).toBe('switch big is-active')
+  el.active = false
+  expect(span.className).toBe('switch big')
+})
+
+test('a falsy value removes the bound class, a truthy one adds it, and null removes', () => {
+  const name = tag()
+  hg(name, { properties: ['active'] })
+  const root = mount(`<${name}><span bind="active:class#on" class="on"></span></${name}>`)
+  const el = root.firstElementChild
+  const span = el.querySelector('span')
+  expect(span.classList.contains('on')).toBe(false)
+  el.active = 'yes'
+  expect(span.classList.contains('on')).toBe(true)
+  el.active = null
+  expect(span.classList.contains('on')).toBe(false)
+})
+
+test('a formatter shapes the value a class bind toggles on, exactly as it does for an attr bind', () => {
+  const name = tag()
+  hg(name, {
+    properties: ['count'],
+    formatters: { isLow: (n) => n > 0 && n < 3 }
+  })
+  const root = mount(`<${name}><p bind="count:class#low|isLow"></p></${name}>`)
+  const el = root.firstElementChild
+  const p = el.querySelector('p')
+  el.count = 2
+  expect(p.classList.contains('low')).toBe(true)
+  el.count = 9
+  expect(p.classList.contains('low')).toBe(false)
+})
+
+test('a class bind with no name after the hash is refused at the parse, exactly as an attr bind is', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  expect(parseBinds('active:class')).toEqual([])
+  expect(parseBinds('active:class#')).toEqual([])
+  expect(parseBinds('active:class#is-active')).toEqual([
+    { path: ['active'], type: 'class', attr: 'is-active', format: null }
+  ])
+  expect(warn).toHaveBeenCalledTimes(2)
+})
+
+test('two class binds on one element stay independent, because nothing writes the class attribute as a whole', () => {
+  const name = tag()
+  hg(name, { properties: ['alive', 'busy'] })
+  const root = mount(`<${name}><b bind="alive:class#is-alive;busy:class#is-busy" class="pill"></b></${name}>`)
+  const el = root.firstElementChild
+  const b = el.querySelector('b')
+  el.alive = true
+  el.busy = true
+  expect(b.className).toBe('pill is-alive is-busy')
+  el.alive = false
+  expect(b.className).toBe('pill is-busy')
+})
+
+test('a class bind survives a reconnect, because the toggle remembers nothing between paints', () => {
+  const name = tag()
+  hg(name, { properties: ['active'] })
+  const root = mount(`<${name}><span bind="active:class#is-active" class="switch"></span></${name}>`)
+  const el = root.firstElementChild
+  el.active = true
+  el.remove()
+  root.appendChild(el)
+  expect(el.querySelector('span').className).toBe('switch is-active')
+  el.active = false
+  expect(el.querySelector('span').className).toBe('switch')
+})
+
 test('a false value removes a bound attribute, true sets it empty', () => {
   const name = tag()
   hg(name, { properties: ['busy'] })

@@ -13,6 +13,21 @@ for the person who wrote the code.
 
 ### Added
 
+- **A `class#name` bind — `bind="active:class#is-active"`.** Toggles one named class on
+  the value's truthiness and writes nothing else. Reaching a class from markup used to
+  mean `attr#class`, which is a `setAttribute` over the whole list: it removed the
+  classes the author wrote, from the first paint, silently, with no warning to mark the
+  spot. That left a page whose CSS you do not own out of reach, since a third-party or
+  legacy stylesheet ships `.is-active` hooks rather than `[data-active]` ones. The rest
+  of the `class` attribute is now untouched, so entries compose —
+  `bind="alive:class#is-alive;busy:class#is-busy"` is two independent switches on one
+  node. It is **not** a merge and will not become one: diffing a computed class list
+  means remembering what was applied last paint, which goes stale against any other
+  writer and is thrown away by a rescan. A formatter shapes the value first, as it does
+  for `attr` — `count:class#low|isLow`; `null` and `false` take the class off; a `class`
+  with no `#name` warns and is skipped, exactly as `attr` and `prop` do. For a value
+  with several states, `attr#data-*` and one selector still beat N toggles.
+
 - **A `prop#name` bind — `bind="quarters:prop#series"`.** Assigns the value to the named
   property, `el.name = value`, and it is the only type that can carry an array or an object
   to another element: an attribute holds a string, so anything else bound through `attr#`
@@ -35,12 +50,6 @@ for the person who wrote the code.
   evaluated. One formatter per entry, no chaining; a missing name warns and paints
   the raw value; `if` and `unless` keep taking conditions. `parseBinds` entries
   grow a `format` field, `null` when there is no formatter.
-
-- **What `attr#class` does, said out loud.** An `attr` bind is a `setAttribute`, so
-  binding `class` replaces the author's class list instead of adding to it — silently,
-  from the first paint, and unlike Alpine's `:class`, which merges. The _bind_ page now
-  says so where the CSS-hook paragraph sits, and points at the shape that works: toggle
-  a `data-` attribute of your own and style that.
 
 - **An `hg-each` docs page.** List rendering had one sentence in _Limits_ and a link to
   another repository; the page now carries the shape, the `items` contract, how binds

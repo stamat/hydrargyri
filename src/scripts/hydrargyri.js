@@ -4,10 +4,10 @@ import { isArray, stringToPrimitive, transformDashToCamelCase, getObjectValueByP
 // nested hydrargyri element owns a node: the nearest hydrargyri ancestor, whatever its tag.
 const hgTags = new Set()
 
-const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'prop', 'if', 'unless'])
+const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'prop', 'class', 'if', 'unless'])
 
 // Types that name the thing they write into, and mean nothing without it.
-const NAMED_BIND_TYPES = new Set(['attr', 'prop'])
+const NAMED_BIND_TYPES = new Set(['attr', 'prop', 'class'])
 
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — hydrargyri's own API and
@@ -103,7 +103,7 @@ export function parseBinds(raw) {
       attr = hash === -1 ? null : typePart.slice(hash + 1).trim()
     }
     if (!BIND_TYPES.has(type) || (NAMED_BIND_TYPES.has(type) && !attr)) {
-      console.warn(`hydrargyri: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name|prop#name|if#condition|unless#condition]`)
+      console.warn(`hydrargyri: unknown bind "${trimmed}" — expected path[:text|html|value|attr#name|prop#name|class#name|if#condition|unless#condition]`)
       continue
     }
     // An if/unless bind paints nothing a formatter could shape — predicates on
@@ -584,6 +584,12 @@ export class HgElement extends HTMLElement {
       // this way. `null` writes null, because a property has no "removed".
       case 'prop':
         el[attr] = value
+        break
+      // One class token, toggled on truthiness — never the whole attribute, so
+      // the author's classes and any other script's survive, and there is no
+      // record of the last paint to go stale across a rescan.
+      case 'class':
+        el.classList.toggle(attr, !!value)
         break
       case 'if':
       case 'unless': {

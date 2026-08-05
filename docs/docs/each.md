@@ -140,7 +140,8 @@ the markup as authored.
 ## Binds resolve into the item
 
 The whole [bind grammar](bind.html) works inside a row — `text`, `html`,
-`value`, `attr#name`, `if`, `unless`, entries separated by `;` — with paths
+`value`, `attr#name`, `prop#name`, `class#name`, `if`, `unless`, entries
+separated by `;` — with paths
 walked from the item rather than from the element: `bind="user.name"` reads
 `item.user.name`, and `bind="."` is the item itself, for arrays of primitives. A
 path that hits nothing leaves the node as authored, [as

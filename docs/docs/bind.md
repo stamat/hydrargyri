@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: bind
-description: Where state lands — text, html, value, attr#name, prop#name, if and unless binds, paths into objects, and what a typo does.
+description: Where state lands — text, html, value, attr#name, prop#name, class#name, if and unless binds, paths into objects, and what a typo does.
 order: 2
 ---
 
@@ -29,6 +29,7 @@ Policy to object to.
 | `value`          | `.value`, for form fields              | empty string                                                  |
 | `attr#name`      | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
 | `prop#name`      | the named property, `el.name = value`  | written as `null` — a property has no removed state          |
+| `class#name`     | toggles the named class, `classList.toggle` | `null` is falsy: the class comes off              |
 | `if` / `if#condition` | toggles `hidden` — see [Conditions](#conditions) | `null` is falsy: hidden, unless the condition says otherwise |
 | `unless` / `unless#condition` | the else leg — `if` inverted, same toggle | `null` is falsy: shown |
 
@@ -80,28 +81,43 @@ twice: `data-tone="warn"` appears and then goes, because `null` removes an
 `attr` bind's attribute rather than setting it to the string `"null"`. That is
 what makes an `attr` bind usable as a CSS hook.
 
-`attr#class` is the one to write carefully. It goes through `setAttribute` like
-every other `attr` bind, so it **replaces** the class list rather than adding to
-it — the classes the author wrote are gone from the first paint, silently, and
-no warning marks the spot. Alpine's `:class` merges; this does not, and hydrargyri
-will not grow a merging type when the hook above already does the job. Toggle an
-attribute of your own and style that:
-
-```html
-<span bind="active:attr#data-active" class="switch"></span>
-```
-
-```css
-.switch[data-active] { background: var(--accent); }
-```
-
-The class attribute stays the author's, which is the rule the rest of the
-library keeps too.
-
 Typing in the field writes state through `relabel`, and the `value` bind writes
 it back into the field. That is not [two-way
 binding](limits.html#two-way-binding) — it is one direction twice, and the
 handler in the middle is the part you can put a breakpoint in.
+
+## Classes
+
+One `attr` name is a trap: `class`. It parses, and it does what every `attr`
+bind does — a `setAttribute` over the whole list — so the classes the author
+wrote are gone from the first paint, silently, with no warning to mark the spot.
+`class#name` is the type for that job, and it toggles one token:
+
+```html
+<span bind="active:class#is-active" class="switch"></span>
+```
+
+```css
+.switch.is-active { background: var(--accent); }
+```
+
+The rest of the `class` attribute is untouched — the author's classes and
+whatever another script put there both survive, which is what lets hydrargyri
+upgrade a page whose CSS it does not own. A stylesheet you did not write ships
+`.is-active` hooks, not `[data-active]` ones.
+
+That is deliberately **not** a merge. Alpine's `:class` takes a computed list and
+diffs it against the one it applied last, which means remembering what it added,
+per element, per paint — state that goes stale the moment anything else writes
+the same class, and that a [rescan](#what-is-scanned-and-when) throws away. A
+named toggle has nothing to remember, so entries simply compose:
+`bind="alive:class#is-alive;busy:class#is-busy"` is two independent switches on
+one node.
+
+One flag per class is the shape. For a value with several states —
+`success | danger | warning` — the hook is an attribute again, where one
+selector says what N toggles would: `bind="variant:attr#data-variant"` against
+`[data-variant="danger"]`.
 
 ## Conditions
 

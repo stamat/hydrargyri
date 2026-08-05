@@ -33,7 +33,8 @@ function getObjectValueByPath(obj, path) {
 
 // src/scripts/hydrargyri.js
 var hgTags = /* @__PURE__ */ new Set();
-var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr", "if", "unless"]);
+var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr", "prop", "class", "if", "unless"]);
+var NAMED_BIND_TYPES = /* @__PURE__ */ new Set(["attr", "prop", "class"]);
 var RESERVED = /* @__PURE__ */ new Set(["handlers", "conditions", "formatters", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
 function propertyNames(properties) {
@@ -86,8 +87,8 @@ function parseBinds(raw) {
       type = (hash === -1 ? typePart : typePart.slice(0, hash)).trim();
       attr = hash === -1 ? null : typePart.slice(hash + 1).trim();
     }
-    if (!BIND_TYPES.has(type) || type === "attr" && !attr) {
-      console.warn(`hydrargyri: unknown bind "${trimmed}" \u2014 expected path[:text|html|value|attr#name|if#condition|unless#condition]`);
+    if (!BIND_TYPES.has(type) || NAMED_BIND_TYPES.has(type) && !attr) {
+      console.warn(`hydrargyri: unknown bind "${trimmed}" \u2014 expected path[:text|html|value|attr#name|prop#name|class#name|if#condition|unless#condition]`);
       continue;
     }
     if (format && (type === "if" || type === "unless")) {
@@ -442,6 +443,18 @@ var HgElement = class extends HTMLElement {
       case "attr":
         if (value === null || value === false) el.removeAttribute(attr);
         else el.setAttribute(attr, value === true ? "" : value);
+        break;
+      // No coercion and no absent state: an attribute can only hold a string,
+      // which is why an array or an object reaching another element has to come
+      // this way. `null` writes null, because a property has no "removed".
+      case "prop":
+        el[attr] = value;
+        break;
+      // One class token, toggled on truthiness — never the whole attribute, so
+      // the author's classes and any other script's survive, and there is no
+      // record of the last paint to go stale across a rescan.
+      case "class":
+        el.classList.toggle(attr, !!value);
         break;
       case "if":
       case "unless": {

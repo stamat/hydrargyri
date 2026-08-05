@@ -34,7 +34,7 @@ function getObjectValueByPath(obj, path) {
 // src/scripts/salis.js
 var salisTags = /* @__PURE__ */ new Set();
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr"]);
-var RESERVED = /* @__PURE__ */ new Set(["handlers", "actions", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
+var RESERVED = /* @__PURE__ */ new Set(["handlers", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
 function propertyNames(properties) {
   return isArray(properties) ? properties : Object.keys(properties);
@@ -169,7 +169,6 @@ var SalisElement = class extends HTMLElement {
     this._initialized = false;
     this._deferredInit = null;
     this.handlers = Object.assign({}, this.constructor.handlers);
-    this.actions = Object.assign({}, this.constructor.actions);
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr);
     for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null);
   }
@@ -369,15 +368,18 @@ var SalisElement = class extends HTMLElement {
     if (typeof this.handlers[name] === "function") return this.handlers[name](e, this);
     console.warn(`salis: <${this.tagName.toLowerCase()}> has no handler "${name}"`);
   }
-  // Command issued, action taken. Keys are the exact command strings, dashes
-  // and all — no name transformation to reason backwards through. An empty
-  // registry stays silent, because commands may be handled by an `on` listener
-  // instead; only a populated one makes an unknown command a typo worth naming.
+  // Commands look up handlers by the exact command string, dashes and all —
+  // no name transformation to reason backwards through, and custom commands
+  // must start with `--`, so command keys cannot collide with handler names.
+  // Registry only, no method lookup: a subclass method must not become
+  // command-invokable by its name alone. Unknown commands warn only when some
+  // `--` key is declared, because commands may be handled by an `on` listener
+  // instead; only a declared command key makes an unknown one a typo worth naming.
   _act(e) {
-    const action = this.actions[e.command];
+    const action = this.handlers[e.command];
     if (typeof action === "function") return action(e, this);
-    if (Object.keys(this.actions).length) {
-      console.warn(`salis: <${this.tagName.toLowerCase()}> has no action for command "${e.command}"`);
+    if (Object.keys(this.handlers).some((key) => key.startsWith("--"))) {
+      console.warn(`salis: <${this.tagName.toLowerCase()}> has no handler for command "${e.command}"`);
     }
   }
   _applyBinds(key) {
@@ -412,10 +414,8 @@ var SalisElement = class extends HTMLElement {
 __publicField(SalisElement, "attributes", []);
 /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
 __publicField(SalisElement, "properties", []);
-/** Named event handlers reachable from `on="event:name"`, shared by all instances. */
+/** Named event handlers reachable from `on="event:name"`, shared by all instances. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command, called as (event, element). */
 __publicField(SalisElement, "handlers", {});
-/** Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as (event, element). */
-__publicField(SalisElement, "actions", {});
 function salis(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
   class Salis extends SalisElement {
@@ -423,7 +423,6 @@ function salis(name, options = {}) {
   __publicField(Salis, "attributes", options.attributes || []);
   __publicField(Salis, "properties", options.properties || []);
   __publicField(Salis, "handlers", options.handlers || {});
-  __publicField(Salis, "actions", options.actions || {});
   for (const hook of ["connected", "disconnected", "attributeChanged"]) {
     if (typeof options[hook] === "function") Salis.prototype[hook] = options[hook];
   }

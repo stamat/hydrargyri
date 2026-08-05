@@ -407,12 +407,12 @@ function commandEvent(command) {
   return Object.assign(new Event('command'), { command })
 }
 
-test('a command routes to the action wearing its exact name, with the event and the element', () => {
+test('a command routes to the handler wearing its exact name, with the event and the element', () => {
   const name = tag()
   const seen = []
   salis(name, {
     attributes: ['count'],
-    actions: {
+    handlers: {
       '--add-item': (e, el) => seen.push([e.command, el.tagName])
     }
   })
@@ -421,26 +421,41 @@ test('a command routes to the action wearing its exact name, with the event and 
   expect(seen).toEqual([['--add-item', name.toUpperCase()]])
 })
 
-test('an unknown command warns when actions are declared, and stays silent when none are', () => {
+test('one handler under a command key answers both the command and an on listener', () => {
+  const name = tag()
+  const seen = []
+  salis(name, {
+    handlers: { '--add-item': (e) => seen.push(e.type) }
+  })
+  const root = mount(`<${name}><button on="click:--add-item"></button></${name}>`)
+  root.querySelector('button').click()
+  root.firstElementChild.dispatchEvent(commandEvent('--add-item'))
+  expect(seen).toEqual(['click', 'command'])
+})
+
+test('an unknown command warns only when a command key is declared — plain handlers keep the silence', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const quiet = tag()
+  const plain = tag()
   const loud = tag()
   salis(quiet, [])
-  salis(loud, { actions: { '--known': () => {} } })
-  const root = mount(`<${quiet}></${quiet}><${loud}></${loud}>`)
+  salis(plain, { handlers: { greet: () => {} } })
+  salis(loud, { handlers: { '--known': () => {} } })
+  const root = mount(`<${quiet}></${quiet}><${plain}></${plain}><${loud}></${loud}>`)
   root.querySelector(quiet).dispatchEvent(commandEvent('--whatever'))
+  root.querySelector(plain).dispatchEvent(commandEvent('--whatever'))
   expect(warn).not.toHaveBeenCalled()
   root.querySelector(loud).dispatchEvent(commandEvent('--typo'))
   expect(warn).toHaveBeenCalledTimes(1)
 })
 
-test('an action assigned at runtime routes without any re-wiring', () => {
+test('a command handler assigned at runtime routes without any re-wiring', () => {
   const name = tag()
   const seen = []
   salis(name, [])
   const root = mount(`<${name}></${name}>`)
   const el = root.firstElementChild
-  el.actions['--late'] = (e, el) => seen.push(el.tagName)
+  el.handlers['--late'] = (e, el) => seen.push(el.tagName)
   el.dispatchEvent(commandEvent('--late'))
   expect(seen).toEqual([name.toUpperCase()])
 })

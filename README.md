@@ -107,8 +107,7 @@ shorthand for `{ attributes: [...] }`.
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                                  |
 | `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time `share()`: `properties: { user: model, draft: null }`.              |
-| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`.                                                                                                                                       |
-| `actions`          | `Object`   | Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as `(event, element)`. Unknown commands warn only when actions are declared. Assignable at runtime: `el.actions['--x'] = fn`. |
+| `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command; unknown commands warn only when a `--` key is declared. Assignable at runtime: `el.handlers['--x'] = fn`. |
 | `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                               |
 | `disconnected`     | `Function` | Runs when the element leaves the DOM, as `(element)`.                                                                                                                                                                 |
 | `attributeChanged` | `Function` | Runs on observed attribute changes as `(name, oldValue, newValue)` — parsed values, not strings. Attributes arriving from the markup are initial state, not changes; this stays silent until after `connected`.       |
@@ -276,7 +275,7 @@ to salis.
 For a trigger with no common ancestor at all, the platform now has
 [`commandfor`/`command`](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
 — a button targets any element by id, the browser fires a `command` event on
-the target, and `actions` answers it:
+the target, and a handler under the command's exact name answers it:
 
 ```html
 <button commandfor="cart" command="--add-item">Add</button>
@@ -287,7 +286,7 @@ the target, and `actions` answers it:
 ```js
 salis("x-cart", {
   attributes: ["count"],
-  actions: {
+  handlers: {
     "--add-item": (e, el) => {
       el.count += 1;
     },
@@ -295,11 +294,12 @@ salis("x-cart", {
 });
 ```
 
-`actions` is the command counterpart of `handlers`: command issued, action
-taken. Keys are the exact `command` strings, dashes and all — no name
-transformation to reason backwards through. An unknown command warns; an
-element with no actions declared stays silent, since `on="command:name"` can
-handle commands its own way instead.
+Command keys live in `handlers` beside the named ones: the exact `command`
+strings, dashes and all — no name transformation to reason backwards through,
+and since custom commands must start with `--`, a command key cannot collide
+with a handler name. An unknown command warns; an element with no `--` keys
+declared stays silent, since `on="command:name"` can handle commands its own
+way instead.
 
 Baseline newly available (December 2025): older browsers leave the button
 inert — nothing breaks, nothing happens. A page that must work everywhere

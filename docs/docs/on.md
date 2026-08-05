@@ -119,10 +119,10 @@ element holding it, and the elements carry no listeners at all.
 
 `on="command:name"` hears
 [Invoker Commands](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
-like any other event, but they have a registry of their own: `actions`, keyed
-by the exact command string — see
-[composition](composition.html#no-common-ancestor-at-all). An element with
-`actions` declared warns on a command it does not know; one without stays
+like any other event, and a handler keyed by the exact command string
+(`handlers: { '--add-item': fn }`) answers its command directly — see
+[composition](composition.html#no-common-ancestor-at-all). An element with a
+`--` key declared warns on a command it does not know; one without stays
 silent, on the assumption an `on` listener like the above is handling them.
 
 ## What is scanned, and when

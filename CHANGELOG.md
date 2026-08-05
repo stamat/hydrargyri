@@ -52,12 +52,13 @@ for the person who wrote the code.
   the raw original notifies nobody, non-plain values (Maps, class instances) warn and come
   back unwrapped, and salis never wraps an object you did not ask wrapped. Disconnecting
   an element unsubscribes it; reconnecting catches it up.
-- **`actions` — Invoker Commands answered by name.** A button anywhere in the document
+- **Invoker Commands answered from `handlers`.** A button anywhere in the document
   says `commandfor="cart" command="--add-item"`, and the element replies from
-  `actions: { '--add-item': (e, el) => {} }` — keyed by the exact command string, no name
-  transformation. The command counterpart of `handlers`, assignable at runtime the same
-  way. An unknown command warns only when actions are declared; an empty registry stays
-  silent so `on="command:name"` can keep handling commands its own way.
+  `handlers: { '--add-item': (e, el) => {} }` — keyed by the exact command string, no name
+  transformation, in the same registry `on` names reach, assignable at runtime the same
+  way. Custom commands must start with `--`, so command keys cannot collide with handler
+  names. An unknown command warns only when a `--` key is declared; an element without one
+  stays silent so `on="command:name"` can keep handling commands its own way.
 - Jest suite covering the whole public surface.
 - **A documentation site.** `docs/` builds to `_site/` with
   [poops-docs-theme](https://github.com/stamat/poops-docs-theme): a landing page and a

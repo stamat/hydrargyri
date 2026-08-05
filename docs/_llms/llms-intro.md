@@ -32,7 +32,7 @@ salis("demo-counter", {
 The API:
 
 - `salis(name, options)` defines a custom element and returns its class.
-  `options` takes `attributes`, `properties`, `handlers`, `actions`, and the
+  `options` takes `attributes`, `properties`, `handlers`, and the
   `connected` / `disconnected` / `attributeChanged` hooks; an array is
   shorthand for `attributes`.
 - `SalisElement` is the exported base class, for elements that need methods of
@@ -75,9 +75,9 @@ virtual DOM, routing and stores.
 
 Elements compose through the platform: bubbling custom events upward, writing a
 child's observed attribute downward, and `commandfor`/`command` where there is
-no common ancestor — the browser fires a `command` event on the target and
-`actions` answers it, keyed by the exact command string
-(`actions: { '--add-item': (e, el) => {} }`). There is no bus.
+no common ancestor — the browser fires a `command` event on the target and a
+handler keyed by the exact command string answers it
+(`handlers: { '--add-item': (e, el) => {} }`). There is no bus.
 
 A name that already answers on the element — `update`, a native like `title`, a
 subclass method — is refused at definition with a warning, and the element keeps

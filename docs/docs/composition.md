@@ -130,7 +130,7 @@ A button in the header, the element it drives at the bottom of the page. The
 platform's own answer is
 [`commandfor`/`command`](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API):
 the button names any element by id, the browser fires a `command` event **on
-that element**, and `actions` answers it.
+that element**, and a handler under the command's exact name answers it.
 
 ```html
 <button commandfor="cart" command="--add-item">Add</button>
@@ -141,7 +141,7 @@ that element**, and `actions` answers it.
 ```js
 salis("x-cart", {
   attributes: ["count"],
-  actions: {
+  handlers: {
     "--add-item": (e, el) => {
       el.count += 1;
     },
@@ -149,11 +149,12 @@ salis("x-cart", {
 });
 ```
 
-`actions` is the command counterpart of `handlers`: command issued, action
-taken. Keys are the exact `command` strings, dashes and all — no name
-transformation to reason backwards through. An unknown command warns; an
-element with no actions declared stays silent, since `on="command:name"` can
-handle commands its own way instead.
+Command keys live in `handlers` beside the named ones: the exact `command`
+strings, dashes and all — no name transformation to reason backwards through,
+and since custom commands must start with `--`, a command key cannot collide
+with a handler name. An unknown command warns; an element with no `--` keys
+declared stays silent, since `on="command:name"` can handle commands its own
+way instead.
 
 Baseline newly available (December 2025). Older browsers leave the button inert
 — nothing breaks and nothing happens, which is the failure mode to weigh before
@@ -164,8 +165,8 @@ using no commands should not pay for one.
 
 [The proposal](https://open-ui.org/components/invokers.explainer/) and the
 polyfill both trace to [@keithamus](https://github.com/keithamus) with
-[@lukewarlow](https://github.com/lukewarlow) co-championing the spec. `actions` exists because that work made commands worth
-answering.
+[@lukewarlow](https://github.com/lukewarlow) co-championing the spec. Command
+keys in `handlers` exist because that work made commands worth answering.
 
 There is no live preview here for that reason: it would demonstrate one thing
 in a current browser and an empty box in an older one, without saying which you

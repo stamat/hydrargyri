@@ -75,8 +75,9 @@ alone reproduces nothing.
   never weaken or delete one to make it pass; if the test itself is wrong, say
   so in the PR and let review decide.
 - **Docs in the same change.** A new option or bind type lands in the docs page
-  that covers it, in the README, and in `docs/_llms/llms-intro.md`, which is
-  hand-written and does not regenerate.
+  that covers it and in `docs/_llms/llms-intro.md`, which is hand-written and
+  does not regenerate. The README carries no reference — it is the pitch, the
+  comparison table and the non-goals, and only changes when one of those does.
 - **Progressive enhancement intact.** Every sample must read sensibly with the
   script blocked.
 - **Run `script/lint`.** eslint is the authority, and CI runs it on Node 22 and

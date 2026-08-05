@@ -38,13 +38,13 @@ are debugging, the other one is writing to it.
 
 ## Late DOM
 
-Binds and handlers are scanned when the element connects. A `bind` node inserted
-afterwards is not seen.
+Binds and handlers are scanned when the element connects, and a node added
+afterwards is not seen — [re-connecting rescans
+everything](bind.html#what-is-scanned-and-when), which is the documented way
+through: move it, replace its children, put it back.
 
-Re-connecting the element rescans everything, which is the documented way
-through: move it, replace its children, put it back. A `MutationObserver` per
-element would make this automatic and would also make every unrelated DOM change
-in the subtree cost a rescan.
+A `MutationObserver` per element would make that automatic, and would also make
+every unrelated DOM change in the subtree cost a rescan.
 
 ## Sanitizing
 
@@ -70,17 +70,9 @@ creates, reorders, or diffs them. If you need a page built out of data, you
 need one of the tools on the [comparison table](../index.html#against-the-alternatives),
 and that is not a defeat.
 
-## What it does do carefully
+## What it does instead of failing
 
-**It waits.** During parse an element defers its scan to `DOMContentLoaded`, so
-it never binds against half its children. Load the script `defer` or as a module
-and this costs nothing.
-
-**It warns instead of throwing.** A bad bind, an unknown handler, a name that
-collides with the platform — each one warns, is skipped, and leaves the rest of
-the element working. A page that half-works is worth more than a page that
-stopped.
-
-**It leaves the markup readable.** The fallback content between the tags is what
-a reader gets before the script arrives, and if it never arrives, they never
-know.
+It warns. A bad bind, an unknown handler, a name that collides with the
+platform — each one warns in the console, is skipped, and leaves the rest of the
+element working. A page that half-works is worth more than a page that stopped,
+and the markup underneath was readable before salis arrived anyway.

@@ -31,7 +31,7 @@ for the person who wrote the code.
   definition — instead of surfacing as a TypeError three calls from the cause.
 - **Components talk the platform way, documented and pinned.** `on` hears bubbling
   custom events from descendants, a parent writes a child's observed attribute — no bus,
-  no store; the README section and two tests hold the guarantee.
+  no store; the composition docs page and two tests hold the guarantee.
 - **`share(values)` — one handshake for a whole tag.** A static on every salis class:
   `Cls.share({ user: model })` hands each value to every instance, present and future,
   called once and never per change — with a `reactive()` model it is a standing broadcast.

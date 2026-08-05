@@ -51,7 +51,8 @@ The API:
   shows). Entries separate with `;`; a path may reach into an object
   (`user.name`).
 - `update(key)` repaints one key, `update()` all of them. It is the escape
-  hatch for mutation inside a plain object, which no setter sees.
+  hatch for mutation inside a plain object, which no setter sees. Reassignment
+  needs no call: `el.user = { ...el.user, name: 'x' }` fires the setter.
 - `reactive(model)` wraps a plain object or array in a deep proxy; assign it
   to any number of elements and mutation through the proxy repaints them all.
   The proxy is the model — the raw original notifies nobody — and non-plain

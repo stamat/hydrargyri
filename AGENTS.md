@@ -62,8 +62,10 @@ Two things on a page are not prose:
 Rules:
 
 - **Document in the same change as the code.** A new option or bind type lands
-  in the docs page that covers it, in `README.md`, and in
-  `docs/_llms/llms-intro.md` — that file is hand-written and does not regenerate.
+  in the docs page that covers it and in `docs/_llms/llms-intro.md` — that file
+  is hand-written and does not regenerate. `README.md` holds no reference: it is
+  the pitch, the comparison table and the non-goals, and it changes only when
+  one of those does.
 - **Edit the page that already covers it.** No new pages, summary files or
   migration notes nobody asked for.
 - **Write for the author using it**: the markup they write, one example that

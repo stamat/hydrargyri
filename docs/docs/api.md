@@ -138,6 +138,12 @@ watches assignment and not mutation. A Proxy that watched everything would fix
 it — [`reactive()`](#reactivemodel) is that proxy, opt-in and by name, for the
 models that earn it.
 
+Or skip the call by not mutating: hand the key a fresh value —
+`el.user = { ...el.user, role: "director of design" }` — and the setter is the
+repaint. One statement, and no copy at all when the value is built new. The
+escape hatch is for the mutation you cannot avoid; reassignment is the
+streamlined path when you can.
+
 ## `reactive(model)`
 
 `update(key)` scales with one element and one mutation site. The moment one
@@ -163,8 +169,7 @@ const user = reactive({ name: "Aja", role: "site design manager" });
 
 salis("demo-crew", {
   // The handshake, tag-wide: { user } declares the key and hands the model
-  // to every crew card, existing and future alike. Per-instance assignment
-  // — el.user = other — still works, and outranks it.
+  // to every crew card, existing and future alike.
   properties: { user },
   handlers: {
     promote() {
@@ -175,10 +180,10 @@ salis("demo-crew", {
 ```
 
 The model must still meet its elements once — a mutation names no tags, so
-nothing can wire itself. The object form of `properties` is that handshake
-for a whole class, and [`share()`](#sharevalues) below is the same handshake
-at runtime; assignment per instance (`el.user = user`) is the form for the
-other case, where the app decides which element holds which model.
+nothing can wire itself. The object form of `properties` is that handshake at
+define time, [`share()`](#sharevalues) is the same at runtime, and per-instance
+assignment (`el.user = user`) is for the other case, where the app decides which
+element holds which model.
 
 `share` composes with data that is not there yet. A reactive model separates
 two events a promise usually glues together — *shared* and *filled*: create
@@ -258,7 +263,7 @@ element references at the mutation site and no re-`share` ever.
 
 The object form of `properties` is this same call at define time —
 `properties: { user: model }` declares the key and shares the value in one
-place, no class variable, no second line. `share()` remains the runtime half:
+place, no class variable, no second line. `share()` is the runtime half:
 swapping a model later, releasing one — and a runtime call overrides the
 declared default from then on.
 

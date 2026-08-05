@@ -62,8 +62,9 @@ twice: `data-tone="warn"` appears and then goes, because `null` removes an
 what makes an `attr` bind usable as a CSS hook.
 
 Typing in the field writes state through `relabel`, and the `value` bind writes
-it back into the field. That is not two-way binding — it is one direction twice,
-and the handler in the middle is the part you can put a breakpoint in.
+it back into the field. That is not [two-way
+binding](limits.html#two-way-binding) — it is one direction twice, and the
+handler in the middle is the part you can put a breakpoint in.
 
 ## Conditions
 

@@ -48,8 +48,9 @@ The API:
   (`.value`), `attr#name` (`setAttribute`), `if` / `if#condition` (toggles
   `hidden` — bare follows truthiness, `#name` runs the named predicate from
   `conditions`, called as `(value, element)` on every paint of the key, truthy
-  shows). Entries separate with `;`; a path may reach into an object
-  (`user.name`).
+  shows), `unless` / `unless#condition` (the same toggle inverted — `if` and
+  `unless` on sibling nodes are a full if/else with no JS). Entries separate
+  with `;`; a path may reach into an object (`user.name`).
 - `update(key)` repaints one key, `update()` all of them. It is the escape
   hatch for mutation inside a plain object, which no setter sees. Reassignment
   needs no call: `el.user = { ...el.user, name: 'x' }` fires the setter.

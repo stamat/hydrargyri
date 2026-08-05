@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: bind
-description: Where state lands — text, html, value and attr#name binds, paths into objects, and what a typo does.
+description: Where state lands — text, html, value, attr#name, if and unless binds, paths into objects, and what a typo does.
 order: 2
 ---
 
@@ -28,6 +28,7 @@ nothing to sanitize and nothing for a Content Security Policy to object to.
 | `value`          | `.value`, for form fields              | empty string                                                  |
 | `attr#name`      | the named attribute via `setAttribute` | attribute removed; `false` removes too, `true` sets valueless |
 | `if` / `if#condition` | toggles `hidden` — see [Conditions](#conditions) | `null` is falsy: hidden, unless the condition says otherwise |
+| `unless` / `unless#condition` | the else leg — `if` inverted, same toggle | `null` is falsy: shown |
 
 `undefined` is not a value and paints nothing — it is what a path into an object
 that has not arrived yet returns, and leaving the node alone is the only right
@@ -70,14 +71,16 @@ handler in the middle is the part you can put a breakpoint in.
 
 An `if` bind toggles the platform's `hidden` attribute instead of writing a
 value. Bare, it follows truthiness — the node shows while the key holds
-something:
+something — and `unless` is the same toggle inverted, which makes a full
+if/else out of two sibling nodes with no JavaScript at all:
 
 ```html
 <p bind="items:if">…</p>
+<p bind="items:unless">Nothing here.</p>
 ```
 
-With a name after `#` it asks a predicate from `conditions` — defined like a
-handler, named from the markup, never evaluated:
+With a name after `#` either type asks a predicate from `conditions` instead —
+defined like a handler, named from the markup, never evaluated:
 
 <!-- demo -->
 
@@ -85,7 +88,8 @@ handler, named from the markup, never evaluated:
 <demo-stock items="3">
   <label>Items <input type="number" min="0" on="input:restock" bind="items:value"></label>
   <p bind="items:if">In stock: <span bind="items"></span></p>
-  <p bind="items:if#isOut">Sold out.</p>
+  <p bind="items:if#isLow">Running low.</p>
+  <p bind="items:unless">Sold out.</p>
 </demo-stock>
 ```
 
@@ -96,21 +100,27 @@ salis("demo-stock", {
     restock(e, el) { el.items = e.target.value || 0 }
   },
   conditions: {
-    isOut: (n) => !n
+    isLow: (n) => n > 0 && n < 3
   }
 });
 ```
 
-Type the stock down to zero: the count line hides on its own truthiness, and
-`isOut` shows the other. The condition is called as `(value, element)` on
-every paint of its key — the initial paint included, where an unassigned
-property is `null`, so a condition owns every value the key can hold.
+Type the stock down to two and **Running low.** joins the count; at zero both
+truthy lines hide and `unless` shows the last. The bare types carry the
+if/else; `isLow` is the part truthiness cannot say, which is what the registry
+is for. A condition is called as `(value, element)` on every paint of its key
+— the initial paint included, where an unassigned property is `null`, so a
+condition owns every value the key can hold.
 
 The dependency is named in the bind itself. That is why salis needs no
 dependency tracking to know when to re-run a condition: repaint `items` and
-`isOut` runs, and nothing else does. It is also the whole difference from an
+`isLow` runs, and nothing else does. It is also the whole difference from an
 evaluated `x-show` — the logic sits in a JS file where it can be tested, and
 the markup carries only its name.
+
+`unless#condition` inverts the predicate too. It parses for free and it is
+yours to use, but `unless#isLow` is a double negation the next reader unpicks
+at their own expense — naming the positive (`if#inStock`) reads better.
 
 ## Paths
 

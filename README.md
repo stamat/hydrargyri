@@ -100,7 +100,7 @@ the site is the manual.
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | [Getting started](https://stamat.github.io/salis/docs/)     | the three parts of a salis element, in one screen                                                  |
 | [API](https://stamat.github.io/salis/docs/api.html)         | `salis()`, `SalisElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
-| [bind](https://stamat.github.io/salis/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `if`, and paths into objects              |
+| [bind](https://stamat.github.io/salis/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects   |
 | [on](https://stamat.github.io/salis/docs/on.html)           | what fires: event names, handler resolution, the `(event, element)` signature                      |
 | [Composition](https://stamat.github.io/salis/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                        |
 | [Limits](https://stamat.github.io/salis/docs/limits.html)   | what salis will not do, and the threat model for `:html`                                           |

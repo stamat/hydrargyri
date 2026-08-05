@@ -502,6 +502,34 @@ test('an unknown condition warns and leaves the node as authored', () => {
   expect(root.querySelector('p').hasAttribute('hidden')).toBe(false)
 })
 
+test('if and unless on one key are a full else in markup, no predicate needed', () => {
+  const name = tag()
+  salis(name, ['count'])
+  const root = mount(
+    `<${name} count="0"><p bind="count:if">some</p><p bind="count:unless">none</p></${name}>`
+  )
+  const el = root.firstElementChild
+  const [some, none] = el.querySelectorAll('p')
+  expect(some.hasAttribute('hidden')).toBe(true)
+  expect(none.hasAttribute('hidden')).toBe(false)
+  el.count = 5
+  expect(some.hasAttribute('hidden')).toBe(false)
+  expect(none.hasAttribute('hidden')).toBe(true)
+})
+
+test('an unless bind inverts its named condition', () => {
+  const name = tag()
+  salis(name, {
+    attributes: ['count'],
+    conditions: { isLow: (n) => n < 3 }
+  })
+  const root = mount(`<${name} count="1"><p bind="count:unless#isLow">plenty</p></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('p').hasAttribute('hidden')).toBe(true)
+  el.count = 5
+  expect(el.querySelector('p').hasAttribute('hidden')).toBe(false)
+})
+
 test('a condition assigned at runtime answers on the next repaint', () => {
   const name = tag()
   salis(name, ['count'])

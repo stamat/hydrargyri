@@ -67,6 +67,9 @@ The API:
   the handler stays the element's, and disconnect unhooks it with the rest.
 - `data-bind` and `data-on` are accepted where a validator objects to the bare
   names.
+- `parseBinds(raw)` parses a `bind` attribute into `{ path, type, attr }`
+  entries — exported for ecosystem packages painting with the same grammar
+  (salis-each); an element on salis alone never needs it.
 - The element wears a `salis` attribute once initialized, so
   `x-el:not([salis])` can style the not-yet-upgraded state.
 
@@ -78,7 +81,10 @@ are scanned on connect; reconnecting rescans), sanitizing (`:html` is
 `innerHTML` verbatim — bind your own state to it, never user input), templating
 (salis never stamps a `<template>` itself — but markup your code clones into an
 element before `customElements.define` binds like authored markup, since the
-scan happens at connect), virtual DOM, routing and stores.
+scan happens at connect; list rendering lives in the separate
+[salis-each](https://github.com/stamat/salis-each) package, whose `<x-each>`
+clones an author-written `<template>` per item with the same bind grammar),
+virtual DOM, routing and stores.
 
 Elements compose through the platform: bubbling custom events upward, writing a
 child's observed attribute downward, and `commandfor`/`command` where there is

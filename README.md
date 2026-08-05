@@ -131,7 +131,10 @@ for each.
 - **Templating, a virtual DOM, a router, a store.** Salis writes values into
   nodes that already exist; it never creates, reorders or diffs them. A page
   built out of data wants one of the tools in the table above, and that is not
-  a defeat.
+  a defeat. The one exception lives outside the house:
+  [salis-each](https://github.com/stamat/salis-each) renders lists from an
+  author-written `<template>`, same grammar, its own package — so this refusal
+  stands.
 
 ## Development
 

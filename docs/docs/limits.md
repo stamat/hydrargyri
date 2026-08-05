@@ -78,6 +78,12 @@ page](examples.html#stamp-an-html-template-into-a-custom-element) shows the
 pattern with a reactive model bound through it. What stays refused is salis
 doing the stamping.
 
+The one door lives outside the house:
+[salis-each](https://github.com/stamat/salis-each) is a separate package whose
+`<x-each>` clones an author-written `<template>` once per item of an array —
+the same bind grammar, names never code, and this refusal here stands
+unamended.
+
 ## What it does instead of failing
 
 It warns. A bad bind, an unknown handler, a name that collides with the

@@ -80,6 +80,10 @@ for the person who wrote the code.
   stored anywhere. Issue forms, a pull request template, a code of conduct, Dependabot,
   `.editorconfig`, and `AGENTS.md` — symlinked as `CLAUDE.md` and
   `.github/copilot-instructions.md`, so one file serves every tool.
+- **`parseBinds(raw)` exported** — the `bind` grammar's parser, for ecosystem
+  packages that paint with the same grammar
+  ([salis-each](https://github.com/stamat/salis-each)). The parser lives in
+  salis so the grammar cannot fork; an element on salis alone never needs it.
 
 ### Changed
 

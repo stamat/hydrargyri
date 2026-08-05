@@ -310,6 +310,22 @@ Override `connected`, `disconnected` and `attributeChanged` — not the
 `*Callback` methods, which run the binding machinery. A method outranks a
 `handlers` entry of the same name, and only one of the two runs.
 
+## `parseBinds(raw)`
+
+The parser behind the `bind` attribute, exported for ecosystem packages that
+paint with the same grammar — [salis-each](https://github.com/stamat/salis-each)
+is the consumer. It lives here so the grammar cannot fork.
+
+```js
+parseBinds("user.name; count:attr#value");
+// [{ path: ['user', 'name'], type: 'text', attr: null },
+//  { path: ['count'], type: 'attr', attr: 'value' }]
+```
+
+A malformed entry warns and is skipped, the rest of the attribute parses — the
+same forgiveness the scanner shows. Writing an element on salis alone never
+needs it.
+
 ## Names that collide
 
 An attribute or property whose camelCase name already answers on the element is

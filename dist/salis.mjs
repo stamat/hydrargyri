@@ -450,6 +450,7 @@ function salis(name, options = {}) {
 export {
   SalisElement,
   salis as default,
+  parseBinds,
   reactive
 };
 //# sourceMappingURL=salis.mjs.map

@@ -6,7 +6,7 @@
 // inserted bind/on nodes — binds are scanned at connect, and picking up later
 // DOM is a documented non-goal for v1 (reconnecting the element rescans).
 import { jest } from '@jest/globals'
-import salis, { SalisElement, reactive } from './salis.js'
+import salis, { SalisElement, reactive, parseBinds } from './salis.js'
 
 let n = 0
 const tag = () => `x-t${++n}`
@@ -793,4 +793,14 @@ test('reactive is idempotent, and a non-plain value warns and comes back as give
   expect(reactive(5)).toBe(5)
   expect(reactive(null)).toBe(null)
   expect(warn).toHaveBeenCalledTimes(3)
+})
+
+test('parseBinds is exported and parses the grammar an ecosystem package paints with', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  expect(parseBinds('user.name; count:attr#value')).toEqual([
+    { path: ['user', 'name'], type: 'text', attr: null },
+    { path: ['count'], type: 'attr', attr: 'value' }
+  ])
+  expect(parseBinds('x:nope; y:html')).toEqual([{ path: ['y'], type: 'html', attr: null }])
+  expect(warn).toHaveBeenCalledTimes(1)
 })

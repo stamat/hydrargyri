@@ -47,9 +47,23 @@ function parseAttributeValue(raw) {
   return stringToPrimitive(raw)
 }
 
-// bind="path[:type[#attr]][;more]" — type defaults to text. A malformed entry
-// warns and is skipped, so one typo does not kill the element's other binds.
-function parseBinds(raw) {
+/**
+ * Parse a `bind` attribute — `path[:type[#attr]][;more]`, type defaulting to
+ * text. A malformed entry warns and is skipped, so one typo does not kill the
+ * element's other binds.
+ *
+ * Exported for ecosystem packages that paint with the same grammar — the
+ * parser lives here so the grammar cannot fork.
+ *
+ * @param {String} raw The attribute value
+ * @returns {Array} Entries of `{ path, type, attr }` — path split on `.`
+ *
+ * @example
+ * parseBinds('user.name; count:attr#value')
+ * // [{ path: ['user', 'name'], type: 'text', attr: null },
+ * //  { path: ['count'], type: 'attr', attr: 'value' }]
+ */
+export function parseBinds(raw) {
   const entries = []
   for (const part of raw.split(';')) {
     const trimmed = part.trim()

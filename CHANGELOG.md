@@ -24,6 +24,12 @@ for the person who wrote the code.
   the raw value; `if` and `unless` keep taking conditions. `parseBinds` entries
   grow a `format` field, `null` when there is no formatter.
 
+- **What `attr#class` does, said out loud.** An `attr` bind is a `setAttribute`, so
+  binding `class` replaces the author's class list instead of adding to it — silently,
+  from the first paint, and unlike Alpine's `:class`, which merges. The _bind_ page now
+  says so where the CSS-hook paragraph sits, and points at the shape that works: toggle
+  a `data-` attribute of your own and style that.
+
 - **An `hg-each` docs page.** List rendering had one sentence in _Limits_ and a link to
   another repository; the page now carries the shape, the `items` contract, how binds
   resolve into an item, and the handler and condition fall-through to the closest hydrargyri

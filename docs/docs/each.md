@@ -66,15 +66,21 @@ elements.
 `items` is an ordinary hydrargyri property, so it is assigned in JavaScript and
 never through an attribute.
 
-| `items`                             | What paints                                          |
-| ----------------------------------- | ---------------------------------------------------- |
-| `null`, never assigned              | nothing — the fallback rows stand                    |
-| an array                            | one clone per item, replacing whatever is there      |
-| `null` or `[]`, after an assignment | no rows — the fallback is gone for good              |
-| anything else                       | a warning, and the rows already standing are left    |
+| `items`                                    | What paints                                       |
+| ------------------------------------------ | ------------------------------------------------- |
+| `null`, never assigned                     | nothing — the fallback rows stand                 |
+| an array                                   | one clone per item, replacing whatever is there   |
+| a plain object                             | one clone per entry, the value as the item        |
+| `null`, `[]` or `{}`, after an assignment  | no rows — the fallback is gone for good           |
+| anything else                              | a warning, and the rows already standing are left |
 
-Assign a [`reactive()`](api.html#reactivemodel) array and mutation repaints:
-`items.push(…)` grows a row with no second call. A plain array needs
+An object paints in `Object.entries` order, with its key reachable in the row as
+`$key`. A `Map`, a `Set` or a class instance is the "anything else" that warns:
+what an entry means there is that type's own question, and guessing is how a
+list quietly paints the wrong thing.
+
+Assign a [`reactive()`](api.html#reactivemodel) array or object and mutation
+repaints: `items.push(…)` grows a row with no second call. A plain one needs
 [`update("items")`](api.html#updatekey-update), exactly as anywhere else.
 
 ## The rows region
@@ -109,6 +115,28 @@ authored, the same [warn and keep
 working](limits.html#what-it-does-instead-of-failing) the core does. A broken
 list degrades to the server-rendered one, never to an empty container.
 
+## A template from elsewhere
+
+`template="id"` names a template anywhere on the page, for row markup two lists
+share. The id is bare, as in `list=` and `for=` — a name, not a selector — and
+it is looked up at the first paint rather than at upgrade, so the template may
+be authored after the element that uses it.
+
+```html
+<template id="card"><article><h3 bind="title"></h3></article></template>
+
+<hg-each template="card">
+  <article><h3>Server-rendered fallback</h3></article>
+</hg-each>
+```
+
+The trade is the region. With no template inside to divide it, the whole of
+`<hg-each>` is the rows region — its own binds and an empty-state node
+included, so those go outside it, and an inline `<template>` beside the
+attribute warns, because the first paint would clear it away. An id naming
+nothing, or naming something that is not a `<template>`, warns once and leaves
+the markup as authored.
+
 ## Binds resolve into the item
 
 The whole [bind grammar](bind.html) works inside a row — `text`, `html`,
@@ -118,10 +146,17 @@ walked from the item rather than from the element: `bind="user.name"` reads
 path that hits nothing leaves the node as authored, [as
 everywhere](bind.html#when-it-goes-wrong).
 
-There is no index bind and no scope chain: a row sees its own item and nothing
-above it, and numbering wants a CSS counter. What a row does get is its
-coordinates on the root element — `hg-row="0"`, the index, also a styling hook —
-and the item itself as an `hgItem` property:
+A row's own coordinates live in a `$` namespace beside the item's fields:
+`bind="$index"` is its position and `bind="$key"` its object key, nothing over
+an array. A plain name always means a field of the item, so an item carrying its
+own `$index` never shadows the coordinate.
+
+There is still no scope chain: a row sees its item and those two names and
+nothing above it, an inner hg-each's rows never see the outer item, and any
+other `$` name warns rather than resolving to nothing. The same coordinates
+reach the DOM on the root element — `hg-row="0"`, the position, also a styling
+hook, and the position even over an object, where the key stays in `$key` — with
+the item itself as an `hgItem` property:
 
 ```js
 handlers: {
@@ -131,6 +166,29 @@ handlers: {
   }
 }
 ```
+
+## `key`, and rows that keep their nodes
+
+Without `key` every repaint clones from scratch, which is fine for a list nobody
+is touching and wrong for one holding focus, a half-typed input or a playing
+video. `key` names what makes a row itself, and then a row whose key comes back
+keeps the nodes it already had: they are moved into the new order and repainted
+in place, new keys arrive as clones, and vanished keys take their rows with
+them.
+
+```html
+<hg-each key="id">          <!-- a path into the item -->
+<hg-each key="$key">        <!-- the object's own keys -->
+<hg-each key=".">           <!-- the item itself, for arrays of primitives -->
+```
+
+The path is the [bind grammar](bind.html) again, resolved against the item, so
+`key="user.id"` walks. Nothing keeps a shadow copy of the DOM to compare
+against — the nodes that move are the real ones. Two rows claiming one key warns
+and clones the later one, a path resolving to nothing warns and falls back to
+re-cloning, and both warn once per element rather than once per repaint.
+`hg-row` keeps following the position, so a handler reading it after a reorder
+reads where the row is now.
 
 ## Handlers and conditions fall through
 
@@ -144,13 +202,13 @@ as it does [on any element](on.html#how-a-name-resolves).
 
 ## What it does not do
 
-- **Keyed diffing, yet.** Every repaint clears the rows and clones again, which
-  discards row DOM state: focus, a half-typed input, a playing video. A `key`
-  attribute is reserved for the keyed version and does nothing today, so a list
-  the user types into while it repaints wants Alpine or Lit instead. The
-  package's README puts it [against those
+- **Diffing.** [`key`](#key-and-rows-that-keep-their-nodes) moves and repaints
+  the real nodes it already has; nothing keeps a shadow copy of the DOM to
+  compare against. Without `key` a repaint clears the rows and clones again,
+  which discards row DOM state: focus, a half-typed input, a playing video. The
+  package's README puts hg-each [against the
   alternatives](https://github.com/stamat/hydrargyri-each#against-the-alternatives)
-  row by row, losing row included.
+  row by row.
 - **Sorting, filtering, pagination.** The array is yours: transform it in
   JavaScript and assign the result. The alternative is a query language growing
   inside an attribute.

@@ -63,6 +63,24 @@ twice: `data-tone="warn"` appears and then goes, because `null` removes an
 `attr` bind's attribute rather than setting it to the string `"null"`. That is
 what makes an `attr` bind usable as a CSS hook.
 
+`attr#class` is the one to write carefully. It goes through `setAttribute` like
+every other `attr` bind, so it **replaces** the class list rather than adding to
+it — the classes the author wrote are gone from the first paint, silently, and
+no warning marks the spot. Alpine's `:class` merges; this does not, and hydrargyri
+will not grow a merging type when the hook above already does the job. Toggle an
+attribute of your own and style that:
+
+```html
+<span bind="active:attr#data-active" class="switch"></span>
+```
+
+```css
+.switch[data-active] { background: var(--accent); }
+```
+
+The class attribute stays the author's, which is the rule the rest of the
+library keeps too.
+
 Typing in the field writes state through `relabel`, and the `value` bind writes
 it back into the field. That is not [two-way
 binding](limits.html#two-way-binding) — it is one direction twice, and the

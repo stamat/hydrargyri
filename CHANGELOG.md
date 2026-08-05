@@ -38,7 +38,9 @@ for the person who wrote the code.
   An instance assignment outranks share on that instance, forever, reconnects included.
   Property keys only: an attribute-backed key warns and is refused, because the attribute
   is the markup's per-instance state; an undeclared key warns and is skipped. No registry —
-  the class reference is the capability.
+  the class reference is the capability. The object form of `properties` is the same
+  handshake at define time — `properties: { user: model, draft: null }` declares the keys
+  and shares the values in one place, and a runtime `share()` overrides it.
 - **`on="event@window:name"` and `@document` — global events, element-owned.** `resize`,
   Escape, click-outside: the listener registers on the global the event actually fires on,
   the handler stays the element's, and disconnect unhooks it with every other listener

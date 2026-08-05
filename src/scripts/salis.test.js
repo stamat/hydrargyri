@@ -621,6 +621,46 @@ test('sharing null releases the model everywhere share put it, and spares direct
   expect(late.user).toBe(null)
 })
 
+test('properties as an object declares the keys and shares the values class-wide', () => {
+  const name = tag()
+  const user = reactive({ name: 'ada' })
+  salis(name, { properties: { user, draft: null } })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  expect(root.querySelector('span').textContent).toBe('ada')
+  user.name = 'grace'
+  expect(root.querySelector('span').textContent).toBe('grace')
+  const late = document.createElement(name)
+  late.innerHTML = '<b bind="user.name"></b>'
+  document.body.appendChild(late)
+  expect(late.querySelector('b').textContent).toBe('grace')
+  late.draft = 'mine'
+  expect(late.draft).toBe('mine')
+  expect(root.firstElementChild.draft).toBe(null)
+})
+
+test('a runtime share overrides a declared default, for instances present and future', () => {
+  const name = tag()
+  const first = reactive({ name: 'first' })
+  const second = reactive({ name: 'second' })
+  const Cls = salis(name, { properties: { user: first } })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  expect(root.querySelector('span').textContent).toBe('first')
+  Cls.share({ user: second })
+  expect(root.querySelector('span').textContent).toBe('second')
+  const late = document.createElement(name)
+  late.innerHTML = '<b bind="user.name"></b>'
+  document.body.appendChild(late)
+  expect(late.querySelector('b').textContent).toBe('second')
+})
+
+test('a dashed property name shares under its camelCase self, from either form', () => {
+  const name = tag()
+  const Cls = salis(name, { properties: ['user-data'] })
+  const root = mount(`<${name}><span bind="userData.name"></span></${name}>`)
+  Cls.share({ 'user-data': { name: 'ada' } })
+  expect(root.querySelector('span').textContent).toBe('ada')
+})
+
 test('share refuses an attribute-backed or undeclared key with a warning, and the rest still lands', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()

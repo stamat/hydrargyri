@@ -106,7 +106,7 @@ shorthand for `{ attributes: [...] }`.
 | Option             | Type       | What it does                                                                                                                                                                                                          |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                                  |
-| `properties`       | `Array`    | Reactive properties that live only in JS, never written to an attribute.                                                                                                                                              |
+| `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time `share()`: `properties: { user: model, draft: null }`.              |
 | `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)`.                                                                                                                                       |
 | `actions`          | `Object`   | Invoker Command responses, keyed by the exact `command` string (`'--add-item'`), called as `(event, element)`. Unknown commands warn only when actions are declared. Assignable at runtime: `el.actions['--x'] = fn`. |
 | `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                               |
@@ -196,8 +196,7 @@ import salis, { reactive } from "salis";
 
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-const Card = salis("user-card", { properties: ["user"] });
-Card.share({ user });
+salis("user-card", { properties: { user } });
 
 user.role = "director of design"; // every card repaints — current and future alike
 ```
@@ -213,8 +212,12 @@ unsubscribes it, reconnecting catches it up.
 A static on every salis class — the tag-wide form of `el.user = user`, called
 once, never per change. Present instances get each value on the spot, future
 ones as they connect; shared with a `reactive()` model it is a standing
-broadcast. An instance assignment outranks `share` on that instance, forever
-— reconnects included — so `share` fills elements the app said nothing about
+broadcast. The object form of `properties` is the same call at define time —
+`properties: { user: model }` declares and shares in one place — with a
+runtime `share()` overriding the declared default from then on.
+
+An instance assignment outranks `share` on that instance, forever —
+reconnects included — so `share` fills elements the app said nothing about
 and never overwrites one it did. Property keys only: an attribute-backed key
 warns and is refused, since the attribute is the markup's per-instance state.
 No registry behind it — the class reference is the capability, and

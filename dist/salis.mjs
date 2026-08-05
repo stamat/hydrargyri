@@ -36,6 +36,14 @@ var salisTags = /* @__PURE__ */ new Set();
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr"]);
 var RESERVED = /* @__PURE__ */ new Set(["handlers", "actions", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
+function propertyNames(properties) {
+  return isArray(properties) ? properties : Object.keys(properties);
+}
+function camelKeys(obj) {
+  const out = {};
+  for (const key in obj) out[transformDashToCamelCase(key)] = obj[key];
+  return out;
+}
 function isPlainValue(value) {
   if (value === null || typeof value !== "object") return false;
   if (isArray(value)) return true;
@@ -128,10 +136,11 @@ var SalisElement = class extends HTMLElement {
    * Crew.share({ user: reactive({ name: 'Ada' }) })
    */
   static share(values) {
-    const owned = new Set(this.properties.map(transformDashToCamelCase));
+    const owned = new Set(propertyNames(this.properties).map(transformDashToCamelCase));
     const accepted = {};
     for (const key in values) {
-      if (owned.has(key)) accepted[key] = values[key];
+      const name = transformDashToCamelCase(key);
+      if (owned.has(name)) accepted[name] = values[key];
       else console.warn(`salis: share() takes declared properties \u2014 "${key}" ignored`);
     }
     this._shared = Object.assign({}, this._shared, accepted);
@@ -139,6 +148,13 @@ var SalisElement = class extends HTMLElement {
     document.querySelectorAll(this._tag).forEach((el) => {
       if (typeof el._applyShared === "function") el._applyShared(accepted);
     });
+  }
+  // Everything shared with this class: object-form property defaults under a
+  // later share() of the same key — a runtime call overrides the declaration.
+  static _sharedAll() {
+    const declared = isArray(this.properties) ? null : camelKeys(this.properties);
+    if (!declared && !this._shared) return null;
+    return Object.assign({}, declared, this._shared);
   }
   constructor() {
     super();
@@ -155,7 +171,7 @@ var SalisElement = class extends HTMLElement {
     this.handlers = Object.assign({}, this.constructor.handlers);
     this.actions = Object.assign({}, this.constructor.actions);
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr);
-    for (const prop of this.constructor.properties) this._defineAccessor(prop, null);
+    for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null);
   }
   connectedCallback() {
     if (this._initialized) return;
@@ -246,7 +262,8 @@ var SalisElement = class extends HTMLElement {
   }
   _init() {
     this._deferredInit = null;
-    if (this.constructor._shared) this._applyShared(this.constructor._shared);
+    const shared = this.constructor._sharedAll();
+    if (shared) this._applyShared(shared);
     this._initialized = true;
     this.setAttribute("salis", "");
     for (const key in this._state) this._subscribe(key, this._state[key]);
@@ -393,7 +410,7 @@ var SalisElement = class extends HTMLElement {
 };
 /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
 __publicField(SalisElement, "attributes", []);
-/** Reactive properties that live only in JS, never written to an attribute. */
+/** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
 __publicField(SalisElement, "properties", []);
 /** Named event handlers reachable from `on="event:name"`, shared by all instances. */
 __publicField(SalisElement, "handlers", {});

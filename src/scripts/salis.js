@@ -15,6 +15,20 @@ const RESERVED = new Set(['handlers', 'actions', '_state', '_binds', '_listeners
 // which is also how the property setter tells a reactive model from a plain one.
 const reactiveSubs = new WeakMap()
 
+// `properties` comes as an array of names, or an object of name → class-wide
+// default — the define-time form of share().
+function propertyNames(properties) {
+  return isArray(properties) ? properties : Object.keys(properties)
+}
+
+// Keys normalize to camelCase once, at the share/declaration boundary —
+// everything downstream trusts _state's own spelling.
+function camelKeys(obj) {
+  const out = {}
+  for (const key in obj) out[transformDashToCamelCase(key)] = obj[key]
+  return out
+}
+
 // Only plain objects and arrays wrap: class instances (Date, Map, elements)
 // break under a proxy because their methods reach for internal slots the
 // proxy does not have.
@@ -130,7 +144,7 @@ export function reactive(obj) {
 export class SalisElement extends HTMLElement {
   /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
   static attributes = []
-  /** Reactive properties that live only in JS, never written to an attribute. */
+  /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
   static properties = []
   /** Named event handlers reachable from `on="event:name"`, shared by all instances. */
   static handlers = {}
@@ -157,10 +171,11 @@ export class SalisElement extends HTMLElement {
    * Crew.share({ user: reactive({ name: 'Ada' }) })
    */
   static share(values) {
-    const owned = new Set(this.properties.map(transformDashToCamelCase))
+    const owned = new Set(propertyNames(this.properties).map(transformDashToCamelCase))
     const accepted = {}
     for (const key in values) {
-      if (owned.has(key)) accepted[key] = values[key]
+      const name = transformDashToCamelCase(key)
+      if (owned.has(name)) accepted[name] = values[key]
       else console.warn(`salis: share() takes declared properties — "${key}" ignored`)
     }
     this._shared = Object.assign({}, this._shared, accepted)
@@ -168,6 +183,14 @@ export class SalisElement extends HTMLElement {
     document.querySelectorAll(this._tag).forEach((el) => {
       if (typeof el._applyShared === 'function') el._applyShared(accepted)
     })
+  }
+
+  // Everything shared with this class: object-form property defaults under a
+  // later share() of the same key — a runtime call overrides the declaration.
+  static _sharedAll() {
+    const declared = isArray(this.properties) ? null : camelKeys(this.properties)
+    if (!declared && !this._shared) return null
+    return Object.assign({}, declared, this._shared)
   }
 
   constructor() {
@@ -190,7 +213,7 @@ export class SalisElement extends HTMLElement {
     this.actions = Object.assign({}, this.constructor.actions)
 
     for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr)
-    for (const prop of this.constructor.properties) this._defineAccessor(prop, null)
+    for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null)
   }
 
   connectedCallback() {
@@ -317,7 +340,8 @@ export class SalisElement extends HTMLElement {
     this._deferredInit = null
     // Before _initialized: the setters store without subscribing, and the
     // subscribe scan below picks the models up exactly once.
-    if (this.constructor._shared) this._applyShared(this.constructor._shared)
+    const shared = this.constructor._sharedAll()
+    if (shared) this._applyShared(shared)
     this._initialized = true
     // Styling hook for the upgraded state: x-el:not([salis]) hides unbound markup.
     this.setAttribute('salis', '')
@@ -493,7 +517,7 @@ export class SalisElement extends HTMLElement {
  * @param {Object|Array} options Attributes, properties, handlers and lifecycle
  *   hooks — or just an array of attribute names.
  * @param {Array} [options.attributes] Observed attributes, reflected reactive properties
- * @param {Array} [options.properties] Reactive properties without an attribute
+ * @param {Array|Object} [options.properties] Reactive properties without an attribute — an array of names, or an object of name → class-wide default (define-time share)
  * @param {Object} [options.handlers] Named handlers for `on="event:name"`, called as (event, element)
  * @param {Object} [options.actions] Invoker Command responses keyed by the exact command string (`'--add-item'`), called as (event, element)
  * @param {Function} [options.connected] Runs once the element is upgraded, scanned and painted

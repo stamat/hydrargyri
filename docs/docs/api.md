@@ -18,7 +18,7 @@ shorthand for `{ attributes: [...] }`, which is the shape most elements need.
 | Option             | Type       | What it does                                                                                                                                                                                                    |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                            |
-| `properties`       | `Array`    | Reactive properties that live only in JS, never written to an attribute.                                                                                                                                        |
+| `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time [`share()`](#sharevalues): `properties: { user: model, draft: null }`. |
 | `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)` — `event@window` / `event@document` for [global events](on.html#window-and-document).                                             |
 | `actions`          | `Object`   | [Invoker Command](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) responses, keyed by the exact `command` string (`'--add-item'`), called as `(event, element)`. An unknown command warns only when actions are declared — an empty registry stays silent, since `on="command:name"` may be handling commands instead. Assignable at runtime: `el.actions['--x'] = fn`. |
 | `connected`        | `Function` | Runs once the element is upgraded, scanned and painted, as `(element)`.                                                                                                                                         |
@@ -161,24 +161,23 @@ through the proxy repaints every element holding it.
 ```js demo
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-const Crew = salis("demo-crew", {
-  properties: ["user"],
+salis("demo-crew", {
+  // The handshake, tag-wide: { user } declares the key and hands the model
+  // to every crew card, existing and future alike. Per-instance assignment
+  // — el.user = other — still works, and outranks it.
+  properties: { user },
   handlers: {
     promote() {
       user.role = "director of design"; // no update(), no element in sight — both cards repaint
     }
   }
 });
-
-// The handshake, tag-wide: every crew card gets the model, existing and
-// future alike. Per-instance assignment — el.user = other — still works,
-// and outranks this wherever both happened.
-Crew.share({ user });
 ```
 
 The model must still meet its elements once — a mutation names no tags, so
-nothing can wire itself. [`share()`](#sharevalues) below is that handshake for
-a whole class; assignment per instance (`el.user = user`) is the form for the
+nothing can wire itself. The object form of `properties` is that handshake
+for a whole class, and [`share()`](#sharevalues) below is the same handshake
+at runtime; assignment per instance (`el.user = user`) is the form for the
 other case, where the app decides which element holds which model.
 
 `share` composes with data that is not there yet. A reactive model separates
@@ -211,16 +210,14 @@ const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
 const user = reactive({});                              // identity exists now
 fetchUser().then((data) => Object.assign(user, data));  // one fetch, module scope
 
-const Lazy = salis("demo-lazy", {
-  properties: ["user"],
+salis("demo-lazy", {
+  properties: { user },
   handlers: {
     async reload() {
       Object.assign(user, await fetchUser()); // no element references — the model is the hub
     }
   }
 });
-
-Lazy.share({ user });
 ```
 
 Nothing here awaits anywhere near an element, and no spinner machinery
@@ -258,6 +255,12 @@ called once, never per change. Present instances get it on the spot; future
 ones pick it up as they connect. Share a `reactive()` model and the pair is a
 standing broadcast: mutate the model anywhere, every instance repaints, no
 element references at the mutation site and no re-`share` ever.
+
+The object form of `properties` is this same call at define time —
+`properties: { user: model }` declares the key and shares the value in one
+place, no class variable, no second line. `share()` remains the runtime half:
+swapping a model later, releasing one — and a runtime call overrides the
+declared default from then on.
 
 The precedence rule keeps it safe to mix with assignment: **an instance
 assignment outranks share on that instance, forever** — including across

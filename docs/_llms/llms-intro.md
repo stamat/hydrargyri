@@ -42,7 +42,8 @@ The API:
   as `null`. Assigning `null` or `false` removes the attribute. The attribute is
   the only copy of the state.
 - `properties` are reactive but never written to an attribute — objects,
-  arrays, timer handles.
+  arrays, timer handles. As an object, `properties: { user: model }` maps
+  name → class-wide default: the define-time form of `share()`.
 - `bind` types: `text` (default, `textContent`), `html` (`innerHTML`), `value`
   (`.value`), `attr#name` (`setAttribute`). Entries separate with `;`; a path
   may reach into an object (`user.name`).

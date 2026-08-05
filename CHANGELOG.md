@@ -11,6 +11,15 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Added
+
+- **A todo list on the _Examples_ page.** The reference had `<hg-each>` painting an
+  array somebody else assigned; this is the loop closed — an ordinary `<form>` adds
+  a row, a checkbox writes through the row's `hgItem`, a button splices by `hg-row`,
+  and a counter outside the list binds the same `reactive()` array. It names both
+  trades it makes: no `key`, so rows are re-cloned rather than kept, and no
+  persistence, so a reload is the markup's own row again.
+
 ## [1.1.0] - 2026-08-05
 
 ### Added

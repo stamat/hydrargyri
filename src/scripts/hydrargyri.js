@@ -158,8 +158,11 @@ export function reactive(obj) {
       set: (target, prop, value, receiver) => {
         const prev = target[prop]
         const ok = Reflect.set(target, prop, value, receiver)
-        // Same-value writes stay silent — an array push still notifies twice
-        // (index, then length), which is two cheap repaints, accepted.
+        // Same-value writes stay silent, which is what keeps `push` to one
+        // notify: setting the index has already moved `length`, so push's own
+        // write of it changes nothing. `splice` is the loud one — it notifies
+        // once per element it shifts, and every one of those intermediate
+        // arrays is a state the author never wrote.
         if (ok && !Object.is(prev, value)) notify()
         return ok
       },

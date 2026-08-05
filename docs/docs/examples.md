@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: Examples
-description: Stamping an HTML template into a custom element and binding a reactive model through it — the pattern, the ordering rule, and what it costs without JavaScript.
+description: Stamping an HTML template into a custom element, and a todo list an ordinary form adds to — the patterns, their ordering rules, and what each costs without JavaScript.
 order: 5
 ---
 
@@ -86,3 +86,98 @@ None of that is template-specific, which is the point. Stamped markup earns no
 special machinery and needs none — the guarantee sits
 in the test suite under its own sentence: *markup stamped from a template
 before define binds like authored markup*.
+
+## A todo list a form adds to
+
+A list the reader grows is the case hydrargyri hands off: rows for items nobody has
+seen yet cannot be written into the page, so [`<hg-each>`](each.html) clones the
+template once per item. Everything around it is already documented — a
+[`reactive()`](api.html#reactivemodel) array both the rows and the counter
+watch, and a `<form>` that is nothing but a form.
+
+<!-- demo -->
+
+```html
+<demo-todo>
+  <form on="submit:add">
+    <label>New task <input name="task" autocomplete="off"></label>
+    <button>Add</button>
+  </form>
+
+  <hg-each>
+    <ul>
+      <template>
+        <li>
+          <label><input type="checkbox" bind="done:prop#checked" on="change:toggle">
+            <span bind="title"></span></label>
+          <button on="click:drop">Delete</button>
+        </li>
+      </template>
+      <li><label><input type="checkbox" checked> Read the docs</label></li>
+    </ul>
+  </hg-each>
+
+  <p><b bind="todos.length">1</b> on the list</p>
+</demo-todo>
+```
+
+```js demo
+const todos = reactive([
+  { id: 1, title: "Read the docs", done: true }
+]);
+let nextId = 2;
+
+hg("demo-todo", {
+  properties: { todos },
+  connected(el) {
+    el.querySelector("hg-each").items = todos;
+  },
+  handlers: {
+    add(e) {
+      e.preventDefault();
+      const field = e.target.elements.task;
+      const title = field.value.trim();
+      if (!title) return;
+      todos.push({ id: nextId++, title, done: false });
+      e.target.reset();
+      field.focus();
+    },
+    toggle(e) {
+      e.target.closest("[hg-row]").hgItem.done = e.target.checked;
+    },
+    drop(e) {
+      todos.splice(+e.target.closest("[hg-row]").getAttribute("hg-row"), 1);
+    }
+  }
+});
+```
+
+Three handlers, and the platform writes most of them. `add` reads the field
+through `e.target.elements.task`, empties it with `reset()` and puts the caret
+back with `focus()` — hydrargyri's contribution is the `push`, and the row appears
+because the array is `reactive()`. `preventDefault` is the line that keeps the
+page: without it the form submits and the demo reloads.
+
+The two row handlers reach their item two different ways, because they need two
+different things. `toggle` needs the item, and hg-each already put it on the row
+as [`hgItem`](each.html#binds-resolve-into-the-item) — writing `done` through it
+writes through the proxy, so the checkbox repaints itself. `drop` needs the
+position instead, and that is what [`hg-row`](each.html#binds-resolve-into-the-item)
+carries. Neither handler is declared on `<hg-each>`: both [fall
+through](each.html#handlers-and-conditions-fall-through) to `<demo-todo>`, which
+owns the data.
+
+The counter is outside `<hg-each>` and binds `todos.length` on `<demo-todo>` —
+one array, two elements watching it, and neither knows the other exists.
+
+Two trades. **No `key`**, so every repaint clones fresh rows: right for a
+checkbox and a button, wrong the moment a row holds a half-typed input or a
+playing video — [`key`](each.html#key-and-rows-that-keep-their-nodes) is the
+answer there. And **the model is memory**: reload and the list is the one row
+the markup ships with. Persistence is a `localStorage` write in the same three
+handlers, or a `fetch` — neither is hydrargyri's business, and neither changes a
+line of the markup above.
+
+With the script blocked, the fallback row still renders and the form still
+submits, because both are the page's own. What a server does with that POST is
+the server's business — but nothing here is a widget impersonating a form.

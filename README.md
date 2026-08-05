@@ -81,9 +81,6 @@ in every other respect.
 
 ## Install
 
-Not on npm yet — the commands below describe the shape of the release, not a
-package you can pull today.
-
 ```bash
 npm install hydrargyri
 ```
@@ -109,11 +106,13 @@ the site is the manual.
 | Page                                                                     | What it covers                                                                                                              |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | [Getting started](https://stamat.github.io/hydrargyri/docs/)             | the three parts of a hydrargyri element, in one screen                                                                      |
-| [API](https://stamat.github.io/hydrargyri/docs/api.html)                 | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()`                         |
-| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)               | where state lands: `text`, `html`, `value`, `attr#name`, `prop#name`, `class#name`, `if` / `unless`, and paths into objects |
+| [API](https://stamat.github.io/hydrargyri/docs/api.html)                 | `hg()`, `HgElement`, typed attributes, `properties`, `formatters`, lifecycle, `update()`, `reactive()`, `share()`           |
+| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)               | where state lands: `text`, `html`, `value`, `attr#name`, `prop#name`, `class#name`, `if` / `unless`, formatters, and paths into objects |
 | [on](https://stamat.github.io/hydrargyri/docs/on.html)                   | what fires: event names, handler resolution, the `(event, element)` signature                                               |
 | [Composition](https://stamat.github.io/hydrargyri/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                                                         |
+| [Examples](https://stamat.github.io/hydrargyri/docs/examples.html)       | whole pieces that run: a `<template>` stamped into an element, a todo list an ordinary `<form>` adds to                     |
 | [Limits](https://stamat.github.io/hydrargyri/docs/limits.html)           | what hydrargyri will not do, and the threat model for `:html`                                                               |
+| [hg-each](https://stamat.github.io/hydrargyri/docs/each.html)            | the list element in its own package — the rows region, `key`, and binds resolving into the item                             |
 
 Agents: [`llms.txt`](https://stamat.github.io/hydrargyri/llms.txt) is the link index,
 [`llms-full.txt`](https://stamat.github.io/hydrargyri/llms-full.txt) the whole thing

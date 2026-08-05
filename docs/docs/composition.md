@@ -7,7 +7,7 @@ order: 4
 
 # Elements talking to each other
 
-Events up, attributes down — the platform's own protocol, and salis already
+Events up, attributes down — the platform's own protocol, and hydrargyri already
 speaks both halves. There is no bus, no store, no `$dispatch`: [`on`](on.html)
 listens to any event name, custom events included, and they bubble.
 
@@ -22,7 +22,7 @@ listens to any event name, custom events included, and they bubble.
 ```
 
 ```js demo
-salis("demo-item", {
+hydrargyri("demo-item", {
   attributes: ["sku"],
   handlers: {
     pick(e, el) {
@@ -36,7 +36,7 @@ salis("demo-item", {
   },
 });
 
-salis("demo-cart", {
+hydrargyri("demo-cart", {
   properties: ["count"],
   connected(el) {
     el.count = 0;
@@ -50,13 +50,13 @@ salis("demo-cart", {
 ```
 
 The cart's `on` sits on the cart, and the event is raised two levels down. It
-arrives because it bubbles, and because a nested salis element does not swallow
+arrives because it bubbles, and because a nested hydrargyri element does not swallow
 what passes through it.
 
 ## The footgun is the platform's
 
 Forget `bubbles: true` and the event reaches nobody, silently — `CustomEvent`
-defaults it to `false`, and nothing in salis or the browser will tell you. It
+defaults it to `false`, and nothing in hydrargyri or the browser will tell you. It
 is the one line in this page worth remembering.
 
 ## Downwards
@@ -68,7 +68,7 @@ repaints and reacts on its own:
 el.querySelector("demo-item").sku = 9;
 ```
 
-That is not a salis API — it is a property on a custom element, set the way any
+That is not a hydrargyri API — it is a property on a custom element, set the way any
 property is set. The child's attribute changes, its binds repaint, and its
 `attributeChanged` runs. Nothing had to be registered for that to work.
 
@@ -91,7 +91,7 @@ event and writes the other sibling.
 ```
 
 ```js demo
-salis("demo-dose", {
+hydrargyri("demo-dose", {
   attributes: ["amount"],
   handlers: {
     pick(e, el) {
@@ -105,9 +105,9 @@ salis("demo-dose", {
   },
 });
 
-salis("demo-vessel", { attributes: ["amount"] });
+hydrargyri("demo-vessel", { attributes: ["amount"] });
 
-salis("demo-mixer", {
+hydrargyri("demo-mixer", {
   handlers: {
     pour(e, el) {
       el.querySelector("demo-vessel").amount += e.detail.amount;
@@ -117,11 +117,11 @@ salis("demo-mixer", {
 ```
 
 The relay writes a property, never the sibling's nodes. `bind="amount"` inside
-`demo-vessel` belongs to `demo-vessel` — binds go to the nearest salis ancestor,
-and a salis element is its own — so the mixer could not paint that `<output>`
+`demo-vessel` belongs to `demo-vessel` — binds go to the nearest hydrargyri ancestor,
+and a hydrargyri element is its own — so the mixer could not paint that `<output>`
 even if it tried. It sets the value; the vessel repaints itself.
 
-Which is also why the relay has to be a salis element: it needs an `on` of its
+Which is also why the relay has to be a hydrargyri element: it needs an `on` of its
 own to catch the event. A plain `<div>` between two siblings relays nothing.
 
 ## No common ancestor at all
@@ -139,7 +139,7 @@ that element**, and a handler under the command's exact name answers it.
 ```
 
 ```js
-salis("x-cart", {
+hydrargyri("x-cart", {
   attributes: ["count"],
   handlers: {
     "--add-item": (e, el) => {
@@ -160,7 +160,7 @@ Baseline newly available (December 2025). Older browsers leave the button inert
 — nothing breaks and nothing happens, which is the failure mode to weigh before
 choosing it. A page that must work everywhere keeps the bubbling event above,
 or loads [invokers-polyfill](https://github.com/keithamus/invokers-polyfill)
-itself — salis does not bundle it, since an element only listens and a page
+itself — hydrargyri does not bundle it, since an element only listens and a page
 using no commands should not pay for one.
 
 [The proposal](https://open-ui.org/components/invokers.explainer/) and the
@@ -180,16 +180,16 @@ were looking at.
 | parent → child            | writing the child's observed attribute                  |
 | sibling → sibling         | both of the above, via their common ancestor            |
 | any element → any element | `commandfor`/`command`, where the browser is new enough |
-| anything wider            | the page's job, not salis's                             |
+| anything wider            | the page's job, not hydrargyri's                             |
 
 State shared across a whole page — a session, a router, a cart that outlives the
-markup around it — belongs to the page. Salis holds state on elements, and an
+markup around it — belongs to the page. Hydrargyri holds state on elements, and an
 element is a subtree. A library that solved the wider case would need a store,
 and a store is the thing this one refuses to grow.
 
 ## Nesting
 
-Binds and handlers belong to the **nearest** salis ancestor, whatever its tag —
-so a salis element inside another salis element keeps its own nodes, and neither
+Binds and handlers belong to the **nearest** hydrargyri ancestor, whatever its tag —
+so a hydrargyri element inside another hydrargyri element keeps its own nodes, and neither
 paints into the other's. That is what makes the cart above work: `bind="count"`
 is the cart's, `on="click:pick"` is the item's, and the two do not negotiate.

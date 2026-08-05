@@ -1,7 +1,7 @@
 {
   "scripts": [{
-    "in": "src/scripts/salis.js",
-    "out": "dist/salis.mjs",
+    "in": "src/scripts/hydrargyri.js",
+    "out": "dist/hydrargyri.mjs",
     "options": {
       "sourcemap": true,
       "minify": true,
@@ -11,7 +11,7 @@
     }
   }, {
     "in": "src/scripts/demos.js",
-    "out": "dist/salis-demos.js",
+    "out": "dist/hydrargyri-demos.js",
     "options": {
       "minify": true,
       "justMinified": true,
@@ -66,13 +66,13 @@
       },
       "robots": "robots.txt",
       "site": {
-        "title": "Salis",
-        "brand": "salis",
-        "brandMark": "🜔",
+        "title": "Hydrargyri",
+        "brand": "hydrargyri",
+        "brandMark": "☿",
         "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.",
         "lang": "en",
-        "url": "https://stamat.github.io/salis",
-        "repo": "https://github.com/stamat/salis",
+        "url": "https://stamat.github.io/hydrargyri",
+        "repo": "https://github.com/stamat/hydrargyri",
         "branch": "main",
         "links": [
           { "title": "Docs", "url": "docs/" }

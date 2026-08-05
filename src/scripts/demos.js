@@ -1,4 +1,4 @@
-// The bundle every live preview loads: salis itself, put on the frame's window.
+// The bundle every live preview loads: hydrargyri itself, put on the frame's window.
 //
 // The elements are not defined here. A preview's ```js demo fence *runs* —
 // code-preview inlines that pane into the frame as a module — so the fence is
@@ -7,10 +7,10 @@
 // `customElements.define` for each, which throws.
 //
 // A global rather than an import line in every fence: the fence is a sample of
-// how salis is used, and `import salis from '../../dist/salis.min.mjs'` is a
+// how hydrargyri is used, and `import hydrargyri from '../../dist/hydrargyri.min.mjs'` is a
 // fact about this repository's layout — a different line on every page, and the
 // wrong one for the reader copying it.
-import salis, { reactive } from './salis.js'
+import hydrargyri, { reactive } from './hydrargyri.js'
 
-window.salis = salis
+window.hydrargyri = hydrargyri
 window.reactive = reactive

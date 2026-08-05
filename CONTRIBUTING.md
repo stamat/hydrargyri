@@ -1,19 +1,19 @@
-# Contributing to Salis
+# Contributing to Hydrargyri
 
 Issues and pull requests are welcome. Taking part means keeping to the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Salis is one idea kept small: state painted into markup the author already
+Hydrargyri is one idea kept small: state painted into markup the author already
 wrote, through names — never code — in attributes. A change that grows that
 idea is welcome; a change that grows the surface is probably for a different
 library.
 
-## What salis refuses to become
+## What hydrargyri refuses to become
 
 - **No expression language.** `bind` and `on` carry names and paths, never
-  JavaScript. The moment an attribute is evaluated, salis is a worse Alpine —
+  JavaScript. The moment an attribute is evaluated, hydrargyri is a worse Alpine —
   logic lives in handlers and methods, in JS files, where it can be tested.
-- **No templating and no virtual DOM.** The markup is the author's. Salis
+- **No templating and no virtual DOM.** The markup is the author's. Hydrargyri
   writes values into existing nodes; it never creates, reorders, or diffs
   them.
 - **No shadow DOM.** The light DOM is the point: the page's CSS, the page's
@@ -23,7 +23,7 @@ library.
   pages one debugger at 3am.
 - **No implicit deep reactivity.** Assignment triggers a repaint; mutation
   inside a plain object needs `update(key)`. The one door is `reactive()`,
-  opt-in and by name: the author asks for the proxy and holds it. A salis
+  opt-in and by name: the author asks for the proxy and holds it. A hydrargyri
   that wraps what you assign on its own — or grows dependency tracking,
   computed values, effects — is a worse Vue.
 - **No dependencies** beyond [book-of-spells](https://github.com/stamat/book-of-spells).
@@ -31,18 +31,18 @@ library.
 ## Threat model
 
 `:html` binds are `innerHTML`, verbatim — sanitizing is out of scope, and
-[the Limits page](https://stamat.github.io/salis/limits.html) says so where it
+[the Limits page](https://stamat.github.io/hydrargyri/limits.html) says so where it
 documents the type. The contract: bind values are the author's state, not user
 input. `text` binds go through `textContent` and `attr` binds through
 `setAttribute`, so payloads arriving there cannot become elements —
-`salis.test.js` holds a test proving markup through a text bind stays text. A
+`hydrargyri.test.js` holds a test proving markup through a text bind stays text. A
 PR touching `_render` keeps that test green.
 
 ## Getting set up
 
 ```bash
-git clone https://github.com/stamat/salis.git
-cd salis
+git clone https://github.com/stamat/hydrargyri.git
+cd hydrargyri
 script/bootstrap
 ```
 
@@ -53,10 +53,10 @@ script/test      # jest
 script/lint      # eslint
 ```
 
-The library is one file, `src/scripts/salis.js`, with its test beside it.
+The library is one file, `src/scripts/hydrargyri.js`, with its test beside it.
 `docs/` is the site source and `_site/` its output; `dist/` is committed and
-`_site/` is not. A live preview on a docs page loads `dist/salis-demos.min.js`,
-built from `src/scripts/demos.js`, which is what puts `salis` on the frame's
+`_site/` is not. A live preview on a docs page loads `dist/hydrargyri-demos.min.js`,
+built from `src/scripts/demos.js`, which is what puts `hydrargyri` on the frame's
 `window`. The element itself comes from the preview's own ` ```js demo ` fence,
 which runs — a sample with no such fence renders as inert markup and says
 nothing about it.
@@ -70,7 +70,7 @@ alone reproduces nothing.
 
 ## Pull requests
 
-- **A test per change**, in `src/scripts/salis.test.js`. Test names are
+- **A test per change**, in `src/scripts/hydrargyri.test.js`. Test names are
   sentences stating the guarantee. A failing test means the code is wrong —
   never weaken or delete one to make it pass; if the test itself is wrong, say
   so in the PR and let review decide.

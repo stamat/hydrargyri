@@ -13,11 +13,11 @@ for the person who wrote the code.
 
 ### Added
 
-- **The library, finished from the 2024 prototype.** `salis(name, options)` defines a
+- **The library, finished from the 2024 prototype.** `hydrargyri(name, options)` defines a
   custom element whose observed attributes become typed camelCase properties reflected to
   the DOM, with `properties` for state that never touches an attribute, `handlers` for
   `on="event:name"` wiring, and `connected` / `disconnected` / `attributeChanged` lifecycle
-  hooks. `SalisElement` is exported for elements that need methods of their own.
+  hooks. `HgElement` is exported for elements that need methods of their own.
 - **Typed binds.** `bind="path[:type[#attr]]"` paints into `textContent` (default),
   `innerHTML`, `.value`, or a named attribute; entries separate with `;` and paths may
   reach into objects (`user.name`). A malformed or typo'd entry warns and is skipped
@@ -26,13 +26,13 @@ for the person who wrote the code.
   custom elements spec forbids and which found nothing during parse; scanning now happens
   on connect, deferred to `DOMContentLoaded` while the document is still parsing.
   Disconnecting unhooks every listener; reconnecting rescans.
-- **Loud collisions.** An attribute or property whose name would shadow the salis API
+- **Loud collisions.** An attribute or property whose name would shadow the hydrargyri API
   (`update`), a platform native (`title`), or a subclass method warns and is skipped at
   definition — instead of surfacing as a TypeError three calls from the cause.
 - **Components talk the platform way, documented and pinned.** `on` hears bubbling
   custom events from descendants, a parent writes a child's observed attribute — no bus,
   no store; the composition docs page and two tests hold the guarantee.
-- **`share(values)` — one handshake for a whole tag.** A static on every salis class:
+- **`share(values)` — one handshake for a whole tag.** A static on every hydrargyri class:
   `Cls.share({ user: model })` hands each value to every instance, present and future,
   called once and never per change — with a `reactive()` model it is a standing broadcast.
   An instance assignment outranks share on that instance, forever, reconnects included.
@@ -44,13 +44,13 @@ for the person who wrote the code.
 - **`on="event@window:name"` and `@document` — global events, element-owned.** `resize`,
   Escape, click-outside: the listener registers on the global the event actually fires on,
   the handler stays the element's, and disconnect unhooks it with every other listener
-  salis added — the removal boilerplate that pattern usually leaks is gone. An unknown
+  hydrargyri added — the removal boilerplate that pattern usually leaks is gone. An unknown
   target (`click@body`) warns and is skipped without taking the entry's neighbours.
 - **`reactive(model)` — the opt-in door out of `update(key)`.** Wrap a plain object or
   array once, assign it to any number of elements, and every mutation through the proxy
   repaints them all — no element references at the mutation site. The proxy is the model:
   the raw original notifies nobody, non-plain values (Maps, class instances) warn and come
-  back unwrapped, and salis never wraps an object you did not ask wrapped. Disconnecting
+  back unwrapped, and hydrargyri never wraps an object you did not ask wrapped. Disconnecting
   an element unsubscribes it; reconnecting catches it up.
 - **Invoker Commands answered from `handlers`.** A button anywhere in the document
   says `commandfor="cart" command="--add-item"`, and the element replies from
@@ -82,15 +82,15 @@ for the person who wrote the code.
   `.github/copilot-instructions.md`, so one file serves every tool.
 - **`parseBinds(raw)` exported** — the `bind` grammar's parser, for ecosystem
   packages that paint with the same grammar
-  ([salis-each](https://github.com/stamat/salis-each)). The parser lives in
-  salis so the grammar cannot fork; an element on salis alone never needs it.
+  ([hydrargyri-each](https://github.com/stamat/hydrargyri-each)). The parser lives in
+  hydrargyri so the grammar cannot fork; an element on hydrargyri alone never needs it.
 
 ### Changed
 
 - **The demo page became the docs site.** `src/markup/` and the hand-rolled layout it used
   are gone, along with `dist/site.*` and the `index.html` that sat in the repository root.
-  Every live preview loads `dist/salis-demos.min.js`, built from
-  `src/scripts/demos.js`, which puts `salis` on the frame's `window`; each demo's element
+  Every live preview loads `dist/hydrargyri-demos.min.js`, built from
+  `src/scripts/demos.js`, which puts `hydrargyri` on the frame's `window`; each demo's element
   is defined by the ` ```js demo ` fence shown beside it, which is the code that runs.
 - **`package-lock.json` is committed**, because `script/bootstrap` and CI both run
   `npm ci`, which needs one and will not write it.

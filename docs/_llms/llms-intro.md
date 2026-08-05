@@ -1,4 +1,4 @@
-Salis is a small JavaScript library (`salis`) for reactive custom elements in
+Hydrargyri is a small JavaScript library (`hydrargyri`) for reactive custom elements in
 the **light DOM** — no shadow roots, no build step, no expression language. It
 upgrades markup an author already wrote rather than generating markup of its
 own, so a page renders without it and keeps rendering if the script never
@@ -18,9 +18,9 @@ sanitize and nothing for a Content Security Policy to object to.
 ```
 
 ```js
-import salis from "salis";
+import hydrargyri from "hydrargyri";
 
-salis("demo-counter", {
+hydrargyri("demo-counter", {
   attributes: ["count"],
   handlers: {
     increment(e, el) { el.count += 1 },
@@ -31,11 +31,11 @@ salis("demo-counter", {
 
 The API:
 
-- `salis(name, options)` defines a custom element and returns its class.
+- `hydrargyri(name, options)` defines a custom element and returns its class.
   `options` takes `attributes`, `properties`, `handlers`, `conditions`, and
   the `connected` / `disconnected` / `attributeChanged` hooks; an array is
   shorthand for `attributes`.
-- `SalisElement` is the exported base class, for elements that need methods of
+- `HgElement` is the exported base class, for elements that need methods of
   their own. A method outranks a `handlers` entry of the same name.
 - Observed attributes become typed camelCase properties reflected to the DOM —
   `count="5"` reads back as `5`, a valueless attribute as `true`, an absent one
@@ -58,7 +58,7 @@ The API:
   to any number of elements and mutation through the proxy repaints them all.
   The proxy is the model — the raw original notifies nobody — and non-plain
   values (Maps, class instances) warn and come back unwrapped.
-- `share(values)` is a static on every salis class: `Cls.share({ user: model })`
+- `share(values)` is a static on every hydrargyri class: `Cls.share({ user: model })`
   hands each value to every instance, present and future — called once, never
   per change. An instance assignment outranks share on that instance, forever.
   Property keys only; attribute-backed keys warn and are refused.
@@ -69,20 +69,20 @@ The API:
   names.
 - `parseBinds(raw)` parses a `bind` attribute into `{ path, type, attr }`
   entries — exported for ecosystem packages painting with the same grammar
-  (salis-each); an element on salis alone never needs it.
-- The element wears a `salis` attribute once initialized, so
-  `x-el:not([salis])` can style the not-yet-upgraded state.
+  (hydrargyri-each); an element on hydrargyri alone never needs it.
+- The element wears an `hg` attribute once initialized, so
+  `x-el:not([hg])` can style the not-yet-upgraded state.
 
 Deliberate non-goals: implicit deep reactivity (assignment is watched, mutation
-needs `update(key)` or an opt-in `reactive()` model — salis never wraps an
+needs `update(key)` or an opt-in `reactive()` model — hydrargyri never wraps an
 object you did not ask wrapped),
 two-way binding (DOM to state goes through a handler you wrote), late DOM (binds
 are scanned on connect; reconnecting rescans), sanitizing (`:html` is
 `innerHTML` verbatim — bind your own state to it, never user input), templating
-(salis never stamps a `<template>` itself — but markup your code clones into an
+(hydrargyri never stamps a `<template>` itself — but markup your code clones into an
 element before `customElements.define` binds like authored markup, since the
 scan happens at connect; list rendering lives in the separate
-[salis-each](https://github.com/stamat/salis-each) package, whose `<x-each>`
+[hydrargyri-each](https://github.com/stamat/hydrargyri-each) package, whose `<hg-each>`
 clones an author-written `<template>` per item with the same bind grammar),
 virtual DOM, routing and stores.
 

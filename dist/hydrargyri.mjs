@@ -1,4 +1,4 @@
-/* salis v1.0.0 | https://stamat.github.io/salis/ | MIT License */
+/* hydrargyri v1.0.0 | https://stamat.github.io/hydrargyri/ | MIT License */
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -31,8 +31,8 @@ function getObjectValueByPath(obj, path) {
   return path.reduce((acc, part) => acc !== null && acc !== void 0 ? acc[part] : void 0, obj);
 }
 
-// src/scripts/salis.js
-var salisTags = /* @__PURE__ */ new Set();
+// src/scripts/hydrargyri.js
+var hgTags = /* @__PURE__ */ new Set();
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr", "if", "unless"]);
 var RESERVED = /* @__PURE__ */ new Set(["handlers", "conditions", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
@@ -72,7 +72,7 @@ function parseBinds(raw) {
       attr = hash === -1 ? null : typePart.slice(hash + 1).trim();
     }
     if (!BIND_TYPES.has(type) || type === "attr" && !attr) {
-      console.warn(`salis: unknown bind "${trimmed}" \u2014 expected path[:text|html|value|attr#name|if#condition|unless#condition]`);
+      console.warn(`hydrargyri: unknown bind "${trimmed}" \u2014 expected path[:text|html|value|attr#name|if#condition|unless#condition]`);
       continue;
     }
     entries.push({ path, type, attr });
@@ -82,7 +82,7 @@ function parseBinds(raw) {
 function reactive(obj) {
   if (reactiveSubs.has(obj)) return obj;
   if (!isPlainValue(obj)) {
-    console.warn("salis: reactive() takes a plain object or array \u2014 returned the value as given");
+    console.warn("hydrargyri: reactive() takes a plain object or array \u2014 returned the value as given");
     return obj;
   }
   const subs = /* @__PURE__ */ new Set();
@@ -116,7 +116,7 @@ function reactive(obj) {
   };
   return wrap(obj);
 }
-var SalisElement = class extends HTMLElement {
+var HgElement = class extends HTMLElement {
   static get observedAttributes() {
     return this.attributes;
   }
@@ -132,7 +132,7 @@ var SalisElement = class extends HTMLElement {
    * @param {Object} values Map of property key → value
    *
    * @example
-   * const Crew = salis('user-card', { properties: ['user'] })
+   * const Crew = hydrargyri('user-card', { properties: ['user'] })
    * Crew.share({ user: reactive({ name: 'Ada' }) })
    */
   static share(values) {
@@ -141,7 +141,7 @@ var SalisElement = class extends HTMLElement {
     for (const key in values) {
       const name = transformDashToCamelCase(key);
       if (owned.has(name)) accepted[name] = values[key];
-      else console.warn(`salis: share() takes declared properties \u2014 "${key}" ignored`);
+      else console.warn(`hydrargyri: share() takes declared properties \u2014 "${key}" ignored`);
     }
     this._shared = Object.assign({}, this._shared, accepted);
     if (!this._tag) return;
@@ -158,7 +158,7 @@ var SalisElement = class extends HTMLElement {
   }
   constructor() {
     super();
-    salisTags.add(this.tagName.toLowerCase());
+    hgTags.add(this.tagName.toLowerCase());
     this.constructor._tag = this.tagName.toLowerCase();
     this._state = {};
     this._binds = {};
@@ -217,7 +217,7 @@ var SalisElement = class extends HTMLElement {
   _defineAccessor(name, attribute) {
     const key = transformDashToCamelCase(name);
     if (RESERVED.has(key)) {
-      console.warn(`salis: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" is reserved by salis`);
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" is reserved by hydrargyri`);
       return;
     }
     let preset;
@@ -226,7 +226,7 @@ var SalisElement = class extends HTMLElement {
       delete this[key];
     }
     if (key in this) {
-      console.warn(`salis: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" already exists on the element`);
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" already exists on the element`);
       return;
     }
     if (attribute) this._reflected[key] = attribute;
@@ -265,7 +265,7 @@ var SalisElement = class extends HTMLElement {
     const shared = this.constructor._sharedAll();
     if (shared) this._applyShared(shared);
     this._initialized = true;
-    this.setAttribute("salis", "");
+    this.setAttribute("hg", "");
     for (const key in this._state) this._subscribe(key, this._state[key]);
     this._scanBinds();
     this._scanHandlers();
@@ -275,10 +275,10 @@ var SalisElement = class extends HTMLElement {
     this.update();
     if (typeof this.connected === "function") this.connected(this);
   }
-  // The nearest salis ancestor owns a node — any salis tag, not only this
-  // element's own, so different salis elements nest without stealing binds.
+  // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
+  // element's own, so different hydrargyri elements nest without stealing binds.
   _scope(el) {
-    return el.closest([...salisTags].join(",")) === this;
+    return el.closest([...hgTags].join(",")) === this;
   }
   _owns(key) {
     return key in this._reflected || key in this._state;
@@ -292,7 +292,7 @@ var SalisElement = class extends HTMLElement {
       for (const entry of parseBinds(raw)) {
         const key = entry.path[0];
         if (!this._owns(key)) {
-          console.warn(`salis: <${this.tagName.toLowerCase()}> has no attribute or property "${key}" for bind "${raw}"`);
+          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${key}" for bind "${raw}"`);
           continue;
         }
         entry.el = el;
@@ -314,7 +314,7 @@ var SalisElement = class extends HTMLElement {
         if (!trimmed) continue;
         const colon = trimmed.indexOf(":");
         if (colon === -1) {
-          console.warn(`salis: unknown handler "${trimmed}" \u2014 expected event:name`);
+          console.warn(`hydrargyri: unknown handler "${trimmed}" \u2014 expected event:name`);
           continue;
         }
         let event = trimmed.slice(0, colon).trim();
@@ -325,7 +325,7 @@ var SalisElement = class extends HTMLElement {
           const where = event.slice(at + 1);
           target = where === "window" ? window : where === "document" ? document : null;
           if (!target) {
-            console.warn(`salis: unknown handler target "${trimmed}" \u2014 expected event@window or event@document`);
+            console.warn(`hydrargyri: unknown handler target "${trimmed}" \u2014 expected event@window or event@document`);
             continue;
           }
           event = event.slice(0, at);
@@ -367,7 +367,7 @@ var SalisElement = class extends HTMLElement {
   _handle(name, e) {
     if (typeof this[name] === "function") return this[name](e, this);
     if (typeof this.handlers[name] === "function") return this.handlers[name](e, this);
-    console.warn(`salis: <${this.tagName.toLowerCase()}> has no handler "${name}"`);
+    console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no handler "${name}"`);
   }
   // Commands look up handlers by the exact command string, dashes and all —
   // no name transformation to reason backwards through, and custom commands
@@ -380,7 +380,7 @@ var SalisElement = class extends HTMLElement {
     const action = this.handlers[e.command];
     if (typeof action === "function") return action(e, this);
     if (Object.keys(this.handlers).some((key) => key.startsWith("--"))) {
-      console.warn(`salis: <${this.tagName.toLowerCase()}> has no handler for command "${e.command}"`);
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no handler for command "${e.command}"`);
     }
   }
   _applyBinds(key) {
@@ -414,7 +414,7 @@ var SalisElement = class extends HTMLElement {
         if (attr) {
           const condition = this.conditions[attr];
           if (typeof condition !== "function") {
-            console.warn(`salis: <${this.tagName.toLowerCase()}> has no condition "${attr}"`);
+            console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no condition "${attr}"`);
             break;
           }
           truth = condition(value, this);
@@ -426,31 +426,31 @@ var SalisElement = class extends HTMLElement {
   }
 };
 /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
-__publicField(SalisElement, "attributes", []);
+__publicField(HgElement, "attributes", []);
 /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
-__publicField(SalisElement, "properties", []);
+__publicField(HgElement, "properties", []);
 /** Named event handlers reachable from `on="event:name"`, shared by all instances. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command, called as (event, element). */
-__publicField(SalisElement, "handlers", {});
+__publicField(HgElement, "handlers", {});
 /** Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`. */
-__publicField(SalisElement, "conditions", {});
-function salis(name, options = {}) {
+__publicField(HgElement, "conditions", {});
+function hydrargyri(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
-  class Salis extends SalisElement {
+  class Hg extends HgElement {
   }
-  __publicField(Salis, "attributes", options.attributes || []);
-  __publicField(Salis, "properties", options.properties || []);
-  __publicField(Salis, "handlers", options.handlers || {});
-  __publicField(Salis, "conditions", options.conditions || {});
+  __publicField(Hg, "attributes", options.attributes || []);
+  __publicField(Hg, "properties", options.properties || []);
+  __publicField(Hg, "handlers", options.handlers || {});
+  __publicField(Hg, "conditions", options.conditions || {});
   for (const hook of ["connected", "disconnected", "attributeChanged"]) {
-    if (typeof options[hook] === "function") Salis.prototype[hook] = options[hook];
+    if (typeof options[hook] === "function") Hg.prototype[hook] = options[hook];
   }
-  customElements.define(name, Salis);
-  return Salis;
+  customElements.define(name, Hg);
+  return Hg;
 }
 export {
-  SalisElement,
-  salis as default,
+  HgElement,
+  hydrargyri as default,
   parseBinds,
   reactive
 };
-//# sourceMappingURL=salis.mjs.map
+//# sourceMappingURL=hydrargyri.mjs.map

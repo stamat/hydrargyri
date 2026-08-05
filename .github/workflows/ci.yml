@@ -52,11 +52,11 @@ jobs:
       - name: Verify build output
         shell: bash
         run: |
-          test -s dist/salis.mjs
-          test -s dist/salis.min.mjs
-          test -s dist/salis-demos.min.js
-          # Every preview's js fence calls a bare `salis(...)`, so the bundle
+          test -s dist/hydrargyri.mjs
+          test -s dist/hydrargyri.min.mjs
+          test -s dist/hydrargyri-demos.min.js
+          # Every preview's js fence calls a bare `hydrargyri(...)`, so the bundle
           # losing the global is a page of ReferenceErrors and a green build.
-          grep -q 'window.salis=' dist/salis-demos.min.js
+          grep -q 'window.hydrargyri=' dist/hydrargyri-demos.min.js
           test -s _site/index.html
           test -s _site/llms.txt

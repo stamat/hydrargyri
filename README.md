@@ -1,4 +1,4 @@
-# <sup>🜔</sup> Salis
+# <sup>☿</sup> Hydrargyri
 
 > Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.
 
@@ -7,7 +7,7 @@ Templates in JS, decorators that need a build step, expressions interpreted out
 of attributes. The page you already had — the one that renders without any of
 it — becomes the framework's output instead of your document.
 
-Salis goes the other way. You keep the HTML. A custom element wraps the part
+Hydrargyri goes the other way. You keep the HTML. A custom element wraps the part
 that changes, `bind` says where state lands, `on` says what fires, and the
 script never loading leaves the page exactly as written:
 
@@ -20,9 +20,9 @@ script never loading leaves the page exactly as written:
 ```
 
 ```js
-import salis from "salis";
+import hydrargyri from "hydrargyri";
 
-salis("demo-counter", {
+hydrargyri("demo-counter", {
   attributes: ["count"],
   handlers: {
     increment(e, el) {
@@ -36,15 +36,16 @@ salis("demo-counter", {
 ```
 
 No build step, no shadow DOM, no expression language — `bind` and `on` hold
-names, never code. Salt, in the alchemical sense: the residue that stays when
-the framework evaporates. It sits on
+names, never code. Quicksilver, in the alchemical sense: the volatile principle,
+the one that moves while the body stays put. Your markup holds still; the values
+are what run through it. It sits on
 [book-of-spells](https://github.com/stamat/book-of-spells), same shelf as
 [sulphuris](https://github.com/stamat/sulphuris) 🜍.
 
 Like sulphuris, the value here is personal first: this is the wrapper I wanted
 to exist, and it transfers to whoever shares the taste for markup-first pages.
 If you want templating, two-way binding, or an ecosystem, the table below says
-where to go — those are fine tools and salis does not compete on their ground.
+where to go — those are fine tools and hydrargyri does not compete on their ground.
 
 ## Against the alternatives
 
@@ -54,18 +55,18 @@ where to go — those are fine tools and salis does not compete on their ground.
 | [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | no — controller code toggles  | you want the mature ecosystem, especially around Rails      |
 | [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | yes — `x-if`, evaluated       | you want logic inline and accept the CSP cost               |
 | [Lit](https://lit.dev)                         | no — templates in JS | yes                  | no, but expected    | no                                 | yes — ternaries in JS templates | you are building an app, not upgrading a page               |
-| salis                                          | yes                  | yes                  | no                  | no                                 | named predicates, never eval  | the markup exists first and must survive without the script |
+| hydrargyri                                          | yes                  | yes                  | no                  | no                                 | named predicates, never eval  | the markup exists first and must survive without the script |
 
-Salis loses on features to every row above: no templating, no two-way binding,
-no plugin ecosystem. That is the trade, and [what salis does not
-do](#what-salis-does-not-do) spells it out rather than burying it.
+Hydrargyri loses on features to every row above: no templating, no two-way binding,
+no plugin ecosystem. That is the trade, and [what hydrargyri does not
+do](#what-hydrargyri-does-not-do) spells it out rather than burying it.
 
 Stimulus earns the honest footnote: same religion, different church. The same
 names-in-markup creed, the same CSP-cleanliness, near-identical event wiring
 and typed attribute-backed values. The doctrine splits on exactly two points —
 `bind` paints declaratively where Stimulus targets are refs you repaint by
 hand, and the component boundary is the platform's custom element instead of a
-runtime with a registry, which is also why salis is 3 kB where Stimulus is 12.
+runtime with a registry, which is also why hydrargyri is 3 kB where Stimulus is 12.
 If neither point matters to your project, go to their church; it is better run
 in every other respect.
 
@@ -75,49 +76,49 @@ Not on npm yet — the commands below describe the shape of the release, not a
 package you can pull today.
 
 ```bash
-npm install salis
+npm install hydrargyri
 ```
 
 ```js
-import salis, { SalisElement, reactive } from "salis";
+import hydrargyri, { HgElement, reactive } from "hydrargyri";
 ```
 
 Or straight from a CDN as a module, no install:
 
 ```html
 <script type="module">
-  import salis from "https://cdn.jsdelivr.net/npm/salis/dist/salis.mjs";
+  import hydrargyri from "https://cdn.jsdelivr.net/npm/hydrargyri/dist/hydrargyri.mjs";
 </script>
 ```
 
 ## The whole surface
 
-<https://stamat.github.io/salis/> — every sample on those pages runs live and
+<https://stamat.github.io/hydrargyri/> — every sample on those pages runs live and
 editable. There is no second copy of the reference: this README is the pitch,
 the site is the manual.
 
 | Page                                                        | What it covers                                                                                     |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [Getting started](https://stamat.github.io/salis/docs/)     | the three parts of a salis element, in one screen                                                  |
-| [API](https://stamat.github.io/salis/docs/api.html)         | `salis()`, `SalisElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
-| [bind](https://stamat.github.io/salis/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects   |
-| [on](https://stamat.github.io/salis/docs/on.html)           | what fires: event names, handler resolution, the `(event, element)` signature                      |
-| [Composition](https://stamat.github.io/salis/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                        |
-| [Limits](https://stamat.github.io/salis/docs/limits.html)   | what salis will not do, and the threat model for `:html`                                           |
+| [Getting started](https://stamat.github.io/hydrargyri/docs/)     | the three parts of a hydrargyri element, in one screen                                                  |
+| [API](https://stamat.github.io/hydrargyri/docs/api.html)         | `hydrargyri()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
+| [bind](https://stamat.github.io/hydrargyri/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects   |
+| [on](https://stamat.github.io/hydrargyri/docs/on.html)           | what fires: event names, handler resolution, the `(event, element)` signature                      |
+| [Composition](https://stamat.github.io/hydrargyri/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                        |
+| [Limits](https://stamat.github.io/hydrargyri/docs/limits.html)   | what hydrargyri will not do, and the threat model for `:html`                                           |
 
-Agents: [`llms.txt`](https://stamat.github.io/salis/llms.txt) is the link index,
-[`llms-full.txt`](https://stamat.github.io/salis/llms-full.txt) the whole thing
+Agents: [`llms.txt`](https://stamat.github.io/hydrargyri/llms.txt) is the link index,
+[`llms-full.txt`](https://stamat.github.io/hydrargyri/llms-full.txt) the whole thing
 in one file.
 
-## What salis does not do
+## What hydrargyri does not do
 
 Each of these is a decision, not a gap waiting for a pull request;
-[Limits](https://stamat.github.io/salis/docs/limits.html) carries the reasoning
+[Limits](https://stamat.github.io/hydrargyri/docs/limits.html) carries the reasoning
 for each.
 
 - **Implicit deep reactivity.** Setters notice assignment, not mutation —
   `update(key)` repaints after mutating a plain object, and `reactive(model)` is
-  the opt-in proxy that needs no such call. It only opens by name: salis never
+  the opt-in proxy that needs no such call. It only opens by name: hydrargyri never
   wraps an object you did not ask wrapped, and will not grow dependency
   tracking, computed values or effects.
 - **Two-way binding.** DOM to state goes through a handler you wrote —
@@ -128,11 +129,11 @@ for each.
 - **Sanitizing.** `:html` is `innerHTML`, verbatim. Bind your own state to it,
   never user input — `text` and `attr` binds are inert by construction, so
   markup arriving through them stays text. There is a test proving it.
-- **Templating, a virtual DOM, a router, a store.** Salis writes values into
+- **Templating, a virtual DOM, a router, a store.** Hydrargyri writes values into
   nodes that already exist; it never creates, reorders or diffs them. A page
   built out of data wants one of the tools in the table above, and that is not
   a defeat. The one exception lives outside the house:
-  [salis-each](https://github.com/stamat/salis-each) renders lists from an
+  [hydrargyri-each](https://github.com/stamat/hydrargyri-each) renders lists from an
   author-written `<template>`, same grammar, its own package — so this refusal
   stands.
 

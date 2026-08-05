@@ -12,20 +12,20 @@ and each one names its trade.
 
 ## Stamp an HTML template into a custom element
 
-The same card markup on a page five times is four copies too many — and salis
+The same card markup on a page five times is four copies too many — and hydrargyri
 will not generate it for you: [the markup is the
 author's](limits.html#a-frameworks-worth-of-everything-else), and a library that
 stamps templates on its own is halfway to being a renderer. Nothing stops *your*
 code from being the author, though. The platform's
 [`<template>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template)
 holds inert markup; clone it into the element **before the element is defined**,
-and by the time salis scans on connect, the clone is ordinary markup — binds and
+and by the time hydrargyri scans on connect, the clone is ordinary markup — binds and
 all — like any you could have typed.
 
 The trade first, because it is real: **template content does not render without
 JavaScript.** A page whose markup lives in templates shows nothing when the
 script is blocked, which spends the progressive-enhancement guarantee the rest
-of salis keeps. Repeated markup that must survive scriptless belongs to the
+of hydrargyri keeps. Repeated markup that must survive scriptless belongs to the
 server — a partial, an include; the template is for markup that only means
 something once the script runs anyway.
 
@@ -50,7 +50,7 @@ for (const el of document.querySelectorAll("demo-tpl-card")) {
 
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-salis("demo-tpl-card", {
+hydrargyri("demo-tpl-card", {
   properties: { user },
   handlers: {
     promote() {
@@ -64,7 +64,7 @@ salis("demo-tpl-card", {
 
 The ordering is the whole trick: **clone before define.** Until
 `customElements.define` runs, `<demo-tpl-card>` is an unknown element — inert,
-stampable, nobody scanning. The `salis()` call defines it, the browser upgrades
+stampable, nobody scanning. The `hydrargyri()` call defines it, the browser upgrades
 every instance on the page, and each one connects and [scans whatever children
 it has at that moment](bind.html#what-is-scanned-and-when) — which now includes
 the clone. An element created later follows the same rule from the other side:

@@ -1,4 +1,4 @@
-// Covers the whole public surface: the factory, the SalisElement base class,
+// Covers the whole public surface: the factory, the HgElement base class,
 // attribute↔property reflection, every bind type, handler wiring, nesting
 // scope, lifecycle hooks, deferred init during parse, pre-upgrade property
 // capture, reactive models, and markup stamped from a template before
@@ -6,7 +6,7 @@
 // inserted bind/on nodes — binds are scanned at connect, and picking up later
 // DOM is a documented non-goal for v1 (reconnecting the element rescans).
 import { jest } from '@jest/globals'
-import salis, { SalisElement, reactive, parseBinds } from './salis.js'
+import hydrargyri, { HgElement, reactive, parseBinds } from './hydrargyri.js'
 
 let n = 0
 const tag = () => `x-t${++n}`
@@ -23,16 +23,16 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
-test('the factory defines the element and returns a SalisElement subclass', () => {
+test('the factory defines the element and returns a HgElement subclass', () => {
   const name = tag()
-  const Cls = salis(name, ['foo'])
+  const Cls = hydrargyri(name, ['foo'])
   expect(customElements.get(name)).toBe(Cls)
-  expect(Object.getPrototypeOf(Cls)).toBe(SalisElement)
+  expect(Object.getPrototypeOf(Cls)).toBe(HgElement)
 })
 
 test('an observed attribute becomes a typed property, and setting it writes the attribute back', () => {
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="5"></${name}>`)
   const el = root.firstElementChild
   expect(el.count).toBe(5)
@@ -43,7 +43,7 @@ test('an observed attribute becomes a typed property, and setting it writes the 
 
 test('a dashed attribute is reachable as its camelCase property', () => {
   const name = tag()
-  salis(name, ['user-name'])
+  hydrargyri(name, ['user-name'])
   const root = mount(`<${name} user-name="ada"></${name}>`)
   const el = root.firstElementChild
   expect(el.userName).toBe('ada')
@@ -53,7 +53,7 @@ test('a dashed attribute is reachable as its camelCase property', () => {
 
 test('a valueless attribute reads as true, false removes it, true puts it back empty', () => {
   const name = tag()
-  salis(name, ['active'])
+  hydrargyri(name, ['active'])
   const root = mount(`<${name} active></${name}>`)
   const el = root.firstElementChild
   expect(el.active).toBe(true)
@@ -66,7 +66,7 @@ test('a valueless attribute reads as true, false removes it, true puts it back e
 
 test('a bare bind paints textContent from the attribute and repaints on setAttribute', () => {
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="5"><span bind="count">stale</span></${name}>`)
   const el = root.firstElementChild
   const span = el.querySelector('span')
@@ -77,7 +77,7 @@ test('a bare bind paints textContent from the attribute and repaints on setAttri
 
 test('markup arriving through a text bind stays text, it cannot become elements', () => {
   const name = tag()
-  salis(name, { properties: ['payload'] })
+  hydrargyri(name, { properties: ['payload'] })
   const root = mount(`<${name}><span bind="payload"></span></${name}>`)
   const el = root.firstElementChild
   el.payload = '<img src=x onerror="boom()">'
@@ -87,7 +87,7 @@ test('markup arriving through a text bind stays text, it cannot become elements'
 
 test('a value bind fills the input, an attr bind sets the named attribute, an html bind parses', () => {
   const name = tag()
-  salis(name, { properties: ['query', 'url', 'body'] })
+  hydrargyri(name, { properties: ['query', 'url', 'body'] })
   const root = mount(
     `<${name}><input bind="query:value"><a bind="url:attr#href">go</a><div bind="body:html"></div></${name}>`
   )
@@ -102,7 +102,7 @@ test('a value bind fills the input, an attr bind sets the named attribute, an ht
 
 test('a false value removes a bound attribute, true sets it empty', () => {
   const name = tag()
-  salis(name, { properties: ['busy'] })
+  hydrargyri(name, { properties: ['busy'] })
   const root = mount(`<${name}><div bind="busy:attr#aria-busy" aria-busy="true"></div></${name}>`)
   const el = root.firstElementChild
   const div = el.querySelector('div')
@@ -114,7 +114,7 @@ test('a false value removes a bound attribute, true sets it empty', () => {
 
 test('one bind attribute carries several semicolon-separated entries', () => {
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="3"><i bind="count:text;count:attr#data-n"></i></${name}>`)
   const i = root.querySelector('i')
   expect(i.textContent).toBe('3')
@@ -123,7 +123,7 @@ test('one bind attribute carries several semicolon-separated entries', () => {
 
 test('several elements bound to one key all repaint on a single set', () => {
   const name = tag()
-  salis(name, { properties: ['msg'] })
+  hydrargyri(name, { properties: ['msg'] })
   const root = mount(`<${name}><b bind="msg"></b><i bind="msg"></i></${name}>`)
   const el = root.firstElementChild
   el.msg = 'hi'
@@ -133,7 +133,7 @@ test('several elements bound to one key all repaint on a single set', () => {
 
 test('a dotted path renders the nested value, and a missing branch leaves the node alone', () => {
   const name = tag()
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name">placeholder</span></${name}>`)
   const el = root.firstElementChild
   expect(el.querySelector('span').textContent).toBe('placeholder')
@@ -143,7 +143,7 @@ test('a dotted path renders the nested value, and a missing branch leaves the no
 
 test('mutation inside an object is invisible until update(key) repaints it', () => {
   const name = tag()
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   const el = root.firstElementChild
   el.user = { name: 'ada' }
@@ -155,7 +155,7 @@ test('mutation inside an object is invisible until update(key) repaints it', () 
 
 test('a property never touches an attribute, only its binds', () => {
   const name = tag()
-  salis(name, { properties: ['secret'] })
+  hydrargyri(name, { properties: ['secret'] })
   const root = mount(`<${name}><span bind="secret"></span></${name}>`)
   const el = root.firstElementChild
   el.secret = 'hush'
@@ -166,7 +166,7 @@ test('a property never touches an attribute, only its binds', () => {
 test('a declared handler fires with the event and the element', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     handlers: { poke: (e, el) => seen.push([e.type, el.tagName]) }
   })
   const root = mount(`<${name}><button on="click:poke">go</button></${name}>`)
@@ -177,7 +177,7 @@ test('a declared handler fires with the event and the element', () => {
 test('a subclass method outranks the registry, and only one of the two runs', () => {
   const name = tag()
   const calls = []
-  class El extends SalisElement {
+  class El extends HgElement {
     static handlers = { poke: () => calls.push('registry') }
     poke() { calls.push('method') }
   }
@@ -189,7 +189,7 @@ test('a subclass method outranks the registry, and only one of the two runs', ()
 test('an unknown handler warns instead of throwing', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
-  salis(name, [])
+  hydrargyri(name, [])
   const root = mount(`<${name}><button on="click:nope"></button></${name}>`)
   expect(() => root.querySelector('button').click()).not.toThrow()
   expect(warn).toHaveBeenCalled()
@@ -198,7 +198,7 @@ test('an unknown handler warns instead of throwing', () => {
 test('one on attribute wires several semicolon-separated events', () => {
   const name = tag()
   const seen = []
-  salis(name, { handlers: { note: (e) => seen.push(e.type) } })
+  hydrargyri(name, { handlers: { note: (e) => seen.push(e.type) } })
   const root = mount(`<${name}><input on="focus:note;input:note"></${name}>`)
   const input = root.querySelector('input')
   input.dispatchEvent(new Event('focus'))
@@ -206,11 +206,11 @@ test('one on attribute wires several semicolon-separated events', () => {
   expect(seen).toEqual(['focus', 'input'])
 })
 
-test('nested salis elements of different tags keep their binds and handlers to themselves', () => {
+test('nested hydrargyri elements of different tags keep their binds and handlers to themselves', () => {
   const outer = tag()
   const inner = tag()
-  salis(outer, { properties: ['msg'] })
-  salis(inner, { properties: ['msg'] })
+  hydrargyri(outer, { properties: ['msg'] })
+  hydrargyri(inner, { properties: ['msg'] })
   const root = mount(
     `<${outer}><b bind="msg"></b><${inner}><i bind="msg"></i></${inner}></${outer}>`
   )
@@ -225,7 +225,7 @@ test('nested salis elements of different tags keep their binds and handlers to t
 
 test('same-tag nesting scopes binds to the nearest instance', () => {
   const name = tag()
-  salis(name, ['label'])
+  hydrargyri(name, ['label'])
   const root = mount(
     `<${name} label="a"><b bind="label"></b><${name} label="b"><i bind="label"></i></${name}></${name}>`
   )
@@ -233,9 +233,9 @@ test('same-tag nesting scopes binds to the nearest instance', () => {
   expect(root.querySelector('i').textContent).toBe('b')
 })
 
-test('a bind on the salis element itself works, scoped to itself', () => {
+test('a bind on the hydrargyri element itself works, scoped to itself', () => {
   const name = tag()
-  salis(name, ['state'])
+  hydrargyri(name, ['state'])
   const root = mount(`<${name} state="on" bind="state:attr#data-state"></${name}>`)
   expect(root.firstElementChild.getAttribute('data-state')).toBe('on')
 })
@@ -243,7 +243,7 @@ test('a bind on the salis element itself works, scoped to itself', () => {
 test('a typo in a bind key warns once at scan and never throws on update', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="1"><span bind="conut"></span></${name}>`)
   expect(warn).toHaveBeenCalled()
   expect(() => root.firstElementChild.update()).not.toThrow()
@@ -252,7 +252,7 @@ test('a typo in a bind key warns once at scan and never throws on update', () =>
 test('a malformed bind entry is skipped while its valid neighbours still paint', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="2"><span bind="count:attr;count"></span></${name}>`)
   expect(warn).toHaveBeenCalled()
   expect(root.querySelector('span').textContent).toBe('2')
@@ -261,7 +261,7 @@ test('a malformed bind entry is skipped while its valid neighbours still paint',
 test('disconnecting unhooks handlers, reconnecting rescans and repaints', () => {
   const name = tag()
   const seen = []
-  salis(name, { handlers: { poke: () => seen.push('hit') } })
+  hydrargyri(name, { handlers: { poke: () => seen.push('hit') } })
   const root = mount(`<${name}><button on="click:poke"></button></${name}>`)
   const el = root.firstElementChild
   const button = el.querySelector('button')
@@ -276,7 +276,7 @@ test('disconnecting unhooks handlers, reconnecting rescans and repaints', () => 
 test('the connected hook runs after binds are painted, disconnected on removal', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     attributes: ['count'],
     connected: (el) => seen.push(['connected', el.querySelector('span').textContent]),
     disconnected: () => seen.push(['disconnected'])
@@ -289,7 +289,7 @@ test('the connected hook runs after binds are painted, disconnected on removal',
 test('attributeChanged stays silent for markup-parsed values and reports parsed primitives after', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     attributes: ['count'],
     attributeChanged: (attr, oldValue, newValue) => seen.push([attr, oldValue, newValue])
   })
@@ -299,18 +299,18 @@ test('attributeChanged stays silent for markup-parsed values and reports parsed 
   expect(seen).toEqual([['count', 1, 2]])
 })
 
-test('the element wears a salis attribute only once initialized, so unbound markup can be styled', () => {
+test('the element wears a hydrargyri attribute only once initialized, so unbound markup can be styled', () => {
   const name = tag()
-  salis(name, [])
+  hydrargyri(name, [])
   const el = document.createElement(name)
-  expect(el.hasAttribute('salis')).toBe(false)
+  expect(el.hasAttribute('hg')).toBe(false)
   document.body.appendChild(el)
-  expect(el.hasAttribute('salis')).toBe(true)
+  expect(el.hasAttribute('hg')).toBe(true)
 })
 
 test('while the document is parsing, init waits for DOMContentLoaded to see all children', () => {
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true })
   const root = mount(`<${name} count="4"><span bind="count">stale</span></${name}>`)
   expect(root.querySelector('span').textContent).toBe('stale')
@@ -324,15 +324,15 @@ test('a property set before the element upgrades replays through the accessor', 
   const el = document.createElement(name)
   el.count = 5
   document.body.appendChild(el)
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   expect(el.getAttribute('count')).toBe('5')
   expect(el.count).toBe(5)
 })
 
-test('a name colliding with the salis API or a native warns and is skipped, the element survives', () => {
+test('a name colliding with the hydrargyri API or a native warns and is skipped, the element survives', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
-  salis(name, ['update', 'title', 'count'])
+  hydrargyri(name, ['update', 'title', 'count'])
   const root = mount(`<${name} count="1"><span bind="count"></span></${name}>`)
   const el = root.firstElementChild
   expect(warn).toHaveBeenCalledTimes(2)
@@ -344,7 +344,7 @@ test('a name colliding with the salis API or a native warns and is skipped, the 
 test('data-bind and data-on work where the bare attributes would offend a validator', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     attributes: ['count'],
     handlers: { poke: () => seen.push('hit') }
   })
@@ -358,7 +358,7 @@ test('data-bind and data-on work where the bare attributes would offend a valida
 
 test('null removes an attr-bound attribute and empties an html bind', () => {
   const name = tag()
-  salis(name, { properties: ['state', 'body'] })
+  hydrargyri(name, { properties: ['state', 'body'] })
   const root = mount(`<${name}><i bind="state:attr#data-state"></i><div bind="body:html"></div></${name}>`)
   const el = root.firstElementChild
   el.state = 'on'
@@ -369,16 +369,16 @@ test('null removes an attr-bound attribute and empties an html bind', () => {
   expect(el.querySelector('div').innerHTML).toBe('')
 })
 
-test('a bubbling custom event from a child element reaches the parent salis handler', () => {
+test('a bubbling custom event from a child element reaches the parent hydrargyri handler', () => {
   const parent = tag()
   const child = tag()
   const seen = []
-  salis(child, {
+  hydrargyri(child, {
     handlers: {
       pick: (e, el) => el.dispatchEvent(new CustomEvent('picked', { bubbles: true, detail: { sku: 7 } }))
     }
   })
-  salis(parent, {
+  hydrargyri(parent, {
     handlers: { heard: (e) => seen.push(e.detail.sku) }
   })
   const root = mount(
@@ -391,8 +391,8 @@ test('a bubbling custom event from a child element reaches the parent salis hand
 test('a parent writing a child observed attribute repaints the child on its own', () => {
   const parent = tag()
   const child = tag()
-  salis(parent, [])
-  salis(child, ['sku'])
+  hydrargyri(parent, [])
+  hydrargyri(child, ['sku'])
   const root = mount(
     `<${parent}><${child} sku="7"><span bind="sku"></span></${child}></${parent}>`
   )
@@ -411,7 +411,7 @@ function commandEvent(command) {
 test('a command routes to the handler wearing its exact name, with the event and the element', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     attributes: ['count'],
     handlers: {
       '--add-item': (e, el) => seen.push([e.command, el.tagName])
@@ -425,7 +425,7 @@ test('a command routes to the handler wearing its exact name, with the event and
 test('one handler under a command key answers both the command and an on listener', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     handlers: { '--add-item': (e) => seen.push(e.type) }
   })
   const root = mount(`<${name}><button on="click:--add-item"></button></${name}>`)
@@ -439,9 +439,9 @@ test('an unknown command warns only when a command key is declared — plain han
   const quiet = tag()
   const plain = tag()
   const loud = tag()
-  salis(quiet, [])
-  salis(plain, { handlers: { greet: () => {} } })
-  salis(loud, { handlers: { '--known': () => {} } })
+  hydrargyri(quiet, [])
+  hydrargyri(plain, { handlers: { greet: () => {} } })
+  hydrargyri(loud, { handlers: { '--known': () => {} } })
   const root = mount(`<${quiet}></${quiet}><${plain}></${plain}><${loud}></${loud}>`)
   root.querySelector(quiet).dispatchEvent(commandEvent('--whatever'))
   root.querySelector(plain).dispatchEvent(commandEvent('--whatever'))
@@ -453,7 +453,7 @@ test('an unknown command warns only when a command key is declared — plain han
 test('a command handler assigned at runtime routes without any re-wiring', () => {
   const name = tag()
   const seen = []
-  salis(name, [])
+  hydrargyri(name, [])
   const root = mount(`<${name}></${name}>`)
   const el = root.firstElementChild
   el.handlers['--late'] = (e, el) => seen.push(el.tagName)
@@ -464,7 +464,7 @@ test('a command handler assigned at runtime routes without any re-wiring', () =>
 test('an if bind shows the node while the named condition holds, and hides it when it stops', () => {
   const name = tag()
   const seen = []
-  salis(name, {
+  hydrargyri(name, {
     properties: ['items'],
     conditions: {
       // Runs on the initial paint too, where an unassigned property is null —
@@ -486,7 +486,7 @@ test('an if bind shows the node while the named condition holds, and hides it wh
 
 test('a bare if bind follows truthiness with no condition declared', () => {
   const name = tag()
-  salis(name, ['done'])
+  hydrargyri(name, ['done'])
   const root = mount(`<${name}><span bind="done:if">done!</span></${name}>`)
   const el = root.firstElementChild
   expect(el.querySelector('span').hasAttribute('hidden')).toBe(true)
@@ -497,7 +497,7 @@ test('a bare if bind follows truthiness with no condition declared', () => {
 test('an unknown condition warns and leaves the node as authored', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="1"><p bind="count:if#missing">kept</p></${name}>`)
   expect(warn).toHaveBeenCalledTimes(1)
   expect(root.querySelector('p').hasAttribute('hidden')).toBe(false)
@@ -505,7 +505,7 @@ test('an unknown condition warns and leaves the node as authored', () => {
 
 test('if and unless on one key are a full else in markup, no predicate needed', () => {
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(
     `<${name} count="0"><p bind="count:if">some</p><p bind="count:unless">none</p></${name}>`
   )
@@ -520,7 +520,7 @@ test('if and unless on one key are a full else in markup, no predicate needed', 
 
 test('an unless bind inverts its named condition', () => {
   const name = tag()
-  salis(name, {
+  hydrargyri(name, {
     attributes: ['count'],
     conditions: { isLow: (n) => n < 3 }
   })
@@ -533,7 +533,7 @@ test('an unless bind inverts its named condition', () => {
 
 test('a condition assigned at runtime answers on the next repaint', () => {
   const name = tag()
-  salis(name, ['count'])
+  hydrargyri(name, ['count'])
   const root = mount(`<${name} count="3"><p bind="count:if#isEven">even</p></${name}>`)
   const el = root.firstElementChild
   jest.spyOn(console, 'warn').mockImplementation(() => {})
@@ -547,7 +547,7 @@ test('a condition assigned at runtime answers on the next repaint', () => {
 test('an @window or @document event reaches the handler from outside the element, and disconnect unhooks both', () => {
   const name = tag()
   const seen = []
-  salis(name, { handlers: { note: (e, el) => seen.push([e.type, el.tagName]) } })
+  hydrargyri(name, { handlers: { note: (e, el) => seen.push([e.type, el.tagName]) } })
   const root = mount(`<${name} on="ping@window:note;pong@document:note"></${name}>`)
   window.dispatchEvent(new Event('ping'))
   document.dispatchEvent(new Event('pong'))
@@ -562,7 +562,7 @@ test('an unknown @target warns and is skipped while its neighbours still wire', 
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
   const seen = []
-  salis(name, { handlers: { poke: () => seen.push('hit') } })
+  hydrargyri(name, { handlers: { poke: () => seen.push('hit') } })
   const root = mount(`<${name} on="click@body:poke;click:poke"></${name}>`)
   expect(warn).toHaveBeenCalledTimes(1)
   root.firstElementChild.click()
@@ -572,8 +572,8 @@ test('an unknown @target warns and is skipped while its neighbours still wire', 
 test('a reactive model repaints every element it is assigned to, no update() in sight', () => {
   const a = tag()
   const b = tag()
-  salis(a, { properties: ['user'] })
-  salis(b, { properties: ['user'] })
+  hydrargyri(a, { properties: ['user'] })
+  hydrargyri(b, { properties: ['user'] })
   const root = mount(`<${a}><span bind="user.name"></span></${a}><${b}><i bind="user.name"></i></${b}>`)
   const user = reactive({ name: 'ada' })
   root.querySelector(a).user = user
@@ -585,7 +585,7 @@ test('a reactive model repaints every element it is assigned to, no update() in 
 
 test('mutation deep inside a reactive model repaints through the path bind', () => {
   const name = tag()
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.prefs.theme"></span></${name}>`)
   const el = root.firstElementChild
   el.user = reactive({ prefs: { theme: 'dark' } })
@@ -596,7 +596,7 @@ test('mutation deep inside a reactive model repaints through the path bind', () 
 
 test('mutating the raw original does nothing — the proxy is the contract', () => {
   const name = tag()
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   const el = root.firstElementChild
   const raw = { name: 'ada' }
@@ -610,7 +610,7 @@ test('mutating the raw original does nothing — the proxy is the contract', () 
 
 test('a disconnected element stops repainting, reconnecting catches it up', () => {
   const name = tag()
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   const el = root.firstElementChild
   const user = reactive({ name: 'ada' })
@@ -631,7 +631,7 @@ test('a model assigned before upgrade still subscribes once the element initiali
   el.user = user
   el.innerHTML = '<span bind="user.name"></span>'
   document.body.appendChild(el)
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   expect(el.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
   expect(el.querySelector('span').textContent).toBe('grace')
@@ -643,7 +643,7 @@ test('markup stamped from a template before define binds like authored markup', 
   const el = root.querySelector(name)
   el.append(root.querySelector('template').content.cloneNode(true))
   const user = reactive({ name: 'ada' })
-  salis(name, { properties: { user } })
+  hydrargyri(name, { properties: { user } })
   expect(el.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
   expect(el.querySelector('span').textContent).toBe('grace')
@@ -651,7 +651,7 @@ test('markup stamped from a template before define binds like authored markup', 
 
 test('reassigning a property unsubscribes the old model', () => {
   const name = tag()
-  salis(name, { properties: ['user'] })
+  hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   const el = root.firstElementChild
   const old = reactive({ name: 'ada' })
@@ -664,7 +664,7 @@ test('reassigning a property unsubscribes the old model', () => {
 
 test('an array push inside a reactive model repaints its binds', () => {
   const name = tag()
-  salis(name, { properties: ['cart'] })
+  hydrargyri(name, { properties: ['cart'] })
   const root = mount(`<${name}><span bind="cart.length"></span></${name}>`)
   const el = root.firstElementChild
   const cart = reactive([])
@@ -676,7 +676,7 @@ test('an array push inside a reactive model repaints its binds', () => {
 
 test('share reaches every existing instance and every future one', () => {
   const name = tag()
-  const Cls = salis(name, { properties: ['user'] })
+  const Cls = hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}><${name}><i bind="user.name"></i></${name}>`)
   Cls.share({ user: { name: 'ada' } })
   expect(root.querySelector('span').textContent).toBe('ada')
@@ -689,7 +689,7 @@ test('share reaches every existing instance and every future one', () => {
 
 test('an instance assignment outranks share, and reconnecting cannot stomp it', () => {
   const name = tag()
-  const Cls = salis(name, { properties: ['user'] })
+  const Cls = hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}><${name}><i bind="user.name"></i></${name}>`)
   const mine = root.firstElementChild
   mine.user = { name: 'mine' }
@@ -703,7 +703,7 @@ test('an instance assignment outranks share, and reconnecting cannot stomp it', 
 
 test('share with a reactive model is a live broadcast to every instance, late ones included', () => {
   const name = tag()
-  const Cls = salis(name, { properties: ['user'] })
+  const Cls = hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   const model = reactive({ name: 'ada' })
   Cls.share({ user: model })
@@ -718,7 +718,7 @@ test('share with a reactive model is a live broadcast to every instance, late on
 
 test('sharing null releases the model everywhere share put it, and spares direct assignments', () => {
   const name = tag()
-  const Cls = salis(name, { properties: ['user'] })
+  const Cls = hydrargyri(name, { properties: ['user'] })
   const root = mount(`<${name}></${name}><${name}></${name}>`)
   const [mine, theirs] = root.children
   const model = reactive({ name: 'ada' })
@@ -735,7 +735,7 @@ test('sharing null releases the model everywhere share put it, and spares direct
 test('properties as an object declares the keys and shares the values class-wide', () => {
   const name = tag()
   const user = reactive({ name: 'ada' })
-  salis(name, { properties: { user, draft: null } })
+  hydrargyri(name, { properties: { user, draft: null } })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   expect(root.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
@@ -753,7 +753,7 @@ test('a runtime share overrides a declared default, for instances present and fu
   const name = tag()
   const first = reactive({ name: 'first' })
   const second = reactive({ name: 'second' })
-  const Cls = salis(name, { properties: { user: first } })
+  const Cls = hydrargyri(name, { properties: { user: first } })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   expect(root.querySelector('span').textContent).toBe('first')
   Cls.share({ user: second })
@@ -766,7 +766,7 @@ test('a runtime share overrides a declared default, for instances present and fu
 
 test('a dashed property name shares under its camelCase self, from either form', () => {
   const name = tag()
-  const Cls = salis(name, { properties: ['user-data'] })
+  const Cls = hydrargyri(name, { properties: ['user-data'] })
   const root = mount(`<${name}><span bind="userData.name"></span></${name}>`)
   Cls.share({ 'user-data': { name: 'ada' } })
   expect(root.querySelector('span').textContent).toBe('ada')
@@ -775,7 +775,7 @@ test('a dashed property name shares under its camelCase self, from either form',
 test('share refuses an attribute-backed or undeclared key with a warning, and the rest still lands', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
-  const Cls = salis(name, { attributes: ['count'], properties: ['user'] })
+  const Cls = hydrargyri(name, { attributes: ['count'], properties: ['user'] })
   const root = mount(`<${name} count="1"><span bind="user.name"></span></${name}>`)
   Cls.share({ count: 9, nope: true, user: { name: 'ada' } })
   expect(warn).toHaveBeenCalledTimes(2)

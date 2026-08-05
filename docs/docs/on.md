@@ -22,7 +22,7 @@ events.
 ```
 
 ```js demo
-salis("demo-greeter", {
+hydrargyri("demo-greeter", {
   attributes: ["name"],
   handlers: {
     rename(e, el) { el.name = e.target.value || null }
@@ -32,14 +32,14 @@ salis("demo-greeter", {
 
 DOM to state goes through a handler you wrote; state to DOM through a bind.
 Nothing writes back on its own — clear the field and `name` becomes `null`,
-which removes the attribute, because `rename` says so and not because salis
+which removes the attribute, because `rename` says so and not because hydrargyri
 decided.
 
 ## The signature
 
 A handler is called as `(event, element)`. The first argument is the ordinary
 DOM event, with `e.target` being the node that was clicked or typed in. The
-second is the salis element that owns the handler — the thing whose state you
+second is the hydrargyri element that owns the handler — the thing whose state you
 are about to change — which is rarely `e.target` and is the argument that saves
 a `closest()` call in every handler.
 
@@ -51,9 +51,9 @@ arrow function.
 
 ## How a name resolves
 
-| Order | Where salis looks                              |
+| Order | Where hydrargyri looks                              |
 | ----- | ---------------------------------------------- |
-| 1     | a method on the element — your `SalisElement` subclass |
+| 1     | a method on the element — your `HgElement` subclass |
 | 2     | the `handlers` object                          |
 | 3     | nowhere: a warning on the first fire           |
 
@@ -74,7 +74,7 @@ on the global instead of the element, for the events that never reach it —
 `resize` fires on `window`, a click that should close this menu happens
 somewhere else entirely. The handler still belongs to the element, still gets
 `(event, element)`, and the listener is unhooked on disconnect like every
-other one salis added — the leak that pattern usually costs is the part you
+other one hydrargyri added — the leak that pattern usually costs is the part you
 stop writing.
 
 <!-- demo -->
@@ -88,7 +88,7 @@ stop writing.
 ```
 
 ```js demo
-salis("demo-menu", {
+hydrargyri("demo-menu", {
   properties: ["state"],
   connected(el) {
     el.state = "closed";
@@ -106,7 +106,7 @@ salis("demo-menu", {
 ```
 
 The `stopPropagation` is the pattern's one moving part, and it is the
-platform's, not salis's: the opening click bubbles to `document` too, and
+platform's, not hydrargyri's: the opening click bubbles to `document` too, and
 without the stop it closes the menu in the same breath.
 
 An `@` pointing anywhere else — `click@body` — warns and is skipped, and the
@@ -128,10 +128,10 @@ silent, on the assumption an `on` listener like the above is handling them.
 ## What is scanned, and when
 
 Handlers are wired when the element connects, on itself and every descendant
-carrying `on` or `data-on` — except those inside a nested salis element, which
+carrying `on` or `data-on` — except those inside a nested hydrargyri element, which
 owns them instead.
 
-Disconnecting removes every listener salis added. Re-connecting rescans and
+Disconnecting removes every listener hydrargyri added. Re-connecting rescans and
 wires them again, so an element moved across the page keeps working and does
 not accumulate a second copy of its listeners. Listeners **you** added in
 `connected` are yours to remove in `disconnected`.

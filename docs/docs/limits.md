@@ -1,11 +1,11 @@
 ---
 layout: poops-docs-theme/docs
 title: Limits
-description: What salis will not do, why each refusal is deliberate, and the threat model for :html binds.
+description: What hydrargyri will not do, why each refusal is deliberate, and the threat model for :html binds.
 order: 6
 ---
 
-# What salis does not do
+# What hydrargyri does not do
 
 Each of these is a decision, not a gap waiting for a pull request. The
 reasoning is here so you can tell whether the trade is one you want, before you
@@ -18,7 +18,7 @@ Setters notice assignment, not mutation. `el.user = {…}` repaints;
 — or until the model came from [`reactive()`](api.html#reactivemodel), which is
 the one door, and it only opens by name.
 
-What stays refused is the implicit version: salis never wraps an object you
+What stays refused is the implicit version: hydrargyri never wraps an object you
 assigned, and will not grow dependency tracking, computed values or effects. A
 proxy has a real cost — the thing in your debugger is a membrane, not your
 data, and identity checks against the raw original fail — so it is a cost you
@@ -54,33 +54,33 @@ every unrelated DOM change in the subtree cost a rescan.
 a `:html` bind is executed as markup by the browser, so a value you did not
 write belongs in a `text` bind — which goes through `textContent` — or an `attr`
 bind, which goes through `setAttribute`. Both are inert by construction: markup
-arriving through them stays text, and `salis.test.js` holds a test proving it.
+arriving through them stays text, and `hydrargyri.test.js` holds a test proving it.
 
-Salis will not add a sanitizer. A sanitizer that is wrong is worse than none,
+Hydrargyri will not add a sanitizer. A sanitizer that is wrong is worse than none,
 because it reads as a guarantee; the platform's own
 [`setHTML`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML) is
-the right place for that job, and it is not salis's to reimplement while it
+the right place for that job, and it is not hydrargyri's to reimplement while it
 lands.
 
 ## A framework's worth of everything else
 
 No templating, no virtual DOM, no components with slots, no router, no store,
-no plugin ecosystem. Salis writes values into nodes that already exist; it never
+no plugin ecosystem. Hydrargyri writes values into nodes that already exist; it never
 creates, reorders, or diffs them. If you need a page built out of data, you
 need one of the tools on the [comparison table](../index.html#against-the-alternatives),
 and that is not a defeat.
 
 The line sits exactly at *who creates the nodes*. Your code cloning a platform
 [`<template>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template)
-into an element **before it is defined** is fine — by the time salis scans on
+into an element **before it is defined** is fine — by the time hydrargyri scans on
 connect, the clone is authored markup like any other, and the [examples
 page](examples.html#stamp-an-html-template-into-a-custom-element) shows the
-pattern with a reactive model bound through it. What stays refused is salis
+pattern with a reactive model bound through it. What stays refused is hydrargyri
 doing the stamping.
 
 The one door lives outside the house:
-[salis-each](https://github.com/stamat/salis-each) is a separate package whose
-`<x-each>` clones an author-written `<template>` once per item of an array —
+[hydrargyri-each](https://github.com/stamat/hydrargyri-each) is a separate package whose
+`<hg-each>` clones an author-written `<template>` once per item of an array —
 the same bind grammar, names never code, and this refusal here stands
 unamended.
 
@@ -89,4 +89,4 @@ unamended.
 It warns. A bad bind, an unknown handler, a name that collides with the
 platform — each one warns in the console, is skipped, and leaves the rest of the
 element working. A page that half-works is worth more than a page that stopped,
-and the markup underneath was readable before salis arrived anyway.
+and the markup underneath was readable before hydrargyri arrived anyway.

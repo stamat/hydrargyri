@@ -1,24 +1,24 @@
 {
-  "name": "salis",
+  "name": "hydrargyri",
   "version": "1.0.0",
   "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote",
   "type": "module",
-  "main": "src/scripts/salis.js",
+  "main": "src/scripts/hydrargyri.js",
   "exports": {
-    ".": "./src/scripts/salis.js",
+    ".": "./src/scripts/hydrargyri.js",
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "files": [
-    "src/scripts/salis.js",
-    "dist/salis.mjs",
-    "dist/salis.mjs.map",
-    "dist/salis.min.mjs"
+    "src/scripts/hydrargyri.js",
+    "dist/hydrargyri.mjs",
+    "dist/hydrargyri.mjs.map",
+    "dist/hydrargyri.min.mjs"
   ],
-  "homepage": "https://stamat.github.io/salis/",
+  "homepage": "https://stamat.github.io/hydrargyri/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stamat/salis.git"
+    "url": "https://github.com/stamat/hydrargyri.git"
   },
   "keywords": [
     "web-components",
@@ -31,7 +31,7 @@
   "contributors": [],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/stamat/salis/issues"
+    "url": "https://github.com/stamat/hydrargyri/issues"
   },
   "scripts": {
     "dev": "poops",

@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: API
-description: salis(), SalisElement, typed attributes, reactive properties, the lifecycle hooks, update() and reactive().
+description: hydrargyri(), HgElement, typed attributes, reactive properties, the lifecycle hooks, update() and reactive().
 order: 1
 ---
 
@@ -10,7 +10,7 @@ order: 1
 Two entry points, and the second exists only because the first cannot carry
 methods.
 
-## `salis(name, options)` → class
+## `hydrargyri(name, options)` → class
 
 Defines the custom element and returns its class. `options` as an array is
 shorthand for `{ attributes: [...] }`, which is the shape most elements need.
@@ -30,7 +30,7 @@ shorthand for `{ attributes: [...] }`, which is the shape most elements need.
 `count="5"` reads back as `5`, `active` with no value as `true`, an absent
 attribute as `null`. Setting `false` or `null` removes the attribute, `true`
 sets it valueless. The attribute is the only copy of the state — devtools edits
-and salis writes cannot disagree, because there is nothing to disagree with.
+and hydrargyri writes cannot disagree, because there is nothing to disagree with.
 
 | In the markup      | `el.thing` reads | Assigning        | The attribute becomes |
 | ------------------ | ---------------- | ---------------- | --------------------- |
@@ -42,7 +42,7 @@ and salis writes cannot disagree, because there is nothing to disagree with.
 
 Coercion is by value, not intent: `zip="01102"` reads back as the number
 `1102`, and the leading zero is gone. A value that must stay a string keeps a
-non-numeric character in it, or is read through `getAttribute`, where salis
+non-numeric character in it, or is read through `getAttribute`, where hydrargyri
 never touches it.
 
 ## `properties`
@@ -64,7 +64,7 @@ starting and stopping the timer is what the lifecycle hooks are for.
 ```
 
 ```js demo
-salis("demo-clock", {
+hydrargyri("demo-clock", {
   properties: ["time"],
   connected(el) {
     el.time = new Date().toLocaleTimeString();
@@ -78,7 +78,7 @@ salis("demo-clock", {
 
 `disconnected` is not optional bookkeeping here: an element removed from the
 page with its interval still running is a leak that keeps a reference to the
-element alive. Salis unhooks the listeners it added; the ones you started are
+element alive. Hydrargyri unhooks the listeners it added; the ones you started are
 yours to stop.
 
 ## Lifecycle
@@ -104,7 +104,7 @@ this costs nothing.
 ## `update(key)` / `update()`
 
 Repaints nodes bound to one key, or all of them. This is the escape hatch for
-the reactivity salis deliberately does not have: mutation _inside_ an object
+the reactivity hydrargyri deliberately does not have: mutation _inside_ an object
 property hits no setter, so `el.user.name = 'x'` paints nothing until you say
 so.
 
@@ -118,7 +118,7 @@ so.
 ```
 
 ```js demo
-salis("demo-profile", {
+hydrargyri("demo-profile", {
   properties: ["user"],
   connected(el) {
     el.user = { name: "Aja", role: "site design manager" };
@@ -167,7 +167,7 @@ through the proxy repaints every element holding it.
 ```js demo
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-salis("demo-crew", {
+hydrargyri("demo-crew", {
   // The handshake, tag-wide: { user } declares the key and hands the model
   // to every crew card, existing and future alike.
   properties: { user },
@@ -215,7 +215,7 @@ const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
 const user = reactive({});                              // identity exists now
 fetchUser().then((data) => Object.assign(user, data));  // one fetch, module scope
 
-salis("demo-lazy", {
+hydrargyri("demo-lazy", {
   properties: { user },
   handlers: {
     async reload() {
@@ -232,7 +232,7 @@ written, and a path through a missing branch paints nothing until
 before the data or added after. Press **Reload** and the old name holds while
 the new one is in flight — stale-while-refetching for free. The refetch
 writes into the *same* model: identity outlives contents, so new data never
-means a new handshake. A fetch that can fail is yours to `catch` — salis
+means a new handshake. A fetch that can fail is yours to `catch` — hydrargyri
 ignores what hooks and handlers return.
 
 The rules, and each is load-bearing:
@@ -245,7 +245,7 @@ The rules, and each is load-bearing:
   proxy does not have.
 - **Repaints are per key, not per path.** Any mutation inside the model
   repaints everything bound to its key on each subscribed element. There is no
-  dependency tracking; at salis scale a repaint is a few `textContent` writes.
+  dependency tracking; at hydrargyri scale a repaint is a few `textContent` writes.
 - **Models do not merge.** A reactive model assigned inside another keeps its
   own subscribers — mutation notifies the model it was mutated through.
 - **Assignment subscribes, disconnect unsubscribes.** An element removed from
@@ -254,7 +254,7 @@ The rules, and each is load-bearing:
 
 ## `share(values)`
 
-A static on every salis class: `Crew.share({ user: model })` hands each value
+A static on every hydrargyri class: `Crew.share({ user: model })` hands each value
 to every instance of the element — the tag-wide form of `el.user = model`,
 called once, never per change. Present instances get it on the spot; future
 ones pick it up as they connect. Share a `reactive()` model and the pair is a
@@ -291,13 +291,13 @@ page has one of — the current user, the cart, the viewport; a noun that
 pluralizes per instance is assignment's, and the app's loop knows which is
 whose.
 
-## `SalisElement`
+## `HgElement`
 
 The base class behind the factory, for elements that need methods of their own.
 Declare the same surface as statics, define the element yourself:
 
 ```js
-class UserCard extends SalisElement {
+class UserCard extends HgElement {
   static attributes = ["name"];
   greet(e) {
     this.name = "clicked";
@@ -313,7 +313,7 @@ Override `connected`, `disconnected` and `attributeChanged` — not the
 ## `parseBinds(raw)`
 
 The parser behind the `bind` attribute, exported for ecosystem packages that
-paint with the same grammar — [salis-each](https://github.com/stamat/salis-each)
+paint with the same grammar — [hydrargyri-each](https://github.com/stamat/hydrargyri-each)
 is the consumer. It lives here so the grammar cannot fork.
 
 ```js
@@ -323,7 +323,7 @@ parseBinds("user.name; count:attr#value");
 ```
 
 A malformed entry warns and is skipped, the rest of the attribute parses — the
-same forgiveness the scanner shows. Writing an element on salis alone never
+same forgiveness the scanner shows. Writing an element on hydrargyri alone never
 needs it.
 
 ## Names that collide
@@ -334,16 +334,16 @@ without it.
 
 | The name                                      | Why it is refused                                     |
 | --------------------------------------------- | ----------------------------------------------------- |
-| `update`                                      | salis's own API — an accessor over it breaks repainting |
+| `update`                                      | hydrargyri's own API — an accessor over it breaks repainting |
 | `title`, `id`, `hidden`, `lang`               | platform natives, which would silently lose their behaviour |
-| a method your `SalisElement` subclass declares | the method is the thing you meant to call             |
-| salis's internals (`handlers`, `_state`, …)   | the machinery the element rides on                    |
+| a method your `HgElement` subclass declares | the method is the thing you meant to call             |
+| hydrargyri's internals (`handlers`, `_state`, …)   | the machinery the element rides on                    |
 
 Failing at definition is the point. The alternative is a `TypeError` three
 calls from the cause, in a stack that names none of the above.
 
-## `[salis]`
+## `[hg]`
 
-The element wears a `salis` attribute once initialized. `x-el:not([salis])`
+The element wears an `hg` attribute once initialized. `x-el:not([hg])`
 styles the not-yet-upgraded state — or hides nothing, since the markup
 underneath is the fallback by design.

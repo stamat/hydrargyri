@@ -47,7 +47,7 @@ Three types on one element, doing three different jobs:
 ```
 
 ```js demo
-salis("demo-badge", {
+hydrargyri("demo-badge", {
   attributes: ["label", "tone"],
   handlers: {
     relabel(e, el) { el.label = e.target.value || null },
@@ -94,7 +94,7 @@ defined like a handler, named from the markup, never evaluated:
 ```
 
 ```js demo
-salis("demo-stock", {
+hydrargyri("demo-stock", {
   attributes: ["items"],
   handlers: {
     restock(e, el) { el.items = e.target.value || 0 }
@@ -112,7 +112,7 @@ is for. A condition is called as `(value, element)` on every paint of its key
 — the initial paint included, where an unassigned property is `null`, so a
 condition owns every value the key can hold.
 
-The dependency is named in the bind itself. That is why salis needs no
+The dependency is named in the bind itself. That is why hydrargyri needs no
 dependency tracking to know when to re-run a condition: repaint `items` and
 `isLow` runs, and nothing else does. It is also the whole difference from an
 evaluated `x-show` — the logic sits in a JS file where it can be tested, and
@@ -132,7 +132,7 @@ model came from [`reactive()`](api.html#reactivemodel), which watches its own
 mutations.
 
 Depth is not limited, and a segment that is missing anywhere along the way is
-`undefined`, which paints nothing. A path is a read, never a write: salis walks
+`undefined`, which paints nothing. A path is a read, never a write: hydrargyri walks
 it to find a value and never creates the objects on the way.
 
 ## When it goes wrong
@@ -166,7 +166,7 @@ sit on one element the bare form wins.
 ## What is scanned, and when
 
 Binds are collected when the element connects, from itself and every descendant
-carrying `bind` or `data-bind` — except those inside a **nested** salis element,
+carrying `bind` or `data-bind` — except those inside a **nested** hydrargyri element,
 which owns them instead. Nesting works, and neither element steals the other's
 nodes.
 

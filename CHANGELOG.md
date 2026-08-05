@@ -13,11 +13,13 @@ for the person who wrote the code.
 
 ### Added
 
-- **The library, finished from the 2024 prototype.** `hydrargyri(name, options)` defines a
+- **The library, finished from the 2024 prototype.** `hg(name, options)` defines a
   custom element whose observed attributes become typed camelCase properties reflected to
   the DOM, with `properties` for state that never touches an attribute, `handlers` for
   `on="event:name"` wiring, and `connected` / `disconnected` / `attributeChanged` lifecycle
-  hooks. `HgElement` is exported for elements that need methods of their own.
+  hooks. It is the default export — the docs write it `hg`, and the named export
+  `hydrargyri` is the same function under its full name. `HgElement` is exported for
+  elements that need methods of their own.
 - **Typed binds.** `bind="path[:type[#attr]]"` paints into `textContent` (default),
   `innerHTML`, `.value`, or a named attribute; entries separate with `;` and paths may
   reach into objects (`user.name`). A malformed or typo'd entry warns and is skipped

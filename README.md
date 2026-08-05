@@ -20,9 +20,9 @@ script never loading leaves the page exactly as written:
 ```
 
 ```js
-import hydrargyri from "hydrargyri";
+import hg from "hydrargyri";
 
-hydrargyri("demo-counter", {
+hg("demo-counter", {
   attributes: ["count"],
   handlers: {
     increment(e, el) {
@@ -80,14 +80,14 @@ npm install hydrargyri
 ```
 
 ```js
-import hydrargyri, { HgElement, reactive } from "hydrargyri";
+import hg, { HgElement, reactive } from "hydrargyri";
 ```
 
 Or straight from a CDN as a module, no install:
 
 ```html
 <script type="module">
-  import hydrargyri from "https://cdn.jsdelivr.net/npm/hydrargyri/dist/hydrargyri.mjs";
+  import hg from "https://cdn.jsdelivr.net/npm/hydrargyri/dist/hydrargyri.mjs";
 </script>
 ```
 
@@ -100,7 +100,7 @@ the site is the manual.
 | Page                                                        | What it covers                                                                                     |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | [Getting started](https://stamat.github.io/hydrargyri/docs/)     | the three parts of a hydrargyri element, in one screen                                                  |
-| [API](https://stamat.github.io/hydrargyri/docs/api.html)         | `hydrargyri()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
+| [API](https://stamat.github.io/hydrargyri/docs/api.html)         | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
 | [bind](https://stamat.github.io/hydrargyri/docs/bind.html)       | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects   |
 | [on](https://stamat.github.io/hydrargyri/docs/on.html)           | what fires: event names, handler resolution, the `(event, element)` signature                      |
 | [Composition](https://stamat.github.io/hydrargyri/docs/composition.html) | elements talking to each other — events up, attributes down, no bus                        |

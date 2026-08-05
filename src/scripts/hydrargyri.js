@@ -150,7 +150,7 @@ export function reactive(obj) {
 
 /**
  * Base class behind every hydrargyri element. Extend it directly when the element
- * needs methods of its own; otherwise the `hydrargyri()` factory is shorter.
+ * needs methods of its own; otherwise the `hg()` factory is shorter.
  *
  * Subclasses override `connected`, `disconnected` and `attributeChanged` —
  * not the *Callback methods, which run the binding machinery.
@@ -181,7 +181,7 @@ export class HgElement extends HTMLElement {
    * @param {Object} values Map of property key → value
    *
    * @example
-   * const Crew = hydrargyri('user-card', { properties: ['user'] })
+   * const Crew = hg('user-card', { properties: ['user'] })
    * Crew.share({ user: reactive({ name: 'Ada' }) })
    */
   static share(values) {
@@ -559,12 +559,12 @@ export class HgElement extends HTMLElement {
  * @returns {typeof HgElement}
  *
  * @example
- * hydrargyri('user-card', {
+ * hg('user-card', {
  *   attributes: ['name'],
  *   handlers: { greet(e, el) { el.name = 'clicked' } }
  * })
  */
-export default function hydrargyri(name, options = {}) {
+export default function hg(name, options = {}) {
   if (isArray(options)) options = { attributes: options }
   class Hg extends HgElement {
     static attributes = options.attributes || []
@@ -578,3 +578,7 @@ export default function hydrargyri(name, options = {}) {
   customElements.define(name, Hg)
   return Hg
 }
+
+// The default import already takes whatever name the caller gives it; this is
+// only what makes the named form `import { hydrargyri }` resolve.
+export { hg as hydrargyri }

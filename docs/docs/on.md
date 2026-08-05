@@ -22,7 +22,7 @@ events.
 ```
 
 ```js demo
-hydrargyri("demo-greeter", {
+hg("demo-greeter", {
   attributes: ["name"],
   handlers: {
     rename(e, el) { el.name = e.target.value || null }
@@ -88,7 +88,7 @@ stop writing.
 ```
 
 ```js demo
-hydrargyri("demo-menu", {
+hg("demo-menu", {
   properties: ["state"],
   connected(el) {
     el.state = "closed";

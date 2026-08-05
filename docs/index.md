@@ -27,7 +27,7 @@ script never loading leaves the page exactly as written.
 ```
 
 ```js demo
-hydrargyri("demo-counter", {
+hg("demo-counter", {
   attributes: ["count"],
   handlers: {
     increment(e, el) { el.count += 1 },
@@ -86,14 +86,14 @@ npm install hydrargyri
 ```
 
 ```js
-import hydrargyri, { HgElement, reactive } from "hydrargyri";
+import hg, { HgElement, reactive } from "hydrargyri";
 ```
 
 Or straight from a CDN as a module, no install:
 
 ```html
 <script type="module">
-  import hydrargyri from "https://cdn.jsdelivr.net/npm/hydrargyri/dist/hydrargyri.mjs";
+  import hg from "https://cdn.jsdelivr.net/npm/hydrargyri/dist/hydrargyri.mjs";
 </script>
 ```
 
@@ -105,7 +105,7 @@ elements. You call it once per tag, and the tag upgrades wherever it appears.
 | Page                                 | What it covers                                                                     |
 | ------------------------------------ | ---------------------------------------------------------------------------------- |
 | [Getting started](docs/)             | the three parts of a hydrargyri element, in one screen                                  |
-| [API](docs/api.html)                 | `hydrargyri()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
+| [API](docs/api.html)                 | `hg()`, `HgElement`, typed attributes, `properties`, lifecycle, `update()`, `reactive()`, `share()` |
 | [bind](docs/bind.html)               | where state lands: `text`, `html`, `value`, `attr#name`, `if` / `unless`, and paths into objects |
 | [on](docs/on.html)                   | what fires: event names, handler resolution, the `(event, element)` signature      |
 | [Composition](docs/composition.html) | elements talking to each other — events up, attributes down, no bus                |

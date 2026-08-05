@@ -7,10 +7,10 @@
 // `customElements.define` for each, which throws.
 //
 // A global rather than an import line in every fence: the fence is a sample of
-// how hydrargyri is used, and `import hydrargyri from '../../dist/hydrargyri.min.mjs'` is a
+// how hydrargyri is used, and `import hg from '../../dist/hydrargyri.min.mjs'` is a
 // fact about this repository's layout — a different line on every page, and the
 // wrong one for the reader copying it.
-import hydrargyri, { reactive } from './hydrargyri.js'
+import hg, { reactive } from './hydrargyri.js'
 
-window.hydrargyri = hydrargyri
+window.hg = hg
 window.reactive = reactive

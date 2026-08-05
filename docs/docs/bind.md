@@ -47,7 +47,7 @@ Three types on one element, doing three different jobs:
 ```
 
 ```js demo
-hydrargyri("demo-badge", {
+hg("demo-badge", {
   attributes: ["label", "tone"],
   handlers: {
     relabel(e, el) { el.label = e.target.value || null },
@@ -94,7 +94,7 @@ defined like a handler, named from the markup, never evaluated:
 ```
 
 ```js demo
-hydrargyri("demo-stock", {
+hg("demo-stock", {
   attributes: ["items"],
   handlers: {
     restock(e, el) { el.items = e.target.value || 0 }

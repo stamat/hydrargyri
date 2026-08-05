@@ -22,7 +22,7 @@ listens to any event name, custom events included, and they bubble.
 ```
 
 ```js demo
-hydrargyri("demo-item", {
+hg("demo-item", {
   attributes: ["sku"],
   handlers: {
     pick(e, el) {
@@ -36,7 +36,7 @@ hydrargyri("demo-item", {
   },
 });
 
-hydrargyri("demo-cart", {
+hg("demo-cart", {
   properties: ["count"],
   connected(el) {
     el.count = 0;
@@ -91,7 +91,7 @@ event and writes the other sibling.
 ```
 
 ```js demo
-hydrargyri("demo-dose", {
+hg("demo-dose", {
   attributes: ["amount"],
   handlers: {
     pick(e, el) {
@@ -105,9 +105,9 @@ hydrargyri("demo-dose", {
   },
 });
 
-hydrargyri("demo-vessel", { attributes: ["amount"] });
+hg("demo-vessel", { attributes: ["amount"] });
 
-hydrargyri("demo-mixer", {
+hg("demo-mixer", {
   handlers: {
     pour(e, el) {
       el.querySelector("demo-vessel").amount += e.detail.amount;
@@ -139,7 +139,7 @@ that element**, and a handler under the command's exact name answers it.
 ```
 
 ```js
-hydrargyri("x-cart", {
+hg("x-cart", {
   attributes: ["count"],
   handlers: {
     "--add-item": (e, el) => {

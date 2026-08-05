@@ -132,7 +132,7 @@ var HgElement = class extends HTMLElement {
    * @param {Object} values Map of property key → value
    *
    * @example
-   * const Crew = hydrargyri('user-card', { properties: ['user'] })
+   * const Crew = hg('user-card', { properties: ['user'] })
    * Crew.share({ user: reactive({ name: 'Ada' }) })
    */
   static share(values) {
@@ -433,7 +433,7 @@ __publicField(HgElement, "properties", []);
 __publicField(HgElement, "handlers", {});
 /** Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`. */
 __publicField(HgElement, "conditions", {});
-function hydrargyri(name, options = {}) {
+function hg(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
   class Hg extends HgElement {
   }
@@ -449,7 +449,8 @@ function hydrargyri(name, options = {}) {
 }
 export {
   HgElement,
-  hydrargyri as default,
+  hg as default,
+  hg as hydrargyri,
   parseBinds,
   reactive
 };

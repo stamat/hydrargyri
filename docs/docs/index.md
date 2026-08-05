@@ -25,7 +25,7 @@ value lands, `on` says what a name fires.
 ```
 
 ```js demo
-hydrargyri("demo-counter", {
+hg("demo-counter", {
   attributes: ["count"],
   handlers: {
     increment(e, el) { el.count += 1 },
@@ -40,9 +40,9 @@ a Content Security Policy nothing.
 
 ## 2. The definition
 
-The JavaScript beside that markup is the whole of it. `hydrargyri(name, options)`
+The JavaScript beside that markup is the whole of it. `hg(name, options)`
 defines a custom element and returns its class; it is called once in a module —
-`import hydrargyri from "hydrargyri"` — and the tag works everywhere it appears on the
+`import hg from "hydrargyri"` — and the tag works everywhere it appears on the
 page.
 
 `attributes` are observed: each becomes a typed camelCase property reflected to

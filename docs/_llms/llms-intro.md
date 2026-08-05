@@ -1,5 +1,7 @@
 Hydrargyri is a small JavaScript library (`hydrargyri`) for reactive custom elements in
-the **light DOM** — no shadow roots, no build step, no expression language. It
+the **light DOM** — no shadow roots, no build step, no expression language. The
+factory is the default export, written `hg` throughout these docs; the named
+export `hydrargyri` is the same function under its full name. It
 upgrades markup an author already wrote rather than generating markup of its
 own, so a page renders without it and keeps rendering if the script never
 loads.
@@ -18,9 +20,9 @@ sanitize and nothing for a Content Security Policy to object to.
 ```
 
 ```js
-import hydrargyri from "hydrargyri";
+import hg from "hydrargyri";
 
-hydrargyri("demo-counter", {
+hg("demo-counter", {
   attributes: ["count"],
   handlers: {
     increment(e, el) { el.count += 1 },
@@ -31,7 +33,7 @@ hydrargyri("demo-counter", {
 
 The API:
 
-- `hydrargyri(name, options)` defines a custom element and returns its class.
+- `hg(name, options)` defines a custom element and returns its class.
   `options` takes `attributes`, `properties`, `handlers`, `conditions`, and
   the `connected` / `disconnected` / `attributeChanged` hooks; an array is
   shorthand for `attributes`.

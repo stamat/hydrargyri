@@ -1,7 +1,7 @@
 ---
 layout: poops-docs-theme/docs
 title: API
-description: hydrargyri(), HgElement, typed attributes, reactive properties, the lifecycle hooks, update() and reactive().
+description: hg(), HgElement, typed attributes, reactive properties, the lifecycle hooks, update() and reactive().
 order: 1
 ---
 
@@ -10,10 +10,19 @@ order: 1
 Two entry points, and the second exists only because the first cannot carry
 methods.
 
-## `hydrargyri(name, options)` → class
+## `hg(name, options)` → class
 
 Defines the custom element and returns its class. `options` as an array is
 shorthand for `{ attributes: [...] }`, which is the shape most elements need.
+
+It is the default export, so the import names it whatever you like — the docs
+use `hg`. A named export `hydrargyri` is the same function, for the times the
+full name reads better:
+
+```js
+import hg from "hydrargyri";
+import { hydrargyri } from "hydrargyri";
+```
 
 | Option             | Type       | What it does                                                                                                                                                                                                    |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -64,7 +73,7 @@ starting and stopping the timer is what the lifecycle hooks are for.
 ```
 
 ```js demo
-hydrargyri("demo-clock", {
+hg("demo-clock", {
   properties: ["time"],
   connected(el) {
     el.time = new Date().toLocaleTimeString();
@@ -118,7 +127,7 @@ so.
 ```
 
 ```js demo
-hydrargyri("demo-profile", {
+hg("demo-profile", {
   properties: ["user"],
   connected(el) {
     el.user = { name: "Aja", role: "site design manager" };
@@ -167,7 +176,7 @@ through the proxy repaints every element holding it.
 ```js demo
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-hydrargyri("demo-crew", {
+hg("demo-crew", {
   // The handshake, tag-wide: { user } declares the key and hands the model
   // to every crew card, existing and future alike.
   properties: { user },
@@ -215,7 +224,7 @@ const fetchUser = () => // stands in for fetch(url).then((r) => r.json())
 const user = reactive({});                              // identity exists now
 fetchUser().then((data) => Object.assign(user, data));  // one fetch, module scope
 
-hydrargyri("demo-lazy", {
+hg("demo-lazy", {
   properties: { user },
   handlers: {
     async reload() {

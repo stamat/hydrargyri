@@ -50,7 +50,7 @@ for (const el of document.querySelectorAll("demo-tpl-card")) {
 
 const user = reactive({ name: "Aja", role: "site design manager" });
 
-hydrargyri("demo-tpl-card", {
+hg("demo-tpl-card", {
   properties: { user },
   handlers: {
     promote() {
@@ -64,7 +64,7 @@ hydrargyri("demo-tpl-card", {
 
 The ordering is the whole trick: **clone before define.** Until
 `customElements.define` runs, `<demo-tpl-card>` is an unknown element — inert,
-stampable, nobody scanning. The `hydrargyri()` call defines it, the browser upgrades
+stampable, nobody scanning. The `hg()` call defines it, the browser upgrades
 every instance on the page, and each one connects and [scans whatever children
 it has at that moment](bind.html#what-is-scanned-and-when) — which now includes
 the clone. An element created later follows the same rule from the other side:

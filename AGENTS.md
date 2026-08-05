@@ -96,7 +96,7 @@ Rules:
 - **Always:** run `script/lint` and `script/test` before calling work done; pair
   every fix or feature with a test; add a changelog entry under
   `## [Unreleased]`.
-- **Ask first:** changing `bind` or `on` syntax, the `hydrargyri()` options, or the
+- **Ask first:** changing `bind` or `on` syntax, the `hg()` options, or the
   `[hg]` attribute — that is the public API; adding a dependency.
 - **Never:** edit `dist/` or `_site/` (generated); weaken, skip, or delete a
   test to make it pass; bump the version or publish — a tag does that.

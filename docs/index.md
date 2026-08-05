@@ -19,25 +19,23 @@ script never loading leaves the page exactly as written.
 <!-- demo -->
 
 ```html
-<demo-counter count="0">
-  <button on="click:decrement" aria-label="Decrement">−</button>
-  <output bind="count">0</output>
-  <button on="click:increment" aria-label="Increment">+</button>
-</demo-counter>
+<demo-greeter name="stranger">
+  <label>Name <input on="input:rename"></label>
+  <p>Hello, <span bind="name">stranger</span>!</p>
+</demo-greeter>
 ```
 
 ```js demo
-hg("demo-counter", {
-  attributes: ["count"],
+hg("demo-greeter", {
+  attributes: ["name"],
   handlers: {
-    increment(e, el) { el.count += 1 },
-    decrement(e, el) { el.count -= 1 }
+    rename(e, el) { el.name = e.target.value || null }
   }
 });
 ```
 
 Edit the markup above and it re-renders — that is the whole contract. Block the
-script and the `0` is still there, because hydrargyri never wrote it.
+script and it still greets a stranger, because hydrargyri never wrote that word.
 
 No build step, no shadow DOM, no expression language — `bind` and `on` hold
 names, never code. Quicksilver, in the alchemical sense: the volatile principle,

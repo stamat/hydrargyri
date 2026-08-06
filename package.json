@@ -1,6 +1,6 @@
 {
   "name": "hydrargyri",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote",
   "type": "module",
   "main": "src/scripts/hydrargyri.js",

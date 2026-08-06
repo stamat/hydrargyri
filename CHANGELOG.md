@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-06
+
 ### Added
 
 - **A todo list on the _Examples_ page.** The reference had `<hg-each>` painting an

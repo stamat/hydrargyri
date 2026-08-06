@@ -20,6 +20,22 @@ for the person who wrote the code.
   trades it makes: no `key`, so rows are re-cloned rather than kept, and no
   persistence, so a reload is the markup's own row again.
 
+### Fixed
+
+- **A handler named after a platform method no longer runs the platform's code.**
+  Name resolution looked at every method the element had, inherited ones included, so
+  `on="click:remove"` called `Element.remove()` and the click detached the element —
+  silently, with `handlers.remove` never reached. Resolution now stops at authored
+  methods (the subclass and the instance, never at or past `HgElement`): a registry
+  entry by a platform name runs, and a platform name with no entry warns instead of
+  executing DOM code nobody wrote as a handler.
+
+- **A `prop` bind on the element's own tag writing its own reactive key is refused at
+  scan.** `<x-list bind="items:prop#items">` painted `items` into its own setter, and
+  the setter repainted — a feedback loop that hit the call-stack limit on the first
+  paint and took the element down with no hint of where. It now warns, names the loop,
+  and is skipped; the fix on the page is assigning the property from a handler.
+
 ## [1.1.0] - 2026-08-05
 
 ### Added

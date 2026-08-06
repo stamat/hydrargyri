@@ -53,7 +53,7 @@ arrow function.
 
 | Order | Where hydrargyri looks                              |
 | ----- | ---------------------------------------------- |
-| 1     | a method on the element — your `HgElement` subclass |
+| 1     | a method you wrote on the element — your `HgElement` subclass |
 | 2     | the `handlers` object                          |
 | 3     | nowhere: a warning on the first fire           |
 
@@ -62,12 +62,13 @@ double-fire behind a subclass method of the same name. An unknown name warns
 when the event first fires rather than throwing, so a typo costs you a feature
 and not the page.
 
-Step 1 is every method the element has, the platform's included: `remove`,
-`focus`, `blur`, `click`, `scrollIntoView`. `on="click:remove"` calls
-`Element.remove()` and the node vanishes — your `handlers.remove` is never
-reached, and nothing warns, because a method was found. Name a handler for what
-it does to your state (`dismiss`, `reset`) rather than for what the DOM already
-answers to.
+Step 1 is authored methods only — what your subclass (or the element instance)
+defines, never what it inherits from the platform. `on="click:remove"` with a
+`handlers.remove` entry runs your entry; with none, it warns that the name only
+matches the platform's `remove()` and calls nothing — `Element.remove()`
+detaching the element on a click is not a handler anyone meant. Platform names
+are still better avoided: a reader of the markup has to know the resolution
+rule to know `remove` is yours.
 
 ## `data-on`
 

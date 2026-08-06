@@ -38,7 +38,9 @@ The API:
   `formatters`, and the `connected` / `disconnected` / `attributeChanged`
   hooks; an array is shorthand for `attributes`.
 - `HgElement` is the exported base class, for elements that need methods of
-  their own. A method outranks a `handlers` entry of the same name.
+  their own. A method you wrote outranks a `handlers` entry of the same name;
+  an inherited one does not, so `on="click:remove"` never reaches
+  `Element.remove()`.
 - Observed attributes become typed camelCase properties reflected to the DOM —
   `count="5"` reads back as `5`, a valueless attribute as `true`, an absent one
   as `null`. Assigning `null` or `false` removes the attribute. The attribute is

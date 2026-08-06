@@ -136,7 +136,7 @@ function reactive(obj) {
   };
   return wrap(obj);
 }
-var HgElement = class extends HTMLElement {
+var _HgElement = class _HgElement extends HTMLElement {
   static get observedAttributes() {
     return this.attributes;
   }
@@ -318,6 +318,10 @@ var HgElement = class extends HTMLElement {
           console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${unknown}" for bind "${raw}"`);
           continue;
         }
+        if (el === this && entry.type === "prop" && entry.attr && this._owns(transformDashToCamelCase(entry.attr))) {
+          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> bind "${raw}" writes its own reactive "${entry.attr}" \u2014 a feedback loop; assign the property from a handler instead`);
+          continue;
+        }
         entry.el = el;
         for (const key of keys) {
           if (!this._binds[key]) this._binds[key] = [];
@@ -387,12 +391,31 @@ var HgElement = class extends HTMLElement {
     for (const { subs, fn } of this._subscriptions) subs.delete(fn);
     this._subscriptions = [];
   }
-  // A method wins over the handlers registry, and only one runs — first
-  // match, so a registry entry cannot double-fire behind a subclass method.
+  // A subclass method wins over the handlers registry, and only one runs —
+  // first match, so a registry entry cannot double-fire behind it. Authored
+  // methods only, found below HgElement in the chain: without that floor,
+  // `on="click:remove"` reaches Element.prototype.remove and the click
+  // silently detaches the element itself.
   _handle(name, e) {
-    if (typeof this[name] === "function") return this[name](e, this);
+    if (this._authoredMethod(name)) return this[name](e, this);
     if (typeof this.handlers[name] === "function") return this.handlers[name](e, this);
+    if (typeof this[name] === "function") {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> handler "${name}" only matches the platform's ${name}() \u2014 not called; declare it in handlers`);
+      return;
+    }
     console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no handler "${name}"`);
+  }
+  // Walks from the instance down to HgElement.prototype, exclusive — what is
+  // found on the way was written by an author; what sits at or past the base
+  // class is hydrargyri's API or the platform's, and neither is a handler.
+  _authoredMethod(name) {
+    if (typeof this[name] !== "function") return false;
+    let proto = this;
+    while (proto && proto !== _HgElement.prototype) {
+      if (Object.prototype.hasOwnProperty.call(proto, name)) return true;
+      proto = Object.getPrototypeOf(proto);
+    }
+    return false;
   }
   // Commands look up handlers by the exact command string, dashes and all —
   // no name transformation to reason backwards through, and custom commands
@@ -474,15 +497,16 @@ var HgElement = class extends HTMLElement {
   }
 };
 /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
-__publicField(HgElement, "attributes", []);
+__publicField(_HgElement, "attributes", []);
 /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
-__publicField(HgElement, "properties", []);
+__publicField(_HgElement, "properties", []);
 /** Named event handlers reachable from `on="event:name"`, shared by all instances. A key that is an exact `command` string (`'--add-item'`) also answers that Invoker Command, called as (event, element). */
-__publicField(HgElement, "handlers", {});
+__publicField(_HgElement, "handlers", {});
 /** Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`. */
-__publicField(HgElement, "conditions", {});
+__publicField(_HgElement, "conditions", {});
 /** Named formatters for `bind="key|name[:arg…]"`, called as (value, element, ...args) at paint — the return value is what lands in the node. Args are property paths resolved on the element, never literals. */
-__publicField(HgElement, "formatters", {});
+__publicField(_HgElement, "formatters", {});
+var HgElement = _HgElement;
 function hg(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
   class Hg extends HgElement {

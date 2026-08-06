@@ -436,6 +436,15 @@ export class HgElement extends HTMLElement {
           console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${unknown}" for bind "${raw}"`)
           continue
         }
+        // A prop bind on the element's own host, writing a reactive key it
+        // owns, is a feedback loop: the paint runs the setter and the setter
+        // repaints — stack overflow at first paint. Refused here, where the
+        // author can still read why. (An attr bind converges instead: the
+        // changed-value guard in attributeChangedCallback stops the echo.)
+        if (el === this && entry.type === 'prop' && entry.attr && this._owns(transformDashToCamelCase(entry.attr))) {
+          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> bind "${raw}" writes its own reactive "${entry.attr}" — a feedback loop; assign the property from a handler instead`)
+          continue
+        }
         entry.el = el
         for (const key of keys) {
           if (!this._binds[key]) this._binds[key] = []
@@ -514,12 +523,32 @@ export class HgElement extends HTMLElement {
     this._subscriptions = []
   }
 
-  // A method wins over the handlers registry, and only one runs — first
-  // match, so a registry entry cannot double-fire behind a subclass method.
+  // A subclass method wins over the handlers registry, and only one runs —
+  // first match, so a registry entry cannot double-fire behind it. Authored
+  // methods only, found below HgElement in the chain: without that floor,
+  // `on="click:remove"` reaches Element.prototype.remove and the click
+  // silently detaches the element itself.
   _handle(name, e) {
-    if (typeof this[name] === 'function') return this[name](e, this)
+    if (this._authoredMethod(name)) return this[name](e, this)
     if (typeof this.handlers[name] === 'function') return this.handlers[name](e, this)
+    if (typeof this[name] === 'function') {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> handler "${name}" only matches the platform's ${name}() — not called; declare it in handlers`)
+      return
+    }
     console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no handler "${name}"`)
+  }
+
+  // Walks from the instance down to HgElement.prototype, exclusive — what is
+  // found on the way was written by an author; what sits at or past the base
+  // class is hydrargyri's API or the platform's, and neither is a handler.
+  _authoredMethod(name) {
+    if (typeof this[name] !== 'function') return false
+    let proto = this
+    while (proto && proto !== HgElement.prototype) {
+      if (Object.prototype.hasOwnProperty.call(proto, name)) return true
+      proto = Object.getPrototypeOf(proto)
+    }
+    return false
   }
 
   // Commands look up handlers by the exact command string, dashes and all —

@@ -265,6 +265,7 @@ entry, and is skipped. The element's **other** binds keep painting.
 | `bind="name:txt"` — unknown type     | warns with the list of types it expected                              |
 | `bind="url:attr"` — `attr` with no `#name` | same warning; there is no attribute to write                    |
 | `bind="rows:prop"` — `prop` with no `#name` | same warning; there is no property to write                    |
+| `bind="items:prop#items"` on the element's own tag | warns that the bind writes its own reactive key — a feedback loop the paint cannot leave — and is skipped; assign the property from a handler instead |
 | `bind="price\|money:tax"` — an argument naming nothing the element owns | warns like a typo in the key, and the entry is skipped |
 | `bind="price\|a\|b"` — a second `\|` | warns; one formatter per entry, chaining is not supported             |
 | `bind="user.name"` before `user` exists | nothing painted, no warning — a path is allowed to be empty for now |

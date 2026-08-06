@@ -303,6 +303,26 @@ test('a subclass method outranks the registry, and only one of the two runs', ()
   expect(calls).toEqual(['method'])
 })
 
+test('a handler named after a platform method runs from the registry, never Element.prototype', () => {
+  const name = tag()
+  const calls = []
+  hg(name, { handlers: { remove: (e, el) => calls.push(el.tagName) } })
+  const root = mount(`<${name}><button on="click:remove">×</button></${name}>`)
+  root.querySelector('button').click()
+  expect(calls).toEqual([name.toUpperCase()])
+  expect(root.querySelector(name)).not.toBeNull()
+})
+
+test('a platform-method name with no registry entry warns instead of detaching the element', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, [])
+  const root = mount(`<${name}><button on="click:remove"></button></${name}>`)
+  root.querySelector('button').click()
+  expect(root.querySelector(name)).not.toBeNull()
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('platform'))
+})
+
 test('an unknown handler warns instead of throwing', () => {
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const name = tag()
@@ -355,6 +375,22 @@ test('a bind on the hydrargyri element itself works, scoped to itself', () => {
   hg(name, ['state'])
   const root = mount(`<${name} state="on" bind="state:attr#data-state"></${name}>`)
   expect(root.firstElementChild.getAttribute('data-state')).toBe('on')
+})
+
+test('a prop bind on the host writing its own reactive key is refused at scan, not painted into a stack overflow', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, { properties: ['items'] })
+  const root = mount(`<${name} bind="items:prop#items"></${name}>`)
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('feedback loop'))
+  expect(() => { root.firstElementChild.items = [1, 2] }).not.toThrow()
+})
+
+test('a prop bind on the host writing a plain DOM property still works', () => {
+  const name = tag()
+  hg(name, ['label'])
+  const root = mount(`<${name} label="hi" bind="label:prop#title"></${name}>`)
+  expect(root.firstElementChild.title).toBe('hi')
 })
 
 test('a typo in a bind key warns once at scan and never throws on update', () => {

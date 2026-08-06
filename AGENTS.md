@@ -121,10 +121,6 @@ Run this checklist before writing any code; stop at the first "no".
 
 ## Non-obvious rules
 
-- **`package.json` is still `private: true`.** Nothing publishes until that comes
-  off, and [publish.yml](.github/workflows/publish.yml) will fail on the first
-  `v*` tag if it is still there. Removing it is a release decision, not a
-  cleanup.
 - **`script/publish` writes the version itself**, in Node, rather than delegating
   to a `script/version`. It calls `script/changelog` and `script/build` if they
   exist, and pushing the tag is what triggers publishing.

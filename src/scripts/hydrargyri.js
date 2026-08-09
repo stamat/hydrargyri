@@ -510,40 +510,47 @@ export class HgElement extends HTMLElement {
   _scanHandlers() {
     this._teardownHandlers()
     const collect = (el) => {
-      if (!this._scope(el)) return
-      const raw = el.getAttribute('on') || el.getAttribute('data-on')
-      if (!raw) return
-      for (const part of raw.split(';')) {
-        const trimmed = part.trim()
-        if (!trimmed) continue
-        const colon = trimmed.indexOf(':')
-        if (colon === -1) {
-          console.warn(`hydrargyri: unknown handler "${trimmed}" — expected event:name`)
-          continue
-        }
-        let event = trimmed.slice(0, colon).trim()
-        const name = trimmed.slice(colon + 1).trim()
-        // resize@window / click@document put the listener on the global while
-        // the handler stays this element's; stored in _listeners like any
-        // other, so disconnect unhooks it and nothing can leak.
-        let target = el
-        const at = event.lastIndexOf('@')
-        if (at !== -1) {
-          const where = event.slice(at + 1)
-          target = where === 'window' ? window : where === 'document' ? document : null
-          if (!target) {
-            console.warn(`hydrargyri: unknown handler target "${trimmed}" — expected event@window or event@document`)
-            continue
-          }
-          event = event.slice(0, at)
-        }
-        const listener = (e) => this._handle(name, e)
-        target.addEventListener(event, listener)
-        this._listeners.push({ el: target, event, listener })
-      }
+      if (this._scope(el)) this._wireHandlers(el)
     }
     collect(this)
     this.querySelectorAll('[on],[data-on]').forEach(collect)
+  }
+
+  // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
+  // with, callable alone for nodes that arrive after the scan (hydrargyri-each
+  // wires fresh rows with it, without rescanning the standing ones). Scope is
+  // the caller's to check; calling twice on one node doubles its listeners.
+  _wireHandlers(el) {
+    const raw = el.getAttribute('on') || el.getAttribute('data-on')
+    if (!raw) return
+    for (const part of raw.split(';')) {
+      const trimmed = part.trim()
+      if (!trimmed) continue
+      const colon = trimmed.indexOf(':')
+      if (colon === -1) {
+        console.warn(`hydrargyri: unknown handler "${trimmed}" — expected event:name`)
+        continue
+      }
+      let event = trimmed.slice(0, colon).trim()
+      const name = trimmed.slice(colon + 1).trim()
+      // resize@window / click@document put the listener on the global while
+      // the handler stays this element's; stored in _listeners like any
+      // other, so disconnect unhooks it and nothing can leak.
+      let target = el
+      const at = event.lastIndexOf('@')
+      if (at !== -1) {
+        const where = event.slice(at + 1)
+        target = where === 'window' ? window : where === 'document' ? document : null
+        if (!target) {
+          console.warn(`hydrargyri: unknown handler target "${trimmed}" — expected event@window or event@document`)
+          continue
+        }
+        event = event.slice(0, at)
+      }
+      const listener = (e) => this._handle(name, e)
+      target.addEventListener(event, listener)
+      this._listeners.push({ el: target, event, listener })
+    }
   }
 
   _teardownHandlers() {

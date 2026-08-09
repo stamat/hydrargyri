@@ -655,6 +655,23 @@ test('a command handler assigned at runtime routes without any re-wiring', () =>
   expect(seen).toEqual([name.toUpperCase()])
 })
 
+test('a node handed to _wireHandlers alone gets its listeners, no rescan and no teardown around it', () => {
+  const name = tag()
+  const seen = []
+  hg(name, { handlers: { poke: () => seen.push('hit') } })
+  const root = mount(`<${name}><button on="click:early"></button></${name}>`)
+  const el = root.firstElementChild
+  jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const standing = el._listeners.length
+  const late = document.createElement('button')
+  late.setAttribute('on', 'click:poke')
+  el.appendChild(late)
+  el._wireHandlers(late)
+  late.click()
+  expect(seen).toEqual(['hit'])
+  expect(el._listeners.length).toBe(standing + 1)
+})
+
 test('the command router survives a rescan', () => {
   const name = tag()
   const seen = []

@@ -11,6 +11,16 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Added
+
+- **`rescan()` picks up markup that changed under an initialized element.** Binds
+  and handlers are scanned once, at connect — a handler swapping `innerHTML` left
+  the new nodes unseen and the old, detached ones still held and painted into, and
+  the only way through was removing the element and putting it back. `rescan()` is
+  that same scan by request: detached nodes drop their binds and listeners, new
+  ones wire and paint. Watching the subtree automatically stays refused — the
+  [Limits page](https://stamat.github.io/hydrargyri/limits.html) says why.
+
 ### Fixed
 
 - **A reactive array no longer repaints when nothing in it moved.** Array methods

@@ -1,10 +1,10 @@
 // Covers the whole public surface: the factory, the HgElement base class,
 // attribute↔property reflection, every bind type, formatters, handler wiring,
 // nesting scope, lifecycle hooks, deferred init during parse, pre-upgrade
-// property capture, reactive models, and markup stamped from a template before
-// define. Deliberately not covered: dynamically
-// inserted bind/on nodes — binds are scanned at connect, and picking up later
-// DOM is a documented non-goal for v1 (reconnecting the element rescans).
+// property capture, reactive models, rescan(), and markup stamped from a
+// template before define. Deliberately not covered: automatic pickup of
+// dynamically inserted bind/on nodes — watching the subtree is a documented
+// non-goal; rescan() and reconnecting are the manual doors, covered here.
 import { jest } from '@jest/globals'
 import hg, { HgElement, reactive, parseBinds, hydrargyri } from './hydrargyri.js'
 
@@ -426,6 +426,34 @@ test('disconnecting unhooks handlers, reconnecting rescans and repaints', () => 
   expect(seen).toEqual(['hit'])
 })
 
+test('rescan picks up swapped markup — new nodes wire and paint, detached ones are let go', () => {
+  const name = tag()
+  const seen = []
+  hg(name, { attributes: ['count'], handlers: { poke: () => seen.push('hit') } })
+  const root = mount(`<${name} count="1"><span bind="count"></span></${name}>`)
+  const el = root.firstElementChild
+  const stale = el.querySelector('span')
+  el.innerHTML = '<i bind="count"></i><button on="click:poke"></button>'
+  el.rescan()
+  expect(el.querySelector('i').textContent).toBe('1')
+  el.count = 2
+  expect(el.querySelector('i').textContent).toBe('2')
+  expect(stale.textContent).toBe('1')
+  el.querySelector('button').click()
+  expect(seen).toEqual(['hit'])
+})
+
+test('rescan before init is a no-op — connect stays the first scan', () => {
+  const name = tag()
+  hg(name, ['count'])
+  const el = document.createElement(name)
+  expect(() => el.rescan()).not.toThrow()
+  el.innerHTML = '<span bind="count"></span>'
+  el.setAttribute('count', '3')
+  document.body.appendChild(el)
+  expect(el.querySelector('span').textContent).toBe('3')
+})
+
 test('the connected hook runs after binds are painted, disconnected on removal', () => {
   const name = tag()
   const seen = []
@@ -612,6 +640,18 @@ test('a command handler assigned at runtime routes without any re-wiring', () =>
   el.handlers['--late'] = (e, el) => seen.push(el.tagName)
   el.dispatchEvent(commandEvent('--late'))
   expect(seen).toEqual([name.toUpperCase()])
+})
+
+test('the command router survives a rescan', () => {
+  const name = tag()
+  const seen = []
+  hg(name, { handlers: { '--add-item': (e) => seen.push(e.command) } })
+  const root = mount(`<${name}></${name}>`)
+  const el = root.firstElementChild
+  el.innerHTML = '<b></b>'
+  el.rescan()
+  el.dispatchEvent(commandEvent('--add-item'))
+  expect(seen).toEqual(['--add-item'])
 })
 
 test('an if bind shows the node while the named condition holds, and hides it when it stops', () => {

@@ -39,12 +39,15 @@ are debugging, the other one is writing to it.
 ## Late DOM
 
 Binds and handlers are scanned when the element connects, and a node added
-afterwards is not seen — [re-connecting rescans
-everything](bind.html#what-is-scanned-and-when), which is the documented way
-through: move it, replace its children, put it back.
+afterwards is not seen. The way through is by name:
+[`rescan()`](api.html#rescan) runs [the same
+scan](bind.html#what-is-scanned-and-when) on the current subtree, and
+re-connecting the element — move it, put it back — does the same through the
+lifecycle.
 
-A `MutationObserver` per element would make that automatic, and would also make
-every unrelated DOM change in the subtree cost a rescan.
+What stays refused is the automatic version. A `MutationObserver` per element
+would pick up new nodes on its own, and would also make every unrelated DOM
+change in the subtree cost a rescan.
 
 ## Sanitizing
 

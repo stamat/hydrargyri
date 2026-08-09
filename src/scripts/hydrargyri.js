@@ -408,14 +408,33 @@ export class HgElement extends HTMLElement {
     for (const key in this._state) this._subscribe(key, this._state[key])
     this._scanBinds()
     this._scanHandlers()
-    // Always wired, even with no command keys declared: a handler assigned at
-    // runtime then routes without the author re-wiring anything. Registered
-    // in _listeners after _scanHandlers, so teardown unhooks it with the rest.
+    this._wireCommands()
+    this.update()
+    if (typeof this.connected === 'function') this.connected(this)
+  }
+
+  /**
+   * Re-collect binds and handlers from the current subtree and repaint — the
+   * door for markup that changed under an initialized element, e.g. a handler
+   * swapping innerHTML. Detached nodes drop their binds and listeners, new
+   * ones wire and paint. A no-op before init: connect is the first scan.
+   */
+  rescan() {
+    if (!this._initialized) return
+    this._scanBinds()
+    this._scanHandlers()
+    this._wireCommands()
+    this.update()
+  }
+
+  // Always wired, even with no command keys declared: a handler assigned at
+  // runtime then routes without the author re-wiring anything. Registered
+  // in _listeners after the handler scan tears the old set down, so both
+  // teardown and rescan unhook it with the rest.
+  _wireCommands() {
     const listener = (e) => this._act(e)
     this.addEventListener('command', listener)
     this._listeners.push({ el: this, event: 'command', listener })
-    this.update()
-    if (typeof this.connected === 'function') this.connected(this)
   }
 
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this

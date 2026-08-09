@@ -154,6 +154,31 @@ repaint. One statement, and no copy at all when the value is built new. The
 escape hatch is for the mutation you cannot avoid; reassignment is the
 streamlined path when you can.
 
+## `rescan()`
+
+Re-collects binds and handlers from the element's current subtree and
+repaints — the door for markup that changed under an initialized element.
+[Scanning happens once, at connect](bind.html#what-is-scanned-and-when): a
+handler that swaps `innerHTML` leaves the new nodes unseen and the old,
+detached ones still held and painted into. `rescan()` is that same scan by
+request — detached nodes drop their binds and listeners, new ones wire and
+paint:
+
+```js
+handlers: {
+  swap(e, el) {
+    el.innerHTML = '<span bind="count"></span>';
+    el.rescan(); // the new span paints, the old subtree is let go
+  }
+}
+```
+
+Removing the element and putting it back runs the same scan through the
+lifecycle; `rescan()` is that door without the round trip. Before the element
+initializes it is a no-op — connect is the first scan. What stays refused is
+the automatic version, a `MutationObserver` watching the subtree — see
+[Limits](limits.html#late-dom).
+
 ## `reactive(model)`
 
 `update(key)` scales with one element and one mutation site. The moment one

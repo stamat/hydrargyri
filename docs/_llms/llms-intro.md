@@ -72,6 +72,10 @@ The API:
 - `update(key)` repaints one key, `update()` all of them. It is the escape
   hatch for mutation inside a plain object, which no setter sees. Reassignment
   needs no call: `el.user = { ...el.user, name: 'x' }` fires the setter.
+- `rescan()` re-collects binds and handlers from the current subtree and
+  repaints — for markup that changed under an initialized element, e.g. a
+  handler swapping `innerHTML`. Detached nodes drop out, new ones wire. A
+  no-op before init.
 - `reactive(model)` wraps a plain object or array in a deep proxy; assign it
   to any number of elements and mutation through the proxy repaints them all.
   The proxy is the model — the raw original notifies nobody — and non-plain
@@ -95,7 +99,8 @@ Deliberate non-goals: implicit deep reactivity (assignment is watched, mutation
 needs `update(key)` or an opt-in `reactive()` model — hydrargyri never wraps an
 object you did not ask wrapped),
 two-way binding (DOM to state goes through a handler you wrote), late DOM (binds
-are scanned on connect; reconnecting rescans), sanitizing (`:html` is
+are scanned on connect; `el.rescan()` re-runs the scan on the current subtree,
+a reconnect does the same — nothing watches the subtree on its own), sanitizing (`:html` is
 `innerHTML` verbatim — bind your own state to it, never user input), templating
 (hydrargyri never stamps a `<template>` itself — but markup your code clones into an
 element before `customElements.define` binds like authored markup, since the

@@ -296,6 +296,7 @@ carrying `bind` or `data-bind` — except those inside a **nested** hydrargyri e
 which owns them instead. Nesting works, and neither element steals the other's
 nodes.
 
-A `bind` node inserted after that scan is not seen. Re-connecting the element
-rescans everything, which is the documented way to pick up new DOM; see
-[Limits](limits.html).
+A `bind` node inserted after that scan is not seen until the element is asked
+to look again: [`rescan()`](api.html#rescan) runs the same scan on the current
+subtree, and re-connecting the element does it through the lifecycle. Nothing
+watches the subtree on its own; see [Limits](limits.html#late-dom).

@@ -21,6 +21,14 @@ for the person who wrote the code.
   ones wire and paint. Watching the subtree automatically stays refused — the
   [Limits page](https://stamat.github.io/hydrargyri/limits.html) says why.
 
+- **`_wireHandlers(el)` — the wiring unit behind the handler scan, callable alone.**
+  `_scanHandlers` parsed and wired inside one closure, so a node arriving after the
+  scan could only be wired by tearing every listener down and rescanning the whole
+  subtree. The parse-and-wire step now stands alone as `_wireHandlers(el)`, and the
+  scan sweeps with it — behaviour unchanged. Internal, but load-bearing for the
+  ecosystem: hydrargyri-each wires fresh rows with it instead of rescanning the
+  standing ones.
+
 ### Changed
 
 - **Reactive mutations coalesce into one repaint per synchronous burst.** Every
@@ -36,16 +44,6 @@ for the person who wrote the code.
   Every node a scan looked at rebuilt the "any hydrargyri element" selector from
   scratch; it is now cached and rebuilt only when a new tag's first instance
   arrives. Same scoping, less work on bind-heavy subtrees.
-
-### Added
-
-- **`_wireHandlers(el)` — the wiring unit behind the handler scan, callable alone.**
-  `_scanHandlers` parsed and wired inside one closure, so a node arriving after the
-  scan could only be wired by tearing every listener down and rescanning the whole
-  subtree. The parse-and-wire step now stands alone as `_wireHandlers(el)`, and the
-  scan sweeps with it — behaviour unchanged. Internal, but load-bearing for the
-  ecosystem: hydrargyri-each wires fresh rows with it instead of rescanning the
-  standing ones.
 
 ### Fixed
 

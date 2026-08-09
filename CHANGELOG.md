@@ -21,6 +21,13 @@ for the person who wrote the code.
   ones wire and paint. Watching the subtree automatically stays refused — the
   [Limits page](https://stamat.github.io/hydrargyri/limits.html) says why.
 
+### Changed
+
+- **The scope selector is built once per new tag, not once per scanned node.**
+  Every node a scan looked at rebuilt the "any hydrargyri element" selector from
+  scratch; it is now cached and rebuilt only when a new tag's first instance
+  arrives. Same scoping, less work on bind-heavy subtrees.
+
 ### Fixed
 
 - **A reactive array no longer repaints when nothing in it moved.** Array methods

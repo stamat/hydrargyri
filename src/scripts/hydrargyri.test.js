@@ -360,6 +360,19 @@ test('nested hydrargyri elements of different tags keep their binds and handlers
   expect(innerEl.querySelector('i').textContent).toBe('in')
 })
 
+test('a tag defined after another has initialized still fences its own binds', () => {
+  const outer = tag()
+  hg(outer, { properties: ['msg'] })
+  mount(`<${outer}><b bind="msg"></b></${outer}>`)
+  const inner = tag()
+  hg(inner, { properties: ['msg'] })
+  const root = mount(`<${outer}><b bind="msg"></b><${inner}><i bind="msg"></i></${inner}></${outer}>`)
+  const outerEl = root.firstElementChild
+  outerEl.msg = 'out'
+  expect(outerEl.querySelector('b').textContent).toBe('out')
+  expect(outerEl.querySelector('i').textContent).toBe('')
+})
+
 test('same-tag nesting scopes binds to the nearest instance', () => {
   const name = tag()
   hg(name, ['label'])

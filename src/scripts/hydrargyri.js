@@ -4,6 +4,10 @@ import { isArray, stringToPrimitive, transformDashToCamelCase, getObjectValueByP
 // nested hydrargyri element owns a node: the nearest hydrargyri ancestor, whatever its tag.
 const hgTags = new Set()
 
+// The selector _scope matches against, rebuilt when a new tag arrives rather
+// than once per scanned node.
+let hgSelector = ''
+
 const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'prop', 'class', 'if', 'unless'])
 
 // Types that name the thing they write into, and mean nothing without it.
@@ -254,10 +258,14 @@ export class HgElement extends HTMLElement {
     super()
     // Lowercase, because selector matching against an uppercase custom
     // element tagName is not reliable everywhere (jsdom rejects it).
-    hgTags.add(this.tagName.toLowerCase())
+    const tag = this.tagName.toLowerCase()
+    if (!hgTags.has(tag)) {
+      hgTags.add(tag)
+      hgSelector = [...hgTags].join(',')
+    }
     // The class learns its tag from its first instance — share() sweeps by it.
     // Before any instance exists there is nothing in the document to sweep.
-    this.constructor._tag = this.tagName.toLowerCase()
+    this.constructor._tag = tag
     this._state = {}
     this._binds = {}
     this._listeners = []
@@ -440,7 +448,7 @@ export class HgElement extends HTMLElement {
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
   // element's own, so different hydrargyri elements nest without stealing binds.
   _scope(el) {
-    return el.closest([...hgTags].join(',')) === this
+    return el.closest(hgSelector) === this
   }
 
   _owns(key) {

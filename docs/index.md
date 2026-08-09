@@ -62,26 +62,49 @@ to exist, and it transfers to whoever shares the taste for markup-first pages.
 If you want templating, two-way binding, or an ecosystem, the table says where
 to go — those are fine tools and hydrargyri does not compete on their ground.
 
-|                                                | Keeps your markup    | Custom elements      | Build step          | Logic in markup                    | Conditionals                  | Pick it when                                                |
-| ---------------------------------------------- | -------------------- | -------------------- | ------------------- | ---------------------------------- | ----------------------------- | ----------------------------------------------------------- |
-| [Catalyst](https://github.com/github/catalyst) | yes                  | yes                  | yes — TS decorators | no                                 | no — you write DOM code       | you already build with TypeScript                           |
-| [Stimulus](https://stimulus.hotwired.dev)      | yes                  | no — its own runtime | no                  | no                                 | no — controller code toggles  | you want the mature ecosystem, especially around Rails      |
-| [Alpine](https://alpinejs.dev)                 | yes                  | no                   | no                  | yes — JS expressions in attributes | yes — `x-if`, evaluated       | you want logic inline and accept the CSP cost               |
-| [Lit](https://lit.dev)                         | no — templates in JS | yes                  | no, but expected    | no                                 | yes — ternaries in JS templates | you are building an app, not upgrading a page               |
-| hydrargyri                                          | yes                  | yes                  | no                  | no                                 | named predicates, never eval  | the markup exists first and must survive without the script |
+The table is drawn on hydrargyri's axes, which is the caveat to read it with: a
+row exists because this library has an opinion about it, and the rows it has no
+answer for are the ones the others win.
 
-Hydrargyri loses on features to every row above: no templating, no two-way binding,
-no plugin ecosystem. That is the trade, and [Limits](docs/limits.html) is the
-page that spells it out rather than burying it.
+|                                | hydrargyri                                                                   | [Catalyst](https://github.com/github/catalyst) | [Stimulus](https://stimulus.hotwired.dev)              | [Alpine](https://alpinejs.dev)                | [Lit](https://lit.dev)                        |
+| ------------------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------ | --------------------------------------------- | --------------------------------------------- |
+| **Size, gzipped**              | 3.7 kB                                                                       | 2.5 kB                                         | 11.0 kB                                                | 16.3 kB                                       | 5.9 kB                                        |
+| **Build step**                 | no                                                                           | yes — TS decorators                            | no                                                     | no                                            | no, but expected                              |
+| **Component boundary**         | custom element                                                               | custom element                                 | its own registry                                       | attribute scan                                | custom element                                |
+| **Shadow DOM**                 | never                                                                        | opt-in                                         | n/a                                                    | n/a                                           | by default                                    |
+| **Evaluates attributes**       | no                                                                           | no                                             | no                                                     | yes                                           | no                                            |
+| **Declarative value binding**  | `bind`                                                                       | no — refs you repaint                          | no — refs you repaint                                  | `x-text`, `x-bind`                            | in the JS template                            |
+| **Conditionals**               | named predicates                                                             | your DOM code                                  | your controller code                                   | `x-if`, evaluated                             | ternaries in JS                               |
+| **Typed attributes**           | `attributes`, reflected                                                      | `@attr`                                        | the values API                                         | no                                            | `@property`                                   |
+| **Formatters at paint**        | `formatters`                                                                 | no                                             | no                                                     | expressions                                   | directives                                    |
+| **Invoker Commands**           | a handler key that is a `command`                                            | no                                             | no                                                     | no                                            | no                                            |
+| **Deep reactivity**            | opt-in, `reactive()`                                                         | no                                             | no                                                     | yes, implicit                                 | no                                            |
+| **Two-way binding**            | no                                                                           | no                                             | no                                                     | `x-model`                                     | no                                            |
+| **Lists and templating**       | no — [hg-each](docs/each.html) is its own package                            | no                                             | no                                                     | `x-for`                                       | yes                                           |
+| **Renders without the script** | yes                                                                          | yes                                            | yes                                                    | mostly — `x-cloak`                            | no                                            |
+| **Ecosystem**                  | none                                                                         | GitHub's                                       | large, especially Rails                                | large                                         | large                                         |
+| **Pick it when**               | the markup exists first and must survive without the script                  | you already build with TypeScript              | you want the mature ecosystem, especially around Rails | you want logic inline and accept the CSP cost | you are building an app, not upgrading a page |
+
+Sizes are each package's public entry bundled and minified as ESM through
+esbuild, then gzipped — hydrargyri's carries book-of-spells, which ships inside
+`dist/`. Every one of those numbers moves with a release; measure before
+quoting.
+
+Where hydrargyri loses is the bottom of the table, and it loses there on purpose:
+no templating, no two-way binding, no ecosystem. That is the trade, and
+[Limits](docs/limits.html) is the page that spells it out rather than burying
+it.
 
 Stimulus earns the honest footnote: same religion, different church. The same
 names-in-markup creed, the same CSP-cleanliness, near-identical event wiring and
 typed attribute-backed values. The doctrine splits on exactly two points —
 `bind` paints declaratively where Stimulus targets are refs you repaint by hand,
 and the component boundary is the platform's custom element instead of a runtime
-with a registry, which is also why hydrargyri is 3 kB where Stimulus is 12. If
-neither point matters to your project, go to their church; it is better run in
-every other respect.
+with a registry, which is also why hydrargyri is 3.7 kB gzipped where Stimulus
+is 11. Past that split it reaches where the table above does not look: outlets
+wiring one controller to another, action params and options, `targetConnected`,
+a classes API, Turbo underneath the whole thing. Weigh the two points against
+that reach, not the row count.
 
 ## Install
 

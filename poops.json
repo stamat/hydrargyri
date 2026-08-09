@@ -59,7 +59,7 @@
     "in": "docs",
     "out": "_site",
     "options": {
-      "nav": "nav.json",
+      "nav": { "out": "nav.json", "root": "docs" },
       "searchIndex": "search-index.json",
       "llms": {
         "out": "llms.txt",

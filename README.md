@@ -42,6 +42,29 @@ are what run through it. It sits on
 [book-of-spells](https://github.com/stamat/book-of-spells), same shelf as
 [sulphuris](https://github.com/stamat/sulphuris) 🜍.
 
+## What you get
+
+- **Typed attributes, reflected.** `attributes: ["count"]` gives a camelCase
+  property; `count="5"` reads back as `5`, a valueless attribute as `true`, and
+  the attribute stays the only copy of the value.
+- **`bind` paints where state lands.** `text`, `html`, `value`, `attr#name`,
+  `prop#name`, `class#name`, `if` / `unless`, with paths reaching into objects.
+- **`on` wires what fires.** `on="click:increment"`, the handler called as
+  `(event, element)`; a handler keyed by a command string answers
+  [Invoker Commands](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
+  directly.
+- **Formatters at paint.** `bind="price|money:currency"` shapes the value on its
+  way into the node, its arguments resolved as property paths.
+- **Named conditions.** `bind="items:if#isLow"` runs a predicate from a JS file,
+  where it can be tested — the markup carries only its name.
+- **Opt-in deep reactivity.** `reactive(model)` repaints on mutation, once per
+  synchronous burst; nothing is wrapped unless you ask for it.
+- **`share()` hands one model to every instance** of a tag, present and future.
+- **The page renders without the script.** Binds paint over markup that already
+  reads correctly, so a script that fails to load leaves the document as
+  authored. Nothing is evaluated, so a strict Content Security Policy has
+  nothing to object to.
+
 [Catalyst](https://github.com/github/catalyst) is where this started — markup
 first, custom elements, names in attributes; the shape was already right. What
 it charges for that shape is a build step — decorators and TypeScript are the

@@ -19,6 +19,17 @@ for the person who wrote the code.
   README never carried the claim, so the two pages disagreed about whether the
   package exists.
 
+### Added
+
+- **The README says what you get, in eight lines, before the comparison table.**
+  The table scores hydrargyri against four alternatives, which answers how it
+  compares and not what it does — its own column is comparative shorthand, six
+  columns wide, and a reader on a phone scrolls sideways before they learn
+  anything. A **What you get** section now carries typed attributes, `bind`,
+  `on`, formatters, conditions, `reactive()`, `share()` and the
+  renders-without-the-script guarantee. The landing page keeps its live demo in
+  that slot instead — it shows the same thing running.
+
 ### Changed
 
 - **The `bind` page names the caret cost of a normalising input handler.** The

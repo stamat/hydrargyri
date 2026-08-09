@@ -86,6 +86,15 @@ it back into the field. That is not [two-way
 binding](limits.html#two-way-binding) — it is one direction twice, and the
 handler in the middle is the part you can put a breakpoint in.
 
+**Mind the caret on a text field.** A handler that stores what it was given is
+invisible: the repaint writes the string already in the field, and setting
+`.value` to the string it already holds moves nothing. A handler that *changes*
+what it stores — `trim()`, `toUpperCase()`, `Number()`, a fallback like
+`|| 0` — writes back a different string, and a different string sends the caret
+to the end of the field on every keystroke. Store the raw value and shape it
+with a [formatter](#formatters) on the way out, or bind the write-back to
+`change` instead of `input`.
+
 ## Classes
 
 One `attr` name is a trap: `class`. It parses, and it does what every `attr`

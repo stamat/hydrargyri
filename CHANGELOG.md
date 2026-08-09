@@ -13,6 +13,16 @@ for the person who wrote the code.
 
 ### Changed
 
+- **The `bind` page names the caret cost of a normalising input handler.** The
+  `input` handler plus `value` bind pair — one direction twice — was documented
+  without the one way it bites: the repaint writes `.value`, and a field whose
+  string changed puts the caret at the end, so a handler that trims, uppercases
+  or coerces moves the cursor on every keystroke while a handler that stores what
+  it was given moves nothing. The [`bind`
+  page](https://stamat.github.io/hydrargyri/docs/bind.html) now says so under that
+  demo, with the two ways out: shape the value in a formatter, or write back on
+  `change`. No behaviour changed.
+
 - **The docs move to hydrargyri-each 2.0.0, and the `hg-each` page says what a
   repaint now touches.** The page had one rule for reactive lists — mutate and it
   repaints — which was the whole truth against 1.x, where every paint rewrote

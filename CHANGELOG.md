@@ -21,7 +21,11 @@ for the person who wrote the code.
   it was given moves nothing. The [`bind`
   page](https://stamat.github.io/hydrargyri/docs/bind.html) now says so under that
   demo, with the two ways out: shape the value in a formatter, or write back on
-  `change`. No behaviour changed.
+  `change`. The page's own two number demos were the counter-example: `restock`
+  and `reprice` stored `e.target.value || 0`, so clearing the field refilled it
+  with `0` under the cursor. Both store `|| null` now — the attribute comes off,
+  the field stays empty, and every input handler in the docs reads the same way.
+  No behaviour changed.
 
 - **The docs move to hydrargyri-each 2.0.0, and the `hg-each` page says what a
   repaint now touches.** The page had one rule for reactive lists — mutate and it

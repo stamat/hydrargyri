@@ -158,7 +158,7 @@ defined like a handler, named from the markup, never evaluated:
 hg("demo-stock", {
   attributes: ["items"],
   handlers: {
-    restock(e, el) { el.items = e.target.value || 0 }
+    restock(e, el) { el.items = e.target.value || null }
   },
   conditions: {
     isLow: (n) => n > 0 && n < 3
@@ -203,7 +203,7 @@ named from the markup after a `|`, never evaluated:
 hg("demo-price", {
   attributes: ["price", "currency"],
   handlers: {
-    reprice(e, el) { el.price = e.target.value || 0 },
+    reprice(e, el) { el.price = e.target.value || null },
     swap(e, el) { el.currency = el.currency === "USD" ? "EUR" : "USD" }
   },
   formatters: {

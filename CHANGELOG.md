@@ -11,6 +11,14 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The landing page no longer says hydrargyri is unpublished.** "Not on npm yet"
+  sat above the install block from before the first release and survived 2.0.0,
+  telling every visitor the `npm install` line underneath it did not work. The
+  README never carried the claim, so the two pages disagreed about whether the
+  package exists.
+
 ### Changed
 
 - **The `bind` page names the caret cost of a normalising input handler.** The

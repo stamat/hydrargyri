@@ -108,9 +108,6 @@ that reach, not the row count.
 
 ## Install
 
-Not on npm yet — the commands below describe the shape of the release, not a
-package you can pull today.
-
 ```bash
 npm install hydrargyri
 ```

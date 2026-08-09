@@ -11,6 +11,15 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A reactive array no longer repaints when nothing in it moved.** Array methods
+  read elements out through the proxy — wrapped — and write them back, so the set
+  trap saw a raw object replaced by its own wrapper and notified: `sort()` on an
+  already-ordered array repainted once per element, and `arr[0] = arr[0]` repainted
+  too. Writes now compare by raw identity, and an object landing back on its own
+  index stays silent.
+
 ## [1.1.1] - 2026-08-06
 
 ### Added

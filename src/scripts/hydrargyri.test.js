@@ -935,6 +935,22 @@ test('reassigning a property unsubscribes the old model', () => {
   expect(update).not.toHaveBeenCalled()
 })
 
+test('writing an element back to its own index repaints nothing — sort on a sorted array included', () => {
+  const name = tag()
+  hg(name, { properties: ['cart'] })
+  const root = mount(`<${name}><span bind="cart.length"></span></${name}>`)
+  const el = root.firstElementChild
+  const cart = reactive([{ id: 1 }, { id: 2 }])
+  el.cart = cart
+  const update = jest.spyOn(el, 'update')
+  const first = cart[0] // read through the proxy, so this is the wrapper
+  cart[0] = first
+  cart.sort((a, b) => a.id - b.id)
+  expect(update).not.toHaveBeenCalled()
+  cart.reverse()
+  expect(update).toHaveBeenCalled()
+})
+
 test('an array push inside a reactive model repaints its binds', () => {
   const name = tag()
   hg(name, { properties: ['cart'] })

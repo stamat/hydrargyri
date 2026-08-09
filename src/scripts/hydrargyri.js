@@ -18,6 +18,11 @@ const RESERVED = new Set(['handlers', 'conditions', 'formatters', '_state', '_bi
 // which is also how the property setter tells a reactive model from a plain one.
 const reactiveSubs = new WeakMap()
 
+// Proxy → raw for every proxy any reactive model hands out, so the set trap
+// can tell an object coming back as its own wrapper from a real replacement —
+// sort() on an already-ordered array writes every element back wrapped.
+const proxyRaw = new WeakMap()
+
 // `properties` comes as an array of names, or an object of name → class-wide
 // default — the define-time form of share().
 function propertyNames(properties) {
@@ -160,10 +165,13 @@ export function reactive(obj) {
         const ok = Reflect.set(target, prop, value, receiver)
         // Same-value writes stay silent, which is what keeps `push` to one
         // notify: setting the index has already moved `length`, so push's own
-        // write of it changes nothing. `splice` is the loud one — it notifies
-        // once per element it shifts, and every one of those intermediate
-        // arrays is a state the author never wrote.
-        if (ok && !Object.is(prev, value)) notify()
+        // write of it changes nothing. Compared by raw identity, because array
+        // methods read wrappers out and write them back — without the unwrap,
+        // sort() on an already-ordered array would notify once per element.
+        // `splice` is still the loud one: it notifies once per element it
+        // genuinely shifts, and every one of those intermediate arrays is a
+        // state the author never wrote.
+        if (ok && !Object.is(proxyRaw.get(prev) ?? prev, proxyRaw.get(value) ?? value)) notify()
         return ok
       },
       deleteProperty: (target, prop) => {
@@ -174,6 +182,7 @@ export function reactive(obj) {
       }
     })
     reactiveSubs.set(proxy, subs)
+    proxyRaw.set(proxy, raw)
     wrapped.set(raw, proxy)
     return proxy
   }

@@ -281,6 +281,11 @@ The rules, and each is load-bearing:
 - **Repaints are per key, not per path.** Any mutation inside the model
   repaints everything bound to its key on each subscribed element. There is no
   dependency tracking; at hydrargyri scale a repaint is a few `textContent` writes.
+- **Mutations coalesce.** A synchronous burst of mutations repaints once, at
+  the end of the microtask — a `splice` is one repaint with the final array,
+  never one per shifted element, and no intermediate state is ever painted.
+  Assignment and `update()` stay synchronous; code that must read the DOM
+  after a mutation awaits a microtask first (`await null` is enough).
 - **Models do not merge.** A reactive model assigned inside another keeps its
   own subscribers — mutation notifies the model it was mutated through.
 - **Assignment subscribes, disconnect unsubscribes.** An element removed from

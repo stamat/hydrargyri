@@ -23,6 +23,15 @@ for the person who wrote the code.
 
 ### Changed
 
+- **Reactive mutations coalesce into one repaint per synchronous burst.** Every
+  mutation through a `reactive()` proxy repainted on the spot, so a `splice`
+  repainted once per element it shifted — and painted every intermediate array,
+  states the author never wrote. The first mutation now schedules a flush at
+  microtask time and the rest of the burst folds into it: one repaint, final state
+  only. The trade is timing: code reading the DOM right after a mutation now
+  awaits a microtask first (`await null` is enough). Assignment and `update()`
+  are untouched and stay synchronous.
+
 - **The scope selector is built once per new tag, not once per scanned node.**
   Every node a scan looked at rebuilt the "any hydrargyri element" selector from
   scratch; it is now cached and rebuilt only when a new tag's first instance

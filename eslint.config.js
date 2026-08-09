@@ -13,7 +13,8 @@ export default [
         console: 'readonly',
         HTMLElement: 'readonly',
         customElements: 'readonly',
-        window: 'readonly'
+        window: 'readonly',
+        queueMicrotask: 'readonly'
       }
     }
   },

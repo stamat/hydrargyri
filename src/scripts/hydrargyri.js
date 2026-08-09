@@ -134,6 +134,9 @@ export function parseBinds(raw) {
  * The proxy is the model: mutations to the raw original notify nobody.
  * Create the model reactive and use the returned proxy everywhere.
  *
+ * Mutations coalesce: a synchronous burst repaints once, at microtask time —
+ * a splice is one repaint with the final array. Assignment stays synchronous.
+ *
  * @param {Object|Array} obj A plain object or array. Anything else —
  *   primitives, Maps, class instances — warns and comes back unwrapped.
  * @returns {Proxy} The reactive model, or `obj` as given when it cannot wrap
@@ -150,7 +153,22 @@ export function reactive(obj) {
     return obj
   }
   const subs = new Set()
-  const notify = () => { for (const fn of subs) fn() }
+  // One repaint per synchronous burst of mutations: the first notify schedules
+  // a flush at microtask time and the rest fold into it — a splice repaints
+  // once with the final array, never once per shifted element, and no
+  // intermediate state is ever painted. The flag drops before the flush runs,
+  // so a mutation made during a repaint schedules the next flush instead of
+  // vanishing. Only mutation through the proxy coalesces — assignment and
+  // update() stay synchronous.
+  let pending = false
+  const notify = () => {
+    if (pending) return
+    pending = true
+    queueMicrotask(() => {
+      pending = false
+      for (const fn of subs) fn()
+    })
+  }
   // Per-model cache: a raw object reached twice through one model wraps once.
   // An object shared between two models gets a proxy per model, and notifies
   // only the model it was mutated through — the cost of having no dep tracking.
@@ -167,14 +185,11 @@ export function reactive(obj) {
       set: (target, prop, value, receiver) => {
         const prev = target[prop]
         const ok = Reflect.set(target, prop, value, receiver)
-        // Same-value writes stay silent, which is what keeps `push` to one
-        // notify: setting the index has already moved `length`, so push's own
-        // write of it changes nothing. Compared by raw identity, because array
-        // methods read wrappers out and write them back — without the unwrap,
-        // sort() on an already-ordered array would notify once per element.
-        // `splice` is still the loud one: it notifies once per element it
-        // genuinely shifts, and every one of those intermediate arrays is a
-        // state the author never wrote.
+        // Same-value writes stay silent, compared by raw identity because
+        // array methods read wrappers out and write them back — without the
+        // unwrap, sort() on an already-ordered array would look like change.
+        // With the batching in notify(), the silence is what keeps a no-op
+        // mutation at zero repaints rather than one.
         if (ok && !Object.is(proxyRaw.get(prev) ?? prev, proxyRaw.get(value) ?? value)) notify()
         return ok
       },

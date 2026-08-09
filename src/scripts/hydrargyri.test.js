@@ -895,7 +895,7 @@ test('an unknown @target warns and is skipped while its neighbours still wire', 
   expect(seen).toEqual(['hit'])
 })
 
-test('a reactive model repaints every element it is assigned to, no update() in sight', () => {
+test('a reactive model repaints every element it is assigned to, no update() in sight', async () => {
   const a = tag()
   const b = tag()
   hg(a, { properties: ['user'] })
@@ -905,11 +905,12 @@ test('a reactive model repaints every element it is assigned to, no update() in 
   root.querySelector(a).user = user
   root.querySelector(b).user = user
   user.name = 'grace'
+  await null
   expect(root.querySelector('span').textContent).toBe('grace')
   expect(root.querySelector('i').textContent).toBe('grace')
 })
 
-test('mutation deep inside a reactive model repaints through the path bind', () => {
+test('mutation deep inside a reactive model repaints through the path bind', async () => {
   const name = tag()
   hg(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.prefs.theme"></span></${name}>`)
@@ -917,10 +918,11 @@ test('mutation deep inside a reactive model repaints through the path bind', () 
   el.user = reactive({ prefs: { theme: 'dark' } })
   expect(el.querySelector('span').textContent).toBe('dark')
   el.user.prefs.theme = 'light'
+  await null
   expect(el.querySelector('span').textContent).toBe('light')
 })
 
-test('mutating the raw original does nothing — the proxy is the contract', () => {
+test('mutating the raw original does nothing — the proxy is the contract', async () => {
   const name = tag()
   hg(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
@@ -929,12 +931,14 @@ test('mutating the raw original does nothing — the proxy is the contract', () 
   const user = reactive(raw)
   el.user = user
   raw.name = 'grace'
+  await null
   expect(el.querySelector('span').textContent).toBe('ada')
   user.name = 'ida'
+  await null
   expect(el.querySelector('span').textContent).toBe('ida')
 })
 
-test('a disconnected element stops repainting, reconnecting catches it up', () => {
+test('a disconnected element stops repainting, reconnecting catches it up', async () => {
   const name = tag()
   hg(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
@@ -943,14 +947,16 @@ test('a disconnected element stops repainting, reconnecting catches it up', () =
   el.user = user
   el.remove()
   user.name = 'grace'
+  await null
   expect(el.querySelector('span').textContent).toBe('ada')
   root.appendChild(el)
   expect(el.querySelector('span').textContent).toBe('grace')
   user.name = 'ida'
+  await null
   expect(el.querySelector('span').textContent).toBe('ida')
 })
 
-test('a model assigned before upgrade still subscribes once the element initializes', () => {
+test('a model assigned before upgrade still subscribes once the element initializes', async () => {
   const name = tag()
   const el = document.createElement(name)
   const user = reactive({ name: 'ada' })
@@ -960,10 +966,11 @@ test('a model assigned before upgrade still subscribes once the element initiali
   hg(name, { properties: ['user'] })
   expect(el.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
+  await null
   expect(el.querySelector('span').textContent).toBe('grace')
 })
 
-test('markup stamped from a template before define binds like authored markup', () => {
+test('markup stamped from a template before define binds like authored markup', async () => {
   const name = tag()
   const root = mount(`<template><span bind="user.name">…</span></template><${name}></${name}>`)
   const el = root.querySelector(name)
@@ -972,10 +979,11 @@ test('markup stamped from a template before define binds like authored markup', 
   hg(name, { properties: { user } })
   expect(el.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
+  await null
   expect(el.querySelector('span').textContent).toBe('grace')
 })
 
-test('reassigning a property unsubscribes the old model', () => {
+test('reassigning a property unsubscribes the old model', async () => {
   const name = tag()
   hg(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
@@ -985,10 +993,11 @@ test('reassigning a property unsubscribes the old model', () => {
   el.user = reactive({ name: 'grace' })
   const update = jest.spyOn(el, 'update')
   old.name = 'ghost'
+  await null
   expect(update).not.toHaveBeenCalled()
 })
 
-test('writing an element back to its own index repaints nothing — sort on a sorted array included', () => {
+test('writing an element back to its own index repaints nothing — sort on a sorted array included', async () => {
   const name = tag()
   hg(name, { properties: ['cart'] })
   const root = mount(`<${name}><span bind="cart.length"></span></${name}>`)
@@ -999,12 +1008,14 @@ test('writing an element back to its own index repaints nothing — sort on a so
   const first = cart[0] // read through the proxy, so this is the wrapper
   cart[0] = first
   cart.sort((a, b) => a.id - b.id)
+  await null
   expect(update).not.toHaveBeenCalled()
   cart.reverse()
-  expect(update).toHaveBeenCalled()
+  await null
+  expect(update).toHaveBeenCalledTimes(1)
 })
 
-test('an array push inside a reactive model repaints its binds', () => {
+test('an array push inside a reactive model repaints its binds', async () => {
   const name = tag()
   hg(name, { properties: ['cart'] })
   const root = mount(`<${name}><span bind="cart.length"></span></${name}>`)
@@ -1013,7 +1024,26 @@ test('an array push inside a reactive model repaints its binds', () => {
   el.cart = cart
   expect(el.querySelector('span').textContent).toBe('0')
   cart.push('salt')
+  await null
   expect(el.querySelector('span').textContent).toBe('1')
+})
+
+test('a splice repaints once with the final array — the intermediate shifts are never painted', async () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    properties: ['cart'],
+    formatters: { joined: (v) => { const s = v === null ? '' : v.join(','); seen.push(s); return s } }
+  })
+  const root = mount(`<${name}><span bind="cart|joined"></span></${name}>`)
+  const el = root.firstElementChild
+  const cart = reactive(['a', 'b', 'c', 'd'])
+  el.cart = cart
+  seen.length = 0
+  cart.splice(0, 1)
+  await null
+  expect(el.querySelector('span').textContent).toBe('b,c,d')
+  expect(seen).toEqual(['b,c,d'])
 })
 
 test('share reaches every existing instance and every future one', () => {
@@ -1043,7 +1073,7 @@ test('an instance assignment outranks share, and reconnecting cannot stomp it', 
   expect(mine.querySelector('span').textContent).toBe('mine')
 })
 
-test('share with a reactive model is a live broadcast to every instance, late ones included', () => {
+test('share with a reactive model is a live broadcast to every instance, late ones included', async () => {
   const name = tag()
   const Cls = hg(name, { properties: ['user'] })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
@@ -1054,6 +1084,7 @@ test('share with a reactive model is a live broadcast to every instance, late on
   late.innerHTML = '<b bind="user.name"></b>'
   document.body.appendChild(late)
   model.name = 'grace'
+  await null
   expect(root.querySelector('span').textContent).toBe('grace')
   expect(late.querySelector('b').textContent).toBe('grace')
 })
@@ -1074,13 +1105,14 @@ test('sharing null releases the model everywhere share put it, and spares direct
   expect(late.user).toBe(null)
 })
 
-test('properties as an object declares the keys and shares the values class-wide', () => {
+test('properties as an object declares the keys and shares the values class-wide', async () => {
   const name = tag()
   const user = reactive({ name: 'ada' })
   hg(name, { properties: { user, draft: null } })
   const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
   expect(root.querySelector('span').textContent).toBe('ada')
   user.name = 'grace'
+  await null
   expect(root.querySelector('span').textContent).toBe('grace')
   const late = document.createElement(name)
   late.innerHTML = '<b bind="user.name"></b>'

@@ -79,7 +79,10 @@ The API:
 - `reactive(model)` wraps a plain object or array in a deep proxy; assign it
   to any number of elements and mutation through the proxy repaints them all.
   The proxy is the model — the raw original notifies nobody — and non-plain
-  values (Maps, class instances) warn and come back unwrapped.
+  values (Maps, class instances) warn and come back unwrapped. Mutations
+  coalesce: a synchronous burst repaints once, at microtask time — a `splice`
+  is one repaint with the final array. Assignment and `update()` stay
+  synchronous; `await null` before reading the DOM after a mutation.
 - `share(values)` is a static on every hydrargyri class: `Cls.share({ user: model })`
   hands each value to every instance, present and future — called once, never
   per change. An instance assignment outranks share on that instance, forever.

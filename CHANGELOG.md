@@ -11,6 +11,20 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Changed
+
+- **The docs move to hydrargyri-each 2.0.0, and the `hg-each` page says what a
+  repaint now touches.** The page had one rule for reactive lists — mutate and it
+  repaints — which was the whole truth against 1.x, where every paint rewrote
+  every row. hg-each 2 narrows it: a row whose item is its own `reactive()` model
+  repaints alone, a keyed row that has not moved is skipped, and a plain-object
+  item still costs the full repaint, because the list's proxy sees the write
+  without seeing which item took it. The [`hg-each`
+  page](https://stamat.github.io/hydrargyri/docs/each.html) now names all three, and the
+  `key` section no longer says every returning row is repainted in place. Nothing
+  in the markup contract moved, and the dependency is a dev one — hydrargyri does
+  not use the package, the docs previews do.
+
 ## [2.0.0] - 2026-08-09
 
 ### Added
@@ -21,7 +35,7 @@ for the person who wrote the code.
   the only way through was removing the element and putting it back. `rescan()` is
   that same scan by request: detached nodes drop their binds and listeners, new
   ones wire and paint. Watching the subtree automatically stays refused — the
-  [Limits page](https://stamat.github.io/hydrargyri/limits.html) says why.
+  [Limits page](https://stamat.github.io/hydrargyri/docs/limits.html) says why.
 
 - **`_wireHandlers(el)` — the wiring unit behind the handler scan, callable alone.**
   `_scanHandlers` parsed and wired inside one closure, so a node arriving after the

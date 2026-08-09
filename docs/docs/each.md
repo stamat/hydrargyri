@@ -98,6 +98,16 @@ Assign a [`reactive()`](api.html#reactivemodel) array or object and mutation
 repaints: `items.push(…)` grows a row with no second call. A plain one needs
 [`update("items")`](api.html#updatekey-update), exactly as anywhere else.
 
+How much of the list that repaint touches depends on the items. An item that is
+its own `reactive()` model is subscribed to by its row, so `item.name = "…"`
+repaints that row and leaves the others standing; a primitive, and any item
+under a [`key`](#key-and-rows-that-keep-their-nodes) whose position has not
+moved, is skipped for the same reason — nothing about it changed. Plain-object
+items keep the full repaint on purpose: they cannot report their own mutations,
+so `items[0].name = "…"` reaches the list's proxy without saying which item took
+it, and skipping would paint a stale row. Rows whose position shifts always
+repaint, since `$index` is part of what a row shows.
+
 ## The rows region
 
 Everything beside the template, inside the template's parent, is hg-each's to
@@ -181,8 +191,9 @@ Without `key` every repaint clones from scratch, which is fine for a list nobody
 is touching and wrong for one holding focus, a half-typed input or a playing
 video. `key` names what makes a row itself, and then a row whose key comes back
 keeps the nodes it already had: they are moved into the new order and repainted
-in place, new keys arrive as clones, and vanished keys take their rows with
-them.
+in place — or left untouched where [nothing about the row
+changed](#items-and-what-a-value-paints) — while new keys arrive as clones and
+vanished keys take their rows with them.
 
 ```html
 <hg-each key="id">          <!-- a path into the item -->

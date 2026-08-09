@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-09
+
 ### Added
 
 - **`rescan()` picks up markup that changed under an initialized element.** Binds

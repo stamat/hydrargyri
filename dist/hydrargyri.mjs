@@ -1,4 +1,4 @@
-/* hydrargyri v1.1.1 | https://stamat.github.io/hydrargyri/ | MIT License */
+/* hydrargyri v2.0.0 | https://stamat.github.io/hydrargyri/ | MIT License */
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -33,10 +33,12 @@ function getObjectValueByPath(obj, path) {
 
 // src/scripts/hydrargyri.js
 var hgTags = /* @__PURE__ */ new Set();
+var hgSelector = "";
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr", "prop", "class", "if", "unless"]);
 var NAMED_BIND_TYPES = /* @__PURE__ */ new Set(["attr", "prop", "class"]);
 var RESERVED = /* @__PURE__ */ new Set(["handlers", "conditions", "formatters", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
+var proxyRaw = /* @__PURE__ */ new WeakMap();
 function propertyNames(properties) {
   return isArray(properties) ? properties : Object.keys(properties);
 }
@@ -106,8 +108,14 @@ function reactive(obj) {
     return obj;
   }
   const subs = /* @__PURE__ */ new Set();
+  let pending = false;
   const notify = () => {
-    for (const fn of subs) fn();
+    if (pending) return;
+    pending = true;
+    queueMicrotask(() => {
+      pending = false;
+      for (const fn of subs) fn();
+    });
   };
   const wrapped = /* @__PURE__ */ new WeakMap();
   const wrap = (raw) => {
@@ -118,9 +126,10 @@ function reactive(obj) {
         return isPlainValue(value) && !reactiveSubs.has(value) ? wrap(value) : value;
       },
       set: (target, prop, value, receiver) => {
+        var _a, _b;
         const prev = target[prop];
         const ok = Reflect.set(target, prop, value, receiver);
-        if (ok && !Object.is(prev, value)) notify();
+        if (ok && !Object.is((_a = proxyRaw.get(prev)) != null ? _a : prev, (_b = proxyRaw.get(value)) != null ? _b : value)) notify();
         return ok;
       },
       deleteProperty: (target, prop) => {
@@ -131,6 +140,7 @@ function reactive(obj) {
       }
     });
     reactiveSubs.set(proxy, subs);
+    proxyRaw.set(proxy, raw);
     wrapped.set(raw, proxy);
     return proxy;
   };
@@ -178,8 +188,12 @@ var _HgElement = class _HgElement extends HTMLElement {
   }
   constructor() {
     super();
-    hgTags.add(this.tagName.toLowerCase());
-    this.constructor._tag = this.tagName.toLowerCase();
+    const tag = this.tagName.toLowerCase();
+    if (!hgTags.has(tag)) {
+      hgTags.add(tag);
+      hgSelector = [...hgTags].join(",");
+    }
+    this.constructor._tag = tag;
     this._state = {};
     this._binds = {};
     this._listeners = [];
@@ -290,16 +304,36 @@ var _HgElement = class _HgElement extends HTMLElement {
     for (const key in this._state) this._subscribe(key, this._state[key]);
     this._scanBinds();
     this._scanHandlers();
+    this._wireCommands();
+    this.update();
+    if (typeof this.connected === "function") this.connected(this);
+  }
+  /**
+   * Re-collect binds and handlers from the current subtree and repaint — the
+   * door for markup that changed under an initialized element, e.g. a handler
+   * swapping innerHTML. Detached nodes drop their binds and listeners, new
+   * ones wire and paint. A no-op before init: connect is the first scan.
+   */
+  rescan() {
+    if (!this._initialized) return;
+    this._scanBinds();
+    this._scanHandlers();
+    this._wireCommands();
+    this.update();
+  }
+  // Always wired, even with no command keys declared: a handler assigned at
+  // runtime then routes without the author re-wiring anything. Registered
+  // in _listeners after the handler scan tears the old set down, so both
+  // teardown and rescan unhook it with the rest.
+  _wireCommands() {
     const listener = (e) => this._act(e);
     this.addEventListener("command", listener);
     this._listeners.push({ el: this, event: "command", listener });
-    this.update();
-    if (typeof this.connected === "function") this.connected(this);
   }
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
   // element's own, so different hydrargyri elements nest without stealing binds.
   _scope(el) {
-    return el.closest([...hgTags].join(",")) === this;
+    return el.closest(hgSelector) === this;
   }
   _owns(key) {
     return key in this._reflected || key in this._state;
@@ -335,37 +369,43 @@ var _HgElement = class _HgElement extends HTMLElement {
   _scanHandlers() {
     this._teardownHandlers();
     const collect = (el) => {
-      if (!this._scope(el)) return;
-      const raw = el.getAttribute("on") || el.getAttribute("data-on");
-      if (!raw) return;
-      for (const part of raw.split(";")) {
-        const trimmed = part.trim();
-        if (!trimmed) continue;
-        const colon = trimmed.indexOf(":");
-        if (colon === -1) {
-          console.warn(`hydrargyri: unknown handler "${trimmed}" \u2014 expected event:name`);
-          continue;
-        }
-        let event = trimmed.slice(0, colon).trim();
-        const name = trimmed.slice(colon + 1).trim();
-        let target = el;
-        const at = event.lastIndexOf("@");
-        if (at !== -1) {
-          const where = event.slice(at + 1);
-          target = where === "window" ? window : where === "document" ? document : null;
-          if (!target) {
-            console.warn(`hydrargyri: unknown handler target "${trimmed}" \u2014 expected event@window or event@document`);
-            continue;
-          }
-          event = event.slice(0, at);
-        }
-        const listener = (e) => this._handle(name, e);
-        target.addEventListener(event, listener);
-        this._listeners.push({ el: target, event, listener });
-      }
+      if (this._scope(el)) this._wireHandlers(el);
     };
     collect(this);
     this.querySelectorAll("[on],[data-on]").forEach(collect);
+  }
+  // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
+  // with, callable alone for nodes that arrive after the scan (hydrargyri-each
+  // wires fresh rows with it, without rescanning the standing ones). Scope is
+  // the caller's to check; calling twice on one node doubles its listeners.
+  _wireHandlers(el) {
+    const raw = el.getAttribute("on") || el.getAttribute("data-on");
+    if (!raw) return;
+    for (const part of raw.split(";")) {
+      const trimmed = part.trim();
+      if (!trimmed) continue;
+      const colon = trimmed.indexOf(":");
+      if (colon === -1) {
+        console.warn(`hydrargyri: unknown handler "${trimmed}" \u2014 expected event:name`);
+        continue;
+      }
+      let event = trimmed.slice(0, colon).trim();
+      const name = trimmed.slice(colon + 1).trim();
+      let target = el;
+      const at = event.lastIndexOf("@");
+      if (at !== -1) {
+        const where = event.slice(at + 1);
+        target = where === "window" ? window : where === "document" ? document : null;
+        if (!target) {
+          console.warn(`hydrargyri: unknown handler target "${trimmed}" \u2014 expected event@window or event@document`);
+          continue;
+        }
+        event = event.slice(0, at);
+      }
+      const listener = (e) => this._handle(name, e);
+      target.addEventListener(event, listener);
+      this._listeners.push({ el: target, event, listener });
+    }
   }
   _teardownHandlers() {
     for (const { el, event, listener } of this._listeners) el.removeEventListener(event, listener);

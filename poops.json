@@ -83,6 +83,7 @@
         "iconLinks": [
           { "title": "npm", "url": "https://www.npmjs.com/package/hydrargyri", "icon": "npm" }
         ],
+        "footer": "<a href=\"https://github.com/stamat/hydrargyri\" target=\"_blank\" rel=\"noopener\">hydrargyri</a> — MIT licensed. Built with 💩 <a href=\"https://github.com/stamat/poops\" target=\"_blank\" rel=\"noopener\">poops</a>, <a href=\"https://github.com/stamat/poops-docs-theme\" target=\"_blank\" rel=\"noopener\">poops-docs-theme</a> and <a href=\"https://stamat.github.io/code-preview-element/\" target=\"_blank\" rel=\"noopener\">code-preview-element</a>.",
         "jsonld": { "@type": "TechArticle" }
       }
     }

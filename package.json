@@ -52,7 +52,7 @@
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0",
     "poops": "^2.0.0",
-    "poops-docs-theme": "^4.0.0"
+    "poops-docs-theme": "^4.0.2"
   },
   "dependencies": {
     "book-of-spells": "^1.0.22"

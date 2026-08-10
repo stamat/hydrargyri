@@ -32,6 +32,24 @@ for the person who wrote the code.
 
 ### Changed
 
+- **The docs site moves to poops-docs-theme 4.0.0, and its search box grew a
+  keyboard.** The field was a text input with a div under it: arrow keys did
+  nothing, the panel had no role, and results appearing in it announced nothing —
+  the only way through a hit was the pointer. It is `<search-elemental>` and
+  `<suggest-elemental>` now, so <kbd>↓</kbd>/<kbd>↑</kbd> walk the results,
+  <kbd>Enter</kbd> follows one, <kbd>Escape</kbd> closes and empties the field,
+  and a settled search says `5 results`, `No results` or `Search failed` out
+  loud. `/` and ⌘K put the cursor in it. Two fixes matter beyond the keyboard: a
+  page `title:` containing markup used to reach `innerHTML` on every page of the
+  site, since the search box is in the topbar — rows are built as nodes now — and
+  a missing `search-index.json` said **Search failed** rather than answering every
+  query with **No results** for the rest of the visit. The upgrade also picks up
+  3.1.0 and 3.1.1: a skip link, keyboard-scrollable code blocks and tables, AA
+  contrast in both code schemes, and a valid list at three nav levels deep. The
+  theme is a dev dependency — hydrargyri does not ship it, the docs site does —
+  and hydrargyri overrides only `--accent`, `--link` and `.brand-mark`, none of
+  which the release touches, so nothing in `docs/` changed with it.
+
 - **The `bind` page names the caret cost of a normalising input handler.** The
   `input` handler plus `value` bind pair — one direction twice — was documented
   without the one way it bites: the repaint writes `.value`, and a field whose

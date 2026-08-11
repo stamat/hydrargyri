@@ -72,6 +72,46 @@ test('a valueless attribute reads as true, false removes it, true puts it back e
   expect(el.getAttribute('active')).toBe('')
 })
 
+test('a string-typed attribute reads back verbatim — the leading zero survives', () => {
+  const name = tag()
+  hg(name, ['zip:string', 'count'])
+  const root = mount(`<${name} zip="007" count="007"></${name}>`)
+  const el = root.firstElementChild
+  expect(el.zip).toBe('007')
+  expect(el.count).toBe(7)
+})
+
+test('a string-typed attribute keeps the empty string, and only absence reads null', () => {
+  const name = tag()
+  hg(name, ['note:string'])
+  const root = mount(`<${name} note></${name}>`)
+  const el = root.firstElementChild
+  expect(el.note).toBe('')
+  el.removeAttribute('note')
+  expect(el.note).toBeNull()
+})
+
+test('a string-typed attribute round-trips through its accessor and paints verbatim', () => {
+  const name = tag()
+  hg(name, ['zip:string'])
+  const root = mount(`<${name} zip="007"><span bind="zip"></span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.querySelector('span').textContent).toBe('007')
+  el.zip = '00042'
+  expect(el.getAttribute('zip')).toBe('00042')
+  expect(el.zip).toBe('00042')
+  expect(el.querySelector('span').textContent).toBe('00042')
+})
+
+test('an unknown attribute type warns and the attribute falls back to the auto reading', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, ['count:integer'])
+  const root = mount(`<${name} count="5"></${name}>`)
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('string is the only type'))
+  expect(root.firstElementChild.count).toBe(5)
+})
+
 test('a bare bind paints textContent from the attribute and repaints on setAttribute', () => {
   const name = tag()
   hg(name, ['count'])

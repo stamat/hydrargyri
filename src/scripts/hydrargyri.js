@@ -16,7 +16,7 @@ const NAMED_BIND_TYPES = new Set(['attr', 'prop', 'class'])
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — hydrargyri's own API and
 // natives like `title` — are caught by the `key in this` check at define time.
-const RESERVED = new Set(['handlers', 'conditions', 'formatters', '_state', '_binds', '_listeners', '_reflected', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
+const RESERVED = new Set(['handlers', 'conditions', 'formatters', '_state', '_binds', '_listeners', '_reflected', '_attrTypes', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
 
 // Every proxy reactive() hands out maps to its model's subscriber set here —
 // which is also how the property setter tells a reactive model from a plain one.
@@ -63,6 +63,15 @@ function parseAttributeValue(raw) {
   if (raw === null) return null
   if (raw === '') return true
   return stringToPrimitive(raw)
+}
+
+// An attributes entry is `name[:type]` — same grammar as bind's `path:type`,
+// so `zip:string` opts that attribute out of coercion. Parsed here and in
+// observedAttributes both, because the platform must see bare names.
+function parseAttributeEntry(entry) {
+  const colon = entry.indexOf(':')
+  if (colon === -1) return { name: entry.trim(), type: null }
+  return { name: entry.slice(0, colon).trim(), type: entry.slice(colon + 1).trim() }
 }
 
 /**
@@ -226,7 +235,7 @@ export function reactive(obj) {
  * not the *Callback methods, which run the binding machinery.
  */
 export class HgElement extends HTMLElement {
-  /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
+  /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. An entry may carry a type — `'zip:string'` reads verbatim, no coercion. */
   static attributes = []
   /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
   static properties = []
@@ -238,7 +247,7 @@ export class HgElement extends HTMLElement {
   static formatters = {}
 
   static get observedAttributes() {
-    return this.attributes
+    return this.attributes.map((entry) => parseAttributeEntry(entry).name)
   }
 
   /**
@@ -295,6 +304,7 @@ export class HgElement extends HTMLElement {
     this._binds = {}
     this._listeners = []
     this._reflected = {}
+    this._attrTypes = {}
     this._subscriptions = []
     this._assigned = new Set()
     this._initialized = false
@@ -303,8 +313,11 @@ export class HgElement extends HTMLElement {
     this.conditions = Object.assign({}, this.constructor.conditions)
     this.formatters = Object.assign({}, this.constructor.formatters)
 
-    for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr)
-    for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null)
+    for (const entry of this.constructor.attributes) {
+      const { name, type } = parseAttributeEntry(entry)
+      this._defineAccessor(name, name, type)
+    }
+    for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null, null)
   }
 
   connectedCallback() {
@@ -341,8 +354,16 @@ export class HgElement extends HTMLElement {
     // Standing down before init: attributes parsed from markup are initial
     // state, not changes. `connected` is where the element meets them.
     if (this._initialized && typeof this.attributeChanged === 'function') {
-      this.attributeChanged(name, parseAttributeValue(oldValue), parseAttributeValue(newValue))
+      this.attributeChanged(name, this._parseAttribute(name, oldValue), this._parseAttribute(name, newValue))
     }
+  }
+
+  // A string-typed attribute is a verbatim channel: the exact attribute text,
+  // `''` included — only absent still reads null. Everything else takes the
+  // HTML-boolean-and-primitive reading of parseAttributeValue.
+  _parseAttribute(attribute, raw) {
+    if (this._attrTypes[attribute] === 'string') return raw
+    return parseAttributeValue(raw)
   }
 
   /**
@@ -359,8 +380,15 @@ export class HgElement extends HTMLElement {
     for (const k in this._binds) this._applyBinds(k)
   }
 
-  _defineAccessor(name, attribute) {
+  _defineAccessor(name, attribute, type) {
     const key = transformDashToCamelCase(name)
+    // `string` is the only named type — verbatim, no coercion. Anything else
+    // warns and reads as auto, so a typo costs a console line, never the attribute.
+    if (type !== null && type !== 'string') {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> attribute "${name}:${type}" — string is the only type; reading as auto`)
+      type = null
+    }
+    if (attribute && type) this._attrTypes[attribute] = type
     // Colliding names fail loud here, at definition — not as a TypeError three
     // calls from the cause when `attributes: ['update']` has shadowed the API
     // or a native like `title` has silently lost its platform behaviour.
@@ -390,7 +418,7 @@ export class HgElement extends HTMLElement {
     // Reflected values are read from the attribute every time — the DOM is
     // the only copy, so devtools edits and hydrargyri writes cannot disagree.
     Object.defineProperty(this, key, attribute ? {
-      get: () => parseAttributeValue(this.getAttribute(attribute)),
+      get: () => this._parseAttribute(attribute, this.getAttribute(attribute)),
       set: (value) => {
         if (value === null || value === undefined || value === false) this.removeAttribute(attribute)
         else if (value === true) this.setAttribute(attribute, '')
@@ -725,7 +753,7 @@ export class HgElement extends HTMLElement {
  * @param {String} name Custom element tag name
  * @param {Object|Array} options Attributes, properties, handlers and lifecycle
  *   hooks — or just an array of attribute names.
- * @param {Array} [options.attributes] Observed attributes, reflected reactive properties
+ * @param {Array} [options.attributes] Observed attributes, reflected reactive properties; an entry may carry a type — `'zip:string'` reads verbatim, no coercion
  * @param {Array|Object} [options.properties] Reactive properties without an attribute — an array of names, or an object of name → class-wide default (define-time share)
  * @param {Object} [options.handlers] Named handlers for `on="event:name"`, called as (event, element); a key that is an exact command string (`'--add-item'`) also answers that Invoker Command
  * @param {Object} [options.conditions] Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`

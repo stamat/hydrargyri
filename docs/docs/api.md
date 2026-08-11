@@ -26,7 +26,7 @@ import { hydrargyri } from "hydrargyri";
 
 | Option             | Type       | What it does                                                                                                                                                                                                    |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`.                                                                            |
+| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`. An entry may carry a type: `"zip:string"` reads [verbatim, no coercion](#attribute-values-are-typed). |
 | `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time [`share()`](#sharevalues): `properties: { user: model, draft: null }`. |
 | `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)` — `event@window` / `event@document` for [global events](on.html#window-and-document). A key that is an exact [Invoker Command](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) string (`'--add-item'`) also answers that command. An unknown command warns only when a `--` key is declared — otherwise the element stays silent, since `on="command:name"` may be handling commands instead. Assignable at runtime: `el.handlers['--x'] = fn`. |
 | `conditions`       | `Object`   | Named predicates for [`if` and `unless` binds](bind.html#conditions) (`bind="items:if#isEmpty"`), called as `(value, element)` on every paint of the key — the initial `null` included. Truthy shows the node under `if`, hides it under `unless`. A missing condition warns and leaves the node as authored. Assignable at runtime: `el.conditions.isEmpty = fn`. |
@@ -50,10 +50,19 @@ and hydrargyri writes cannot disagree, because there is nothing to disagree with
 | absent             | `null`           | `el.thing = null`| removed               |
 |                    |                  | `el.thing = false`| removed              |
 
-Coercion is by value, not intent: `zip="01102"` reads back as the number
-`1102`, and the leading zero is gone. A value that must stay a string keeps a
-non-numeric character in it, or is read through `getAttribute`, where hydrargyri
-never touches it.
+Coercion is by value, not intent: `zip="01102"` would read back as the number
+`1102`, the leading zero gone. An attribute declared with the `string` type —
+same `name:type` grammar as `bind` — is a verbatim channel instead:
+
+```js
+hg("order-card", { attributes: ["zip:string", "count"] });
+```
+
+`el.zip` now reads exactly what the attribute holds, `""` included; only an
+absent attribute still reads `null`, and assignment keeps the removal rules
+above. `string` is the only named type — auto covers numbers and booleans
+already, and a typo in the type warns and reads as auto rather than costing
+the attribute.
 
 ## `properties`
 

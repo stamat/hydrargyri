@@ -21,7 +21,7 @@ export interface HgBindEntry {
 
 /** Options for `hg()` — `HgElement`'s statics plus the lifecycle hooks. */
 export interface HgOptions {
-  /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
+  /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. An entry may carry a type — `'zip:string'` reads verbatim, no coercion. */
   attributes?: string[]
   /** Reactive properties without an attribute — names, or name → class-wide default (define-time share). */
   properties?: string[] | Record<string, unknown>

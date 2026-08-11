@@ -27,6 +27,15 @@ for the person who wrote the code.
 
 ### Added
 
+- **A per-attribute `string` type opts out of coercion.** Typed reading is by value,
+  not intent: `zip="007"` read back as the number `7`, the leading zero gone, and the
+  only escape was raw `getAttribute`, which loses reactivity. An attributes entry now
+  carries an optional type in bind's own grammar — `attributes: ["zip:string", "count"]`
+  — and a string-typed attribute is a verbatim channel: the exact attribute text, `""`
+  included, `null` only when absent. `string` is the only named type, since the auto
+  reading already covers numbers and booleans, and a typo in the type warns and reads
+  as auto rather than costing the attribute.
+
 - **TypeScript declarations ship with the package.** `hg()`, `HgElement`, `reactive()`,
   `parseBinds` and the options object are typed in a hand-written
   `src/scripts/hydrargyri.d.ts`, wired through `types` and the `exports` map — TS

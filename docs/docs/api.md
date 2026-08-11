@@ -274,7 +274,9 @@ The rules, and each is load-bearing:
 
 - **The proxy is the model.** `reactive` returns a deep proxy; mutating the
   raw original notifies nobody. Create the model reactive and pass the proxy
-  around — never keep the raw.
+  around — never keep the raw. Wrapping the same object again returns that
+  same model, never a second one, so two call sites cannot end up with split
+  subscribers.
 - **Only plain objects and arrays wrap.** A Map, a Date, a class instance
   warns and comes back unwrapped — their methods reach for internal slots a
   proxy does not have.

@@ -13,6 +13,12 @@ for the person who wrote the code.
 
 ### Fixed
 
+- **`reactive()` on an object it has already wrapped returns the model it made, never a
+  second one.** Two calls on the same raw used to hand back two independent proxies,
+  each with its own subscriber set — an element subscribed through one never heard a
+  mutation made through the other, and nothing warned. The raw now remembers its model,
+  so however many call sites wrap it, they all hold the same proxy.
+
 - **The landing page no longer says hydrargyri is unpublished.** "Not on npm yet"
   sat above the install block from before the first release and survived 2.0.0,
   telling every visitor the `npm install` line underneath it did not work. The

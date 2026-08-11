@@ -955,6 +955,21 @@ test('mutating the raw original does nothing — the proxy is the contract', asy
   expect(el.querySelector('span').textContent).toBe('ida')
 })
 
+test('reactive() on the same object twice is the same model, so subscribers cannot split', async () => {
+  const name = tag()
+  hg(name, { properties: ['user'] })
+  const root = mount(`<${name}><span bind="user.name"></span></${name}>`)
+  const el = root.firstElementChild
+  const raw = { name: 'ada' }
+  const first = reactive(raw)
+  const second = reactive(raw)
+  expect(second).toBe(first)
+  el.user = first
+  second.name = 'grace'
+  await null
+  expect(el.querySelector('span').textContent).toBe('grace')
+})
+
 test('a disconnected element stops repainting, reconnecting catches it up', async () => {
   const name = tag()
   hg(name, { properties: ['user'] })

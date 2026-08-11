@@ -27,6 +27,12 @@ const reactiveSubs = new WeakMap()
 // sort() on an already-ordered array writes every element back wrapped.
 const proxyRaw = new WeakMap()
 
+// Raw → model for every root reactive() call: wrapping the same object twice
+// hands back the one model, because two proxies over one raw would each keep
+// their own subscribers and mutations through one would silently miss the
+// other's elements.
+const reactiveModels = new WeakMap()
+
 // `properties` comes as an array of names, or an object of name → class-wide
 // default — the define-time form of share().
 function propertyNames(properties) {
@@ -133,6 +139,7 @@ export function parseBinds(raw) {
  *
  * The proxy is the model: mutations to the raw original notify nobody.
  * Create the model reactive and use the returned proxy everywhere.
+ * Wrapping the same object again returns that same model, never a second one.
  *
  * Mutations coalesce: a synchronous burst repaints once, at microtask time —
  * a splice is one repaint with the final array. Assignment stays synchronous.
@@ -148,6 +155,7 @@ export function parseBinds(raw) {
  */
 export function reactive(obj) {
   if (reactiveSubs.has(obj)) return obj
+  if (reactiveModels.has(obj)) return reactiveModels.get(obj)
   if (!isPlainValue(obj)) {
     console.warn('hydrargyri: reactive() takes a plain object or array — returned the value as given')
     return obj
@@ -205,7 +213,9 @@ export function reactive(obj) {
     wrapped.set(raw, proxy)
     return proxy
   }
-  return wrap(obj)
+  const model = wrap(obj)
+  reactiveModels.set(obj, model)
+  return model
 }
 
 /**

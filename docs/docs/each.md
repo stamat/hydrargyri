@@ -183,7 +183,10 @@ other `$` name warns rather than resolving to nothing. The same coordinates
 reach the DOM on the root element — `hg-row="0"`, the position, also a styling
 hook, and the position even over an object, where the key stays in `$key` — with
 the item itself as an `hgItem` property. `hg-row` is how a button inside a row
-says which row fired it, [below](#handlers-and-conditions-fall-through).
+says which row fired it, [below](#handlers-and-conditions-fall-through). The
+`$` reservation extends to `update()`: a key with the `$row:` prefix is
+hg-each's own routing for a single row's repaint, never a name for element
+state.
 
 ## `key`, and rows that keep their nodes
 

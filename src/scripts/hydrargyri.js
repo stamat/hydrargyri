@@ -16,7 +16,7 @@ const NAMED_BIND_TYPES = new Set(['attr', 'prop', 'class'])
 // Instance fields the constructor assigns; an accessor over one of these would
 // dismantle the machinery it rides on. Prototype members — hydrargyri's own API and
 // natives like `title` — are caught by the `key in this` check at define time.
-const RESERVED = new Set(['handlers', 'conditions', 'formatters', '_state', '_binds', '_listeners', '_reflected', '_attrTypes', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
+const RESERVED = new Set(['handlers', 'conditions', 'formatters', '_state', '_binds', '_listeners', '_reflected', '_attrTypes', '_jsonCache', '_subscriptions', '_assigned', '_initialized', '_deferredInit'])
 
 // Every proxy reactive() hands out maps to its model's subscriber set here —
 // which is also how the property setter tells a reactive model from a plain one.
@@ -72,6 +72,16 @@ function parseAttributeEntry(entry) {
   const colon = entry.indexOf(':')
   if (colon === -1) return { name: entry.trim(), type: null }
   return { name: entry.slice(0, colon).trim(), type: entry.slice(colon + 1).trim() }
+}
+
+// A json attribute hands out one parse per value, and that parse is frozen:
+// the attribute is the only copy of the state, so mutating the parsed object
+// would diverge the two silently — frozen, the mutation throws where it was
+// written. JSON has no cycles, so the recursion terminates.
+function deepFreeze(value) {
+  if (value === null || typeof value !== 'object') return value
+  for (const key of Object.keys(value)) deepFreeze(value[key])
+  return Object.freeze(value)
 }
 
 /**
@@ -235,7 +245,7 @@ export function reactive(obj) {
  * not the *Callback methods, which run the binding machinery.
  */
 export class HgElement extends HTMLElement {
-  /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. An entry may carry a type — `'zip:string'` reads verbatim, no coercion. */
+  /** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. An entry may carry a type — `'zip:string'` reads verbatim, `'config:json'` parses to a frozen object. */
   static attributes = []
   /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
   static properties = []
@@ -305,6 +315,7 @@ export class HgElement extends HTMLElement {
     this._listeners = []
     this._reflected = {}
     this._attrTypes = {}
+    this._jsonCache = {}
     this._subscriptions = []
     this._assigned = new Set()
     this._initialized = false
@@ -359,11 +370,33 @@ export class HgElement extends HTMLElement {
   }
 
   // A string-typed attribute is a verbatim channel: the exact attribute text,
-  // `''` included — only absent still reads null. Everything else takes the
-  // HTML-boolean-and-primitive reading of parseAttributeValue.
+  // `''` included — only absent still reads null. A json-typed one hands out
+  // the frozen parse. Everything else takes the HTML-boolean-and-primitive
+  // reading of parseAttributeValue.
   _parseAttribute(attribute, raw) {
-    if (this._attrTypes[attribute] === 'string') return raw
+    const type = this._attrTypes[attribute]
+    if (type === 'string') return raw
+    if (type === 'json') return this._parseJson(attribute, raw)
     return parseAttributeValue(raw)
+  }
+
+  // One parse per attribute value, cached by the raw string — every read of an
+  // unchanged attribute returns the same frozen object, so identity survives
+  // between paints. Malformed JSON (a valueless attribute included) warns and
+  // reads null, and the cache is what keeps that warning to once per value
+  // rather than once per read.
+  _parseJson(attribute, raw) {
+    if (raw === null) return null
+    const cached = this._jsonCache[attribute]
+    if (cached && cached.raw === raw) return cached.value
+    let value = null
+    try {
+      value = deepFreeze(JSON.parse(raw))
+    } catch {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> attribute "${attribute}" holds malformed JSON — read as null`)
+    }
+    this._jsonCache[attribute] = { raw, value }
+    return value
   }
 
   /**
@@ -382,10 +415,10 @@ export class HgElement extends HTMLElement {
 
   _defineAccessor(name, attribute, type) {
     const key = transformDashToCamelCase(name)
-    // `string` is the only named type — verbatim, no coercion. Anything else
-    // warns and reads as auto, so a typo costs a console line, never the attribute.
-    if (type !== null && type !== 'string') {
-      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> attribute "${name}:${type}" — string is the only type; reading as auto`)
+    // `string` reads verbatim, `json` parses — the only named types. Anything
+    // else warns and reads as auto, so a typo costs a console line, never the attribute.
+    if (type !== null && type !== 'string' && type !== 'json') {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> attribute "${name}:${type}" — string and json are the only types; reading as auto`)
       type = null
     }
     if (attribute && type) this._attrTypes[attribute] = type
@@ -420,7 +453,11 @@ export class HgElement extends HTMLElement {
     Object.defineProperty(this, key, attribute ? {
       get: () => this._parseAttribute(attribute, this.getAttribute(attribute)),
       set: (value) => {
-        if (value === null || value === undefined || value === false) this.removeAttribute(attribute)
+        if (value === null || value === undefined) this.removeAttribute(attribute)
+        // Booleans are JSON values, not the HTML valueless convention, when
+        // the attribute is json-typed — `el.flags = false` must read back false.
+        else if (type === 'json') this.setAttribute(attribute, JSON.stringify(value))
+        else if (value === false) this.removeAttribute(attribute)
         else if (value === true) this.setAttribute(attribute, '')
         else this.setAttribute(attribute, value)
         // attributeChangedCallback repaints; nothing else to do here.
@@ -753,7 +790,7 @@ export class HgElement extends HTMLElement {
  * @param {String} name Custom element tag name
  * @param {Object|Array} options Attributes, properties, handlers and lifecycle
  *   hooks — or just an array of attribute names.
- * @param {Array} [options.attributes] Observed attributes, reflected reactive properties; an entry may carry a type — `'zip:string'` reads verbatim, no coercion
+ * @param {Array} [options.attributes] Observed attributes, reflected reactive properties; an entry may carry a type — `'zip:string'` reads verbatim, `'config:json'` parses to a frozen object
  * @param {Array|Object} [options.properties] Reactive properties without an attribute — an array of names, or an object of name → class-wide default (define-time share)
  * @param {Object} [options.handlers] Named handlers for `on="event:name"`, called as (event, element); a key that is an exact command string (`'--add-item'`) also answers that Invoker Command
  * @param {Object} [options.conditions] Named predicates for `bind="key:if#name"` and `key:unless#name`, called as (value, element) at paint — truthy shows the node under `if`, hides it under `unless`

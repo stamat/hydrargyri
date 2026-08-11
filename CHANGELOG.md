@@ -27,14 +27,18 @@ for the person who wrote the code.
 
 ### Added
 
-- **A per-attribute `string` type opts out of coercion.** Typed reading is by value,
-  not intent: `zip="007"` read back as the number `7`, the leading zero gone, and the
-  only escape was raw `getAttribute`, which loses reactivity. An attributes entry now
-  carries an optional type in bind's own grammar — `attributes: ["zip:string", "count"]`
-  — and a string-typed attribute is a verbatim channel: the exact attribute text, `""`
-  included, `null` only when absent. `string` is the only named type, since the auto
-  reading already covers numbers and booleans, and a typo in the type warns and reads
-  as auto rather than costing the attribute.
+- **Per-attribute types: `string` opts out of coercion, `json` reads a payload.** Typed
+  reading is by value, not intent: `zip="007"` read back as the number `7`, the leading
+  zero gone, and the only escape was raw `getAttribute`, which loses reactivity — while
+  an object could not arrive through an attribute at all. An attributes entry now
+  carries an optional type in bind's own grammar — `attributes: ["zip:string",
+  "config:json"]`. A string-typed attribute is a verbatim channel: the exact attribute
+  text, `""` included, `null` only when absent. A json-typed one reads as the parsed
+  object — one parse per value, the same identity on every read, and frozen deep,
+  because the attribute is the only copy of the state and a mutated parse would diverge
+  from it silently; assignment stringifies back into the attribute, booleans staying
+  JSON values. Malformed JSON warns once per value and reads `null`; a typo in a type
+  warns and reads as auto rather than costing the attribute.
 
 - **TypeScript declarations ship with the package.** `hg()`, `HgElement`, `reactive()`,
   `parseBinds` and the options object are typed in a hand-written

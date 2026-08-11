@@ -108,8 +108,59 @@ test('an unknown attribute type warns and the attribute falls back to the auto r
   const name = tag()
   hg(name, ['count:integer'])
   const root = mount(`<${name} count="5"></${name}>`)
-  expect(warn).toHaveBeenCalledWith(expect.stringContaining('string is the only type'))
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('string and json are the only types'))
   expect(root.firstElementChild.count).toBe(5)
+})
+
+test('a json-typed attribute parses to the object, and an unchanged attribute reads as the same object', () => {
+  const name = tag()
+  hg(name, ['config:json'])
+  const root = mount(`<${name} config='{"currency":"eur","tiers":[1,2]}'><span bind="config.currency"></span></${name}>`)
+  const el = root.firstElementChild
+  expect(el.config.currency).toBe('eur')
+  expect(el.config.tiers[1]).toBe(2)
+  expect(el.config).toBe(el.config)
+  expect(el.querySelector('span').textContent).toBe('eur')
+})
+
+test('a json parse is frozen deep — mutating it throws instead of silently diverging from the attribute', () => {
+  const name = tag()
+  hg(name, ['config:json'])
+  const root = mount(`<${name} config='{"tiers":[1,2]}'></${name}>`)
+  const el = root.firstElementChild
+  expect(() => { el.config.tiers.push(3) }).toThrow(TypeError)
+  expect(() => { el.config.fresh = true }).toThrow(TypeError)
+  expect(el.getAttribute('config')).toBe('{"tiers":[1,2]}')
+})
+
+test('assigning to a json-typed attribute stringifies, and booleans stay JSON values', () => {
+  const name = tag()
+  hg(name, ['config:json', 'flags:json'])
+  const root = mount(`<${name}></${name}>`)
+  const el = root.firstElementChild
+  el.config = { currency: 'usd' }
+  expect(el.getAttribute('config')).toBe('{"currency":"usd"}')
+  expect(el.config.currency).toBe('usd')
+  el.flags = false
+  expect(el.getAttribute('flags')).toBe('false')
+  expect(el.flags).toBe(false)
+  el.config = null
+  expect(el.hasAttribute('config')).toBe(false)
+  expect(el.config).toBeNull()
+})
+
+test('malformed JSON warns once per value and reads null — never a half-parsed one', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, ['config:json'])
+  const root = mount(`<${name} config="{broken"></${name}>`)
+  const el = root.firstElementChild
+  expect(el.config).toBeNull()
+  expect(el.config).toBeNull()
+  expect(warn.mock.calls.filter((call) => String(call[0]).includes('malformed JSON')).length).toBe(1)
+  el.setAttribute('config', '')
+  expect(el.config).toBeNull()
+  expect(warn.mock.calls.filter((call) => String(call[0]).includes('malformed JSON')).length).toBe(2)
 })
 
 test('a bare bind paints textContent from the attribute and repaints on setAttribute', () => {

@@ -26,7 +26,7 @@ import { hydrargyri } from "hydrargyri";
 
 | Option             | Type       | What it does                                                                                                                                                                                                    |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`. An entry may carry a type: `"zip:string"` reads [verbatim, no coercion](#attribute-values-are-typed). |
+| `attributes`       | `Array`    | Observed attributes. Each becomes a typed camelCase property reflected to the attribute — `user-name` is reachable as `el.userName`. An entry may carry a type: `"zip:string"` reads verbatim, `"config:json"` parses to a [frozen object](#attribute-values-are-typed). |
 | `properties`       | `Array`, `Object` | Reactive properties that live only in JS, never written to an attribute. An object maps name → class-wide starting value — the define-time [`share()`](#sharevalues): `properties: { user: model, draft: null }`. |
 | `handlers`         | `Object`   | Named functions reachable from `on="event:name"`, called as `(event, element)` — `event@window` / `event@document` for [global events](on.html#window-and-document). A key that is an exact [Invoker Command](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API) string (`'--add-item'`) also answers that command. An unknown command warns only when a `--` key is declared — otherwise the element stays silent, since `on="command:name"` may be handling commands instead. Assignable at runtime: `el.handlers['--x'] = fn`. |
 | `conditions`       | `Object`   | Named predicates for [`if` and `unless` binds](bind.html#conditions) (`bind="items:if#isEmpty"`), called as `(value, element)` on every paint of the key — the initial `null` included. Truthy shows the node under `if`, hides it under `unless`. A missing condition warns and leaves the node as authored. Assignable at runtime: `el.conditions.isEmpty = fn`. |
@@ -60,9 +60,31 @@ hg("order-card", { attributes: ["zip:string", "count"] });
 
 `el.zip` now reads exactly what the attribute holds, `""` included; only an
 absent attribute still reads `null`, and assignment keeps the removal rules
-above. `string` is the only named type — auto covers numbers and booleans
-already, and a typo in the type warns and reads as auto rather than costing
-the attribute.
+above.
+
+`json` is the other named type — for the server-rendered payload an element
+should read without a line of script:
+
+```html
+<order-card config='{"currency":"eur","tiers":[10,50]}'>…</order-card>
+```
+
+```js
+hg("order-card", { attributes: ["config:json"] });
+```
+
+`el.config` is the parsed object — parsed once per attribute value, the same
+object identity on every read until the attribute changes. The parse is frozen
+deep: the attribute is the only copy of the state, so mutating the parse would
+diverge the two silently — frozen, `el.config.currency = "usd"` throws where
+it was written. Change the state by assigning — `el.config = { ...el.config,
+currency: "usd" }` — which stringifies back into the attribute, booleans
+staying JSON values rather than the valueless convention. Malformed JSON — a
+valueless `config` included — warns once per value and reads `null`.
+
+`string` and `json` are the only named types: auto already covers numbers and
+booleans, and a typo in a type warns and reads as auto rather than costing the
+attribute.
 
 ## `properties`
 

@@ -1,4 +1,4 @@
-/* hydrargyri v2.0.0 | https://stamat.github.io/hydrargyri/ | MIT License */
+/* hydrargyri v2.1.0 | https://stamat.github.io/hydrargyri/ | MIT License */
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -36,9 +36,10 @@ var hgTags = /* @__PURE__ */ new Set();
 var hgSelector = "";
 var BIND_TYPES = /* @__PURE__ */ new Set(["text", "html", "value", "attr", "prop", "class", "if", "unless"]);
 var NAMED_BIND_TYPES = /* @__PURE__ */ new Set(["attr", "prop", "class"]);
-var RESERVED = /* @__PURE__ */ new Set(["handlers", "conditions", "formatters", "_state", "_binds", "_listeners", "_reflected", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
+var RESERVED = /* @__PURE__ */ new Set(["handlers", "conditions", "formatters", "_state", "_binds", "_listeners", "_reflected", "_attrTypes", "_jsonCache", "_subscriptions", "_assigned", "_initialized", "_deferredInit"]);
 var reactiveSubs = /* @__PURE__ */ new WeakMap();
 var proxyRaw = /* @__PURE__ */ new WeakMap();
+var reactiveModels = /* @__PURE__ */ new WeakMap();
 function propertyNames(properties) {
   return isArray(properties) ? properties : Object.keys(properties);
 }
@@ -57,6 +58,16 @@ function parseAttributeValue(raw) {
   if (raw === null) return null;
   if (raw === "") return true;
   return stringToPrimitive(raw);
+}
+function parseAttributeEntry(entry) {
+  const colon = entry.indexOf(":");
+  if (colon === -1) return { name: entry.trim(), type: null };
+  return { name: entry.slice(0, colon).trim(), type: entry.slice(colon + 1).trim() };
+}
+function deepFreeze(value) {
+  if (value === null || typeof value !== "object") return value;
+  for (const key of Object.keys(value)) deepFreeze(value[key]);
+  return Object.freeze(value);
 }
 function parseBinds(raw) {
   const entries = [];
@@ -103,6 +114,7 @@ function parseBinds(raw) {
 }
 function reactive(obj) {
   if (reactiveSubs.has(obj)) return obj;
+  if (reactiveModels.has(obj)) return reactiveModels.get(obj);
   if (!isPlainValue(obj)) {
     console.warn("hydrargyri: reactive() takes a plain object or array \u2014 returned the value as given");
     return obj;
@@ -144,11 +156,13 @@ function reactive(obj) {
     wrapped.set(raw, proxy);
     return proxy;
   };
-  return wrap(obj);
+  const model = wrap(obj);
+  reactiveModels.set(obj, model);
+  return model;
 }
 var _HgElement = class _HgElement extends HTMLElement {
   static get observedAttributes() {
-    return this.attributes;
+    return this.attributes.map((entry) => parseAttributeEntry(entry).name);
   }
   /**
    * Hand a value to every instance of this element, present and future —
@@ -198,6 +212,8 @@ var _HgElement = class _HgElement extends HTMLElement {
     this._binds = {};
     this._listeners = [];
     this._reflected = {};
+    this._attrTypes = {};
+    this._jsonCache = {};
     this._subscriptions = [];
     this._assigned = /* @__PURE__ */ new Set();
     this._initialized = false;
@@ -205,8 +221,11 @@ var _HgElement = class _HgElement extends HTMLElement {
     this.handlers = Object.assign({}, this.constructor.handlers);
     this.conditions = Object.assign({}, this.constructor.conditions);
     this.formatters = Object.assign({}, this.constructor.formatters);
-    for (const attr of this.constructor.observedAttributes) this._defineAccessor(attr, attr);
-    for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null);
+    for (const entry of this.constructor.attributes) {
+      const { name, type } = parseAttributeEntry(entry);
+      this._defineAccessor(name, name, type);
+    }
+    for (const prop of propertyNames(this.constructor.properties)) this._defineAccessor(prop, null, null);
   }
   connectedCallback() {
     if (this._initialized) return;
@@ -233,8 +252,36 @@ var _HgElement = class _HgElement extends HTMLElement {
     if (oldValue === newValue) return;
     this.update(transformDashToCamelCase(name));
     if (this._initialized && typeof this.attributeChanged === "function") {
-      this.attributeChanged(name, parseAttributeValue(oldValue), parseAttributeValue(newValue));
+      this.attributeChanged(name, this._parseAttribute(name, oldValue), this._parseAttribute(name, newValue));
     }
+  }
+  // A string-typed attribute is a verbatim channel: the exact attribute text,
+  // `''` included — only absent still reads null. A json-typed one hands out
+  // the frozen parse. Everything else takes the HTML-boolean-and-primitive
+  // reading of parseAttributeValue.
+  _parseAttribute(attribute, raw) {
+    const type = this._attrTypes[attribute];
+    if (type === "string") return raw;
+    if (type === "json") return this._parseJson(attribute, raw);
+    return parseAttributeValue(raw);
+  }
+  // One parse per attribute value, cached by the raw string — every read of an
+  // unchanged attribute returns the same frozen object, so identity survives
+  // between paints. Malformed JSON (a valueless attribute included) warns and
+  // reads null, and the cache is what keeps that warning to once per value
+  // rather than once per read.
+  _parseJson(attribute, raw) {
+    if (raw === null) return null;
+    const cached = this._jsonCache[attribute];
+    if (cached && cached.raw === raw) return cached.value;
+    let value = null;
+    try {
+      value = deepFreeze(JSON.parse(raw));
+    } catch {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> attribute "${attribute}" holds malformed JSON \u2014 read as null`);
+    }
+    this._jsonCache[attribute] = { raw, value };
+    return value;
   }
   /**
    * Repaint bound nodes — all of them, or only those bound to one key.
@@ -249,8 +296,13 @@ var _HgElement = class _HgElement extends HTMLElement {
     }
     for (const k in this._binds) this._applyBinds(k);
   }
-  _defineAccessor(name, attribute) {
+  _defineAccessor(name, attribute, type) {
     const key = transformDashToCamelCase(name);
+    if (type !== null && type !== "string" && type !== "json") {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> attribute "${name}:${type}" \u2014 string and json are the only types; reading as auto`);
+      type = null;
+    }
+    if (attribute && type) this._attrTypes[attribute] = type;
     if (RESERVED.has(key)) {
       console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> cannot observe "${name}" \u2014 "${key}" is reserved by hydrargyri`);
       return;
@@ -267,9 +319,11 @@ var _HgElement = class _HgElement extends HTMLElement {
     if (attribute) this._reflected[key] = attribute;
     else if (!(key in this._state)) this._state[key] = null;
     Object.defineProperty(this, key, attribute ? {
-      get: () => parseAttributeValue(this.getAttribute(attribute)),
+      get: () => this._parseAttribute(attribute, this.getAttribute(attribute)),
       set: (value) => {
-        if (value === null || value === void 0 || value === false) this.removeAttribute(attribute);
+        if (value === null || value === void 0) this.removeAttribute(attribute);
+        else if (type === "json") this.setAttribute(attribute, JSON.stringify(value));
+        else if (value === false) this.removeAttribute(attribute);
         else if (value === true) this.setAttribute(attribute, "");
         else this.setAttribute(attribute, value);
       }
@@ -332,6 +386,9 @@ var _HgElement = class _HgElement extends HTMLElement {
   }
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
   // element's own, so different hydrargyri elements nest without stealing binds.
+  // The selector grows with every tag ever defined and closest() pays for it
+  // per scanned node — the ceiling is scan cost on pages defining many tags;
+  // a per-scan ancestor cache is the upgrade if it ever shows up in a profile.
   _scope(el) {
     return el.closest(hgSelector) === this;
   }
@@ -482,6 +539,11 @@ var _HgElement = class _HgElement extends HTMLElement {
     const value = this[path[0]];
     return path.length > 1 ? getObjectValueByPath(value, path.slice(1)) : value;
   }
+  // Stateless on purpose: no memory of the last painted value, so an unchanged
+  // value is written again, and a bind registered under two keys (its own and a
+  // formatter argument's) paints once per key in a full update(). Nothing can go
+  // stale across a rescan; a per-entry last-value memo is the upgrade if
+  // repaint cost ever earns it.
   _render({ el, type, attr, format }, value) {
     if (value === void 0) return;
     if (format) {
@@ -536,7 +598,7 @@ var _HgElement = class _HgElement extends HTMLElement {
     }
   }
 };
-/** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. */
+/** Observed attributes, each becoming a reactive camelCase property reflected to the DOM. An entry may carry a type — `'zip:string'` reads verbatim, `'config:json'` parses to a frozen object. */
 __publicField(_HgElement, "attributes", []);
 /** Reactive properties that live only in JS, never written to an attribute — an array of names, or an object of name → class-wide default (define-time share). */
 __publicField(_HgElement, "properties", []);

@@ -4,13 +4,18 @@
   "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote",
   "type": "module",
   "main": "src/scripts/hydrargyri.js",
+  "types": "./src/scripts/hydrargyri.d.ts",
   "exports": {
-    ".": "./src/scripts/hydrargyri.js",
+    ".": {
+      "types": "./src/scripts/hydrargyri.d.ts",
+      "default": "./src/scripts/hydrargyri.js"
+    },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "files": [
     "src/scripts/hydrargyri.js",
+    "src/scripts/hydrargyri.d.ts",
     "dist/hydrargyri.mjs",
     "dist/hydrargyri.mjs.map",
     "dist/hydrargyri.min.mjs"

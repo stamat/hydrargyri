@@ -27,6 +27,13 @@ for the person who wrote the code.
 
 ### Added
 
+- **TypeScript declarations ship with the package.** `hg()`, `HgElement`, `reactive()`,
+  `parseBinds` and the options object are typed in a hand-written
+  `src/scripts/hydrargyri.d.ts`, wired through `types` and the `exports` map — TS
+  consumers had implicit `any` for the whole surface until now. Declared attributes and
+  properties become accessors at runtime, so on the element they type as an index
+  signature; that is the price of a runtime-defined surface, and the declarations say so.
+
 - **The README says what you get, in eight lines, before the comparison table.**
   The table scores hydrargyri against four alternatives, which answers how it
   compares and not what it does — its own column is comparative shorthand, six

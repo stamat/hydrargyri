@@ -472,6 +472,9 @@ export class HgElement extends HTMLElement {
 
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
   // element's own, so different hydrargyri elements nest without stealing binds.
+  // The selector grows with every tag ever defined and closest() pays for it
+  // per scanned node — the ceiling is scan cost on pages defining many tags;
+  // a per-scan ancestor cache is the upgrade if it ever shows up in a profile.
   _scope(el) {
     return el.closest(hgSelector) === this
   }
@@ -649,6 +652,11 @@ export class HgElement extends HTMLElement {
     return path.length > 1 ? getObjectValueByPath(value, path.slice(1)) : value
   }
 
+  // Stateless on purpose: no memory of the last painted value, so an unchanged
+  // value is written again, and a bind registered under two keys (its own and a
+  // formatter argument's) paints once per key in a full update(). Nothing can go
+  // stale across a rescan; a per-entry last-value memo is the upgrade if
+  // repaint cost ever earns it.
   _render({ el, type, attr, format }, value) {
     // undefined means a path into an object that is not there yet — leave the
     // node alone. null is a real value and clears.

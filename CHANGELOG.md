@@ -11,6 +11,12 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Changed
+
+- Bump hydrargyri-each to 2.1.0 to pass on the fixes and updates to the docs site and force the dependency to be installed in the package-lock.json.
+
+- Bump poops-docs-theme to 4.2.0 to update the docs site with the latest fixes and improvements.
+
 ## [2.1.0] - 2026-08-11
 
 ### Fixed
@@ -34,7 +40,7 @@ for the person who wrote the code.
   zero gone, and the only escape was raw `getAttribute`, which loses reactivity — while
   an object could not arrive through an attribute at all. An attributes entry now
   carries an optional type in bind's own grammar — `attributes: ["zip:string",
-  "config:json"]`. A string-typed attribute is a verbatim channel: the exact attribute
+"config:json"]`. A string-typed attribute is a verbatim channel: the exact attribute
   text, `""` included, `null` only when absent. A json-typed one reads as the parsed
   object — one parse per value, the same identity on every read, and frozen deep,
   because the attribute is the only copy of the state and a mutated parse would diverge

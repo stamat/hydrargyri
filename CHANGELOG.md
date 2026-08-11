@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-08-11
+
 ### Fixed
 
 - **`reactive()` on an object it has already wrapped returns the model it made, never a

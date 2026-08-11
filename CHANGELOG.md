@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-11
+
 ### Changed
 
 - Bump hydrargyri-each to 2.1.0 to pass on the fixes and updates to the docs site and force the dependency to be installed in the package-lock.json.

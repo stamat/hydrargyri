@@ -65,3 +65,50 @@ jobs:
           test "$(grep -c -o 'has no attribute or property' dist/hydrargyri-demos.min.js)" -eq 1
           test -s _site/index.html
           test -s _site/llms.txt
+
+  # hydrargyri-each is built on six of HgElement's underscore members —
+  # _wireHandlers, _scope, _scanBinds, _render, _handle and _listeners — and its
+  # own CI installs the published hydrargyri. So a refactor of any of them goes
+  # green in both repos and surfaces at the next publish, in someone else's
+  # install. This job runs its suite against the working tree instead, which puts
+  # the break on the pull request that causes it.
+  downstream:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install dependencies
+        run: script/bootstrap
+
+      # A tarball rather than a path install: prepack builds dist/, the package
+      # entry is src/scripts/hydrargyri.js, and `files` decides what ships — so
+      # this resolves exactly as a publish would, and a file left out of `files`
+      # fails here rather than after the tag.
+      - name: Pack the working tree
+        run: npm pack --pack-destination "$RUNNER_TEMP"
+
+      - name: Check out hydrargyri-each
+        uses: actions/checkout@v7
+        with:
+          repository: stamat/hydrargyri-each
+          path: hydrargyri-each
+
+      # An unmet peer range is the signal, not a nuisance: a major bump
+      # hydrargyri-each has not widened for breaks every downstream install.
+      - name: Install hydrargyri-each against this tree
+        working-directory: hydrargyri-each
+        run: |
+          script/bootstrap
+          npm install "$RUNNER_TEMP"/hydrargyri-*.tgz --no-save
+
+      - name: Test hydrargyri-each
+        working-directory: hydrargyri-each
+        run: script/test

@@ -26,6 +26,8 @@ export interface HgOptions {
   /** Reactive properties without an attribute — names, or name → class-wide default (define-time share). */
   properties?: string[] | Record<string, unknown>
   handlers?: Record<string, HgHandler>
+  /** Listeners the class wires itself, by selector — `{ 'audio, video': 'play:onPlay' }`, the same pair grammar `on` takes. A pair the node's own `on` attribute already carries is skipped. */
+  wires?: Record<string, string>
   conditions?: Record<string, HgCondition>
   formatters?: Record<string, HgFormatter>
   /** Runs once the element is upgraded, scanned and painted. */
@@ -41,6 +43,7 @@ export class HgElement extends HTMLElement {
   static attributes: string[]
   static properties: string[] | Record<string, unknown>
   static handlers: Record<string, HgHandler>
+  static wires: Record<string, string>
   static conditions: Record<string, HgCondition>
   static formatters: Record<string, HgFormatter>
   static readonly observedAttributes: string[]

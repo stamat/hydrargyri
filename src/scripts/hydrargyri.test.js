@@ -1,8 +1,8 @@
 // Covers the whole public surface: the factory, the HgElement base class,
 // attribute↔property reflection, every bind type, formatters, handler wiring,
-// nesting scope, lifecycle hooks, deferred init during parse, pre-upgrade
-// property capture, reactive models, rescan(), and markup stamped from a
-// template before define. Deliberately not covered: automatic pickup of
+// static wires, nesting scope, lifecycle hooks, deferred init during parse,
+// pre-upgrade property capture, reactive models, rescan(), and markup stamped
+// from a template before define. Deliberately not covered: automatic pickup of
 // dynamically inserted bind/on nodes — watching the subtree is a documented
 // non-goal; rescan() and reconnecting are the manual doors, covered here.
 import { jest } from '@jest/globals'
@@ -432,6 +432,115 @@ test('one on attribute wires several semicolon-separated events', () => {
   input.dispatchEvent(new Event('focus'))
   input.dispatchEvent(new Event('input'))
   expect(seen).toEqual(['focus', 'input'])
+})
+
+test('static wires attach the declared listeners to matching children, no on attribute in the markup', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    wires: { button: 'click:poke' },
+    handlers: { poke: (e, el) => seen.push([e.type, el.tagName]) }
+  })
+  const root = mount(`<${name}><button>a</button><button>b</button></${name}>`)
+  for (const button of root.querySelectorAll('button')) button.click()
+  expect(seen).toEqual([['click', name.toUpperCase()], ['click', name.toUpperCase()]])
+})
+
+test('a wires pair the markup already carries fires once, not twice', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    wires: { button: 'click:poke' },
+    handlers: { poke: () => seen.push('hit') }
+  })
+  const root = mount(`<${name}><button on="click:poke"></button></${name}>`)
+  root.querySelector('button').click()
+  expect(seen).toEqual(['hit'])
+})
+
+test('wires and a differing on pair on the same node both fire', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    wires: { button: 'click:first' },
+    handlers: { first: () => seen.push('wires'), second: () => seen.push('markup') }
+  })
+  const root = mount(`<${name}><button on="click:second"></button></${name}>`)
+  root.querySelector('button').click()
+  expect(seen.sort()).toEqual(['markup', 'wires'])
+})
+
+test('a selector the element itself matches wires the element too', () => {
+  const name = tag()
+  const seen = []
+  class El extends HgElement {
+    static wires = { '[data-hot]': 'click:poke' }
+    poke() { seen.push('hit') }
+  }
+  customElements.define(name, El)
+  const root = mount(`<${name} data-hot></${name}>`)
+  root.firstElementChild.click()
+  expect(seen).toEqual(['hit'])
+})
+
+test('wires from an outer element stop at a nested hydrargyri element', () => {
+  const outer = tag()
+  const inner = tag()
+  const seen = []
+  hg(inner, [])
+  hg(outer, {
+    wires: { button: 'click:poke' },
+    handlers: { poke: () => seen.push('outer') }
+  })
+  const root = mount(
+    `<${outer}><button>mine</button><${inner}><button>theirs</button></${inner}></${outer}>`
+  )
+  for (const button of root.querySelectorAll('button')) button.click()
+  expect(seen).toEqual(['outer'])
+})
+
+test('wires unhook on disconnect and come back on reconnect, never doubled', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    wires: { button: 'click:poke' },
+    handlers: { poke: () => seen.push('hit') }
+  })
+  const root = mount(`<${name}><button></button></${name}>`)
+  const el = root.firstElementChild
+  const button = el.querySelector('button')
+  el.remove()
+  button.click()
+  expect(seen).toEqual([])
+  root.appendChild(el)
+  button.click()
+  expect(seen).toEqual(['hit'])
+})
+
+test('a wires pair aimed @document listens there, and the handler stays the element with the wires', () => {
+  const name = tag()
+  const seen = []
+  hg(name, {
+    wires: { button: 'keyup@document:note' },
+    handlers: { note: (e, el) => seen.push([e.type, el.tagName]) }
+  })
+  mount(`<${name}><button></button></${name}>`)
+  document.dispatchEvent(new Event('keyup'))
+  expect(seen).toEqual([['keyup', name.toUpperCase()]])
+})
+
+test('a wires selector that will not parse warns, and the neighbouring selectors still wire', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  const seen = []
+  hg(name, {
+    wires: { ':::': 'click:poke', button: 'click:poke' },
+    handlers: { poke: () => seen.push('hit') }
+  })
+  const root = mount(`<${name}><button></button></${name}>`)
+  root.querySelector('button').click()
+  expect(seen).toEqual(['hit'])
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('wires'))
 })
 
 test('nested hydrargyri elements of different tags keep their binds and handlers to themselves', () => {

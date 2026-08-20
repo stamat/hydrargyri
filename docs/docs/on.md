@@ -133,11 +133,46 @@ like any other event, and a handler keyed by the exact command string
 `--` key declared warns on a command it does not know; one without stays
 silent, on the assumption an `on` listener like the above is handling them.
 
+## `static wires`
+
+Some pairs are not the author's choice. A class wrapping an `<audio>` element
+needs `play`, `pause` and their kin bound on it in every instance — plumbing,
+not authorship — and one pair forgotten in the markup is a component that
+half-works with nothing saying why. `wires` moves those pairs into the class:
+
+```js
+class MediaThing extends HgElement {
+  static wires = { 'audio, video': 'play:onPlay;pause:onPause' }
+  onPlay(e) { /* … */ }
+  onPause(e) { /* … */ }
+}
+```
+
+Each key is a selector, each value the pair grammar `on` takes — `@window` and
+`@document` included — and `hg()` accepts the same under `options.wires`. At
+scan, every node in the element's scope matching the selector gets the
+listeners, the element itself included when it matches. A name resolves
+exactly as it does from `on`.
+
+The markup wins where the two meet: a pair the node's own `on` attribute
+already carries is skipped, so markup written before the wires existed keeps
+firing once, and a differing pair the author adds rides alongside. A selector
+that will not parse warns and is skipped; the other selectors still wire.
+
+Wires are for pairs that are invariantly the element's own. A binding the
+author should see, choose or vary belongs in the markup — the wiring being
+readable in the page is most of the point here, and wires spend that
+visibility. One shape to know: a `@document` or `@window` pair registers once
+**per matched node**, so a selector matching three buttons puts three
+listeners on the document — aim a global pair at a selector the element
+matches once.
+
 ## What is scanned, and when
 
 Handlers are wired when the element connects, on itself and every descendant
 carrying `on` or `data-on` — except those inside a nested hydrargyri element, which
-owns them instead.
+owns them instead. `static wires` land in the same sweep, on the nodes their
+selectors match at that moment.
 
 Disconnecting removes every listener hydrargyri added. Re-connecting rescans and
 wires them again, so an element moved across the page keeps working and does

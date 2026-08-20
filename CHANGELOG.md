@@ -11,6 +11,17 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Added
+
+- **`static wires` — listeners the class wires itself, by selector.** An element wrapping
+  an `<audio>` needs `play:onPlay;pause:onPause` and kin bound on it in every instance —
+  plumbing, not authorship — and one pair forgotten in the markup was a component that
+  half-worked with nothing saying why. `static wires = { 'audio, video': 'play:onPlay;…' }`
+  on the class, or `wires:` in `hg()`, attaches them at scan to every matching node in the
+  element's scope, the element itself included. The pair grammar is `on`'s own, `@window`
+  and `@document` included, and the markup wins where the two meet: a pair the node's `on`
+  attribute already carries is skipped, so markup predating the wires keeps firing once.
+
 ## [2.1.1] - 2026-08-11
 
 ### Changed

@@ -34,9 +34,9 @@ hg("demo-counter", {
 The API:
 
 - `hg(name, options)` defines a custom element and returns its class.
-  `options` takes `attributes`, `properties`, `handlers`, `conditions`,
-  `formatters`, and the `connected` / `disconnected` / `attributeChanged`
-  hooks; an array is shorthand for `attributes`.
+  `options` takes `attributes`, `properties`, `handlers`, `wires`,
+  `conditions`, `formatters`, and the `connected` / `disconnected` /
+  `attributeChanged` hooks; an array is shorthand for `attributes`.
 - `HgElement` is the exported base class, for elements that need methods of
   their own. A method you wrote outranks a `handlers` entry of the same name;
   an inherited one does not, so `on="click:remove"` never reaches
@@ -92,6 +92,12 @@ The API:
 - `on` may target the globals: `on="resize@window:name"` and
   `on="click@document:name"` register the listener on `window` or `document` —
   the handler stays the element's, and disconnect unhooks it with the rest.
+- `static wires` (or `options.wires`) are listeners the class wires itself, by
+  selector — `{ 'audio, video': 'play:onPlay;pause:onPause' }`, the same pair
+  grammar as `on`, for plumbing an element needs in every instance. Wired at
+  scan on every matching node in scope, the element itself included; a pair
+  the node's own `on` attribute already carries is skipped, so such markup
+  keeps firing once.
 - `data-bind` and `data-on` are accepted where a validator objects to the bare
   names.
 - `parseBinds(raw)` parses a `bind` attribute into `{ path, type, attr, format }`

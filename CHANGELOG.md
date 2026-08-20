@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-20
+
 ### Added
 
 - **`static wires` — listeners the class wires itself, by selector.** An element wrapping

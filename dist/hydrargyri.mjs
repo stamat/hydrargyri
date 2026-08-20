@@ -1,4 +1,4 @@
-/* hydrargyri v2.1.1 | https://stamat.github.io/hydrargyri/ | MIT License */
+/* hydrargyri v2.2.0 | https://stamat.github.io/hydrargyri/ | MIT License */
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -63,6 +63,9 @@ function parseAttributeEntry(entry) {
   const colon = entry.indexOf(":");
   if (colon === -1) return { name: entry.trim(), type: null };
   return { name: entry.slice(0, colon).trim(), type: entry.slice(colon + 1).trim() };
+}
+function pairKey({ event, where, name }) {
+  return `${event}@${where || ""}:${name}`;
 }
 function deepFreeze(value) {
   if (value === null || typeof value !== "object") return value;
@@ -425,19 +428,21 @@ var _HgElement = class _HgElement extends HTMLElement {
   }
   _scanHandlers() {
     this._teardownHandlers();
+    const wired = /* @__PURE__ */ new Map();
     const collect = (el) => {
-      if (this._scope(el)) this._wireHandlers(el);
+      if (!this._scope(el)) return;
+      const keys = this._wireHandlers(el);
+      if (keys.length) wired.set(el, new Set(keys));
     };
     collect(this);
     this.querySelectorAll("[on],[data-on]").forEach(collect);
+    this._scanWires(wired);
   }
-  // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
-  // with, callable alone for nodes that arrive after the scan (hydrargyri-each
-  // wires fresh rows with it, without rescanning the standing ones). Scope is
-  // the caller's to check; calling twice on one node doubles its listeners.
-  _wireHandlers(el) {
-    const raw = el.getAttribute("on") || el.getAttribute("data-on");
-    if (!raw) return;
+  // The pair grammar — `event[@window|@document]:name`, `;`-separated — parsed
+  // in one place for the `on` attribute and `static wires` both, so the two
+  // cannot fork. A malformed pair warns and is skipped; its neighbours still wire.
+  _parseHandlers(raw) {
+    const entries = [];
     for (const part of raw.split(";")) {
       const trimmed = part.trim();
       if (!trimmed) continue;
@@ -448,20 +453,72 @@ var _HgElement = class _HgElement extends HTMLElement {
       }
       let event = trimmed.slice(0, colon).trim();
       const name = trimmed.slice(colon + 1).trim();
-      let target = el;
+      let where = null;
       const at = event.lastIndexOf("@");
       if (at !== -1) {
-        const where = event.slice(at + 1);
-        target = where === "window" ? window : where === "document" ? document : null;
-        if (!target) {
+        where = event.slice(at + 1);
+        if (where !== "window" && where !== "document") {
           console.warn(`hydrargyri: unknown handler target "${trimmed}" \u2014 expected event@window or event@document`);
           continue;
         }
         event = event.slice(0, at);
       }
-      const listener = (e) => this._handle(name, e);
-      target.addEventListener(event, listener);
-      this._listeners.push({ el: target, event, listener });
+      entries.push({ event, where, name });
+    }
+    return entries;
+  }
+  // resize@window / click@document put the listener on the global while the
+  // handler stays this element's; stored in _listeners like any other, so
+  // disconnect unhooks it and nothing can leak.
+  _wireEntry(el, { event, where, name }) {
+    const target = where === "window" ? window : where === "document" ? document : el;
+    const listener = (e) => this._handle(name, e);
+    target.addEventListener(event, listener);
+    this._listeners.push({ el: target, event, listener });
+  }
+  // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
+  // with, callable alone for nodes that arrive after the scan (hydrargyri-each
+  // wires fresh rows with it, without rescanning the standing ones). Scope is
+  // the caller's to check; calling twice on one node doubles its listeners.
+  // Returns the wired pair keys, which is what lets wires skip them.
+  _wireHandlers(el) {
+    const raw = el.getAttribute("on") || el.getAttribute("data-on");
+    if (!raw) return [];
+    const keys = [];
+    for (const entry of this._parseHandlers(raw)) {
+      this._wireEntry(el, entry);
+      keys.push(pairKey(entry));
+    }
+    return keys;
+  }
+  // Class-declared listeners on the nodes a selector names — the plumbing a
+  // subclass needs in every instance, wired without the author writing it.
+  // The markup wins where they meet: a pair the node already wired from its
+  // own `on` attribute is skipped, so markup predating the wires keeps firing
+  // once. A selector that will not parse warns and is skipped; the other
+  // selectors still wire.
+  _scanWires(wired) {
+    for (const [selector, spec] of Object.entries(this.constructor.wires)) {
+      let nodes;
+      try {
+        nodes = [...this.querySelectorAll(selector)];
+        if (this.matches(selector)) nodes.unshift(this);
+      } catch {
+        console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> wires selector "${selector}" will not parse \u2014 skipped`);
+        continue;
+      }
+      const entries = this._parseHandlers(spec);
+      for (const el of nodes) {
+        if (!this._scope(el)) continue;
+        let keys = wired.get(el);
+        for (const entry of entries) {
+          const key = pairKey(entry);
+          if (keys && keys.has(key)) continue;
+          this._wireEntry(el, entry);
+          if (!keys) wired.set(el, keys = /* @__PURE__ */ new Set());
+          keys.add(key);
+        }
+      }
     }
   }
   _teardownHandlers() {
@@ -608,6 +665,8 @@ __publicField(_HgElement, "handlers", {});
 __publicField(_HgElement, "conditions", {});
 /** Named formatters for `bind="key|name[:arg…]"`, called as (value, element, ...args) at paint — the return value is what lands in the node. Args are property paths resolved on the element, never literals. */
 __publicField(_HgElement, "formatters", {});
+/** Listeners the class wires itself, by selector — `{ 'audio, video': 'play:onPlay;pause:onPause' }`, the same pair grammar `on` takes. Wired at scan on every matching node in scope, the element itself included; a pair the node's own `on` attribute already carries is skipped. */
+__publicField(_HgElement, "wires", {});
 var HgElement = _HgElement;
 function hg(name, options = {}) {
   if (isArray(options)) options = { attributes: options };
@@ -618,6 +677,7 @@ function hg(name, options = {}) {
   __publicField(Hg, "handlers", options.handlers || {});
   __publicField(Hg, "conditions", options.conditions || {});
   __publicField(Hg, "formatters", options.formatters || {});
+  __publicField(Hg, "wires", options.wires || {});
   for (const hook of ["connected", "disconnected", "attributeChanged"]) {
     if (typeof options[hook] === "function") Hg.prototype[hook] = options[hook];
   }

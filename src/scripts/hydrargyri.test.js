@@ -458,6 +458,23 @@ test('a wires pair the markup already carries fires once, not twice', () => {
   expect(seen).toEqual(['hit'])
 })
 
+test('a subclass that wraps _wireHandlers without returning still wires, and the markup still wins', () => {
+  const name = tag()
+  const seen = []
+  const Cls = hg(name, {
+    wires: { button: 'click:poke' },
+    handlers: { poke: () => seen.push('hit') }
+  })
+  // What hydrargyri-each does to stamp a row's carrier node onto its listeners:
+  // wrap the wire step around super and return nothing.
+  Cls.prototype._wireHandlers = function (el) {
+    HgElement.prototype._wireHandlers.call(this, el)
+  }
+  const root = mount(`<${name}><button on="click:poke"></button></${name}>`)
+  root.querySelector('button').click()
+  expect(seen).toEqual(['hit'])
+})
+
 test('wires and a differing on pair on the same node both fire', () => {
   const name = tag()
   const seen = []

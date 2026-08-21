@@ -11,6 +11,15 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`static wires` no longer breaks a subclass that overrides `_wireHandlers`.** 2.2.0 made
+  the scan read the wired pair keys off that method's return value, so a subclass wrapping
+  it — hydrargyri-each stamps each row's carrier node onto its listeners there — threw
+  `Cannot read properties of undefined` on every element at first paint. The scan now reads
+  the keys off the listeners the wiring actually pushed, so a wrapper cannot swallow them
+  and "the markup wins" holds either way. `_wireHandlers` returns nothing again.
+
 ## [2.2.0] - 2026-08-20
 
 ### Added

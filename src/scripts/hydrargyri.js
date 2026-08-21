@@ -601,8 +601,15 @@ export class HgElement extends HTMLElement {
     const wired = new Map()
     const collect = (el) => {
       if (!this._scope(el)) return
-      const keys = this._wireHandlers(el)
-      if (keys.length) wired.set(el, new Set(keys))
+      // The keys come off the listeners the wiring actually pushed, never off
+      // what _wireHandlers returns: subclasses wrap that method (hydrargyri-each
+      // stamps each row's carrier node onto its listeners there), and a wrapper
+      // that swallows the return would take "the markup wins" down with it.
+      const from = this._listeners.length
+      this._wireHandlers(el)
+      const keys = new Set()
+      for (let i = from; i < this._listeners.length; i++) keys.add(this._listeners[i].key)
+      if (keys.size) wired.set(el, keys)
     }
     collect(this)
     this.querySelectorAll('[on],[data-on]').forEach(collect)
@@ -642,27 +649,22 @@ export class HgElement extends HTMLElement {
   // resize@window / click@document put the listener on the global while the
   // handler stays this element's; stored in _listeners like any other, so
   // disconnect unhooks it and nothing can leak.
-  _wireEntry(el, { event, where, name }) {
+  _wireEntry(el, entry) {
+    const { event, where, name } = entry
     const target = where === 'window' ? window : where === 'document' ? document : el
     const listener = (e) => this._handle(name, e)
     target.addEventListener(event, listener)
-    this._listeners.push({ el: target, event, listener })
+    this._listeners.push({ el: target, event, listener, key: pairKey(entry) })
   }
 
   // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
   // with, callable alone for nodes that arrive after the scan (hydrargyri-each
   // wires fresh rows with it, without rescanning the standing ones). Scope is
   // the caller's to check; calling twice on one node doubles its listeners.
-  // Returns the wired pair keys, which is what lets wires skip them.
   _wireHandlers(el) {
     const raw = el.getAttribute('on') || el.getAttribute('data-on')
-    if (!raw) return []
-    const keys = []
-    for (const entry of this._parseHandlers(raw)) {
-      this._wireEntry(el, entry)
-      keys.push(pairKey(entry))
-    }
-    return keys
+    if (!raw) return
+    for (const entry of this._parseHandlers(raw)) this._wireEntry(el, entry)
   }
 
   // Class-declared listeners on the nodes a selector names — the plumbing a

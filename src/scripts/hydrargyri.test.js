@@ -434,6 +434,53 @@ test('one on attribute wires several semicolon-separated events', () => {
   expect(seen).toEqual(['focus', 'input'])
 })
 
+test('a |once listener is spent on the first event, which is the option saying so', () => {
+  const name = tag()
+  const seen = []
+  hg(name, { handlers: { note: (e) => seen.push(e.type) } })
+  const root = mount(`<${name}><button on="click|once:note"></button></${name}>`)
+  const button = root.querySelector('button')
+  button.click()
+  button.click()
+  expect(seen).toEqual(['click'])
+})
+
+test('a |passive option reaches addEventListener, so a scroll gesture never waits on the handler', () => {
+  const add = jest.spyOn(window.EventTarget.prototype, 'addEventListener')
+  const name = tag()
+  hg(name, { handlers: { note: () => {} } })
+  mount(`<${name}><div on="touchstart|passive:note"></div></${name}>`)
+  const call = add.mock.calls.find(([event]) => event === 'touchstart')
+  add.mockRestore()
+  expect(call[2]).toEqual({ passive: true })
+})
+
+test('a |capture listener hears the event on the way down, and leaves with its capture flag at disconnect', () => {
+  const name = tag()
+  const phases = []
+  hg(name, { handlers: { note: (e) => phases.push(e.eventPhase) } })
+  const root = mount(`<${name} on="click|capture:note"><button></button></${name}>`)
+  const button = root.querySelector('button')
+  button.click()
+  expect(phases).toEqual([Event.CAPTURING_PHASE], 'the listener heard the bubble, not the capture')
+  root.querySelector(name).remove()
+  button.click()
+  expect(phases).toEqual([Event.CAPTURING_PHASE], 'a capture listener survived removeEventListener')
+})
+
+test('an unknown modifier warns and skips its pair, and the neighbouring pair still wires', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  const seen = []
+  hg(name, { handlers: { note: (e) => seen.push(e.type) } })
+  const root = mount(`<${name}><input on="click|nope:note;input:note"></${name}>`)
+  const input = root.querySelector('input')
+  input.click()
+  input.dispatchEvent(new Event('input'))
+  expect(seen).toEqual(['input'])
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('option'))
+})
+
 test('static wires attach the declared listeners to matching children, no on attribute in the markup', () => {
   const name = tag()
   const seen = []

@@ -92,6 +92,10 @@ The API:
 - `on` may target the globals: `on="resize@window:name"` and
   `on="click@document:name"` register the listener on `window` or `document` —
   the handler stays the element's, and disconnect unhooks it with the rest.
+- `on` may name the native listener options after the event, `|`-separated and
+  stackable: `on="touchstart|passive:name"`, `wheel|passive|capture@window:name`,
+  `click|once:name`. Exactly `passive`, `once` and `capture`; anything else
+  warns and skips that pair.
 - `static wires` (or `options.wires`) are listeners the class wires itself, by
   selector — `{ 'audio, video': 'play:onPlay;pause:onPause' }`, the same pair
   grammar as `on`, for plumbing an element needs in every instance. Wired at

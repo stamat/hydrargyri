@@ -76,9 +76,17 @@ function parseAttributeEntry(entry) {
 
 // One spelling per wired pair, so a wires entry and an `on` entry that mean
 // the same listener compare equal — the comparison behind "the markup wins".
+// Modifiers are left out on purpose: `click:go` in the markup and `click|once:go`
+// in the wires are one listener disagreeing about options, and the markup
+// winning outright beats both firing.
 function pairKey({ event, where, name }) {
   return `${event}@${where || ''}:${name}`
 }
+
+// The `addEventListener` options the grammar can name — exactly the native
+// ones, because options configure the listener; what happens inside the
+// handler is the handler's, in a JS file, where it can be tested.
+const LISTENER_OPTIONS = new Set(['passive', 'once', 'capture'])
 
 // A json attribute hands out one parse per value, and that parse is frozen:
 // the attribute is the only copy of the state, so mutating the parsed object
@@ -616,9 +624,13 @@ export class HgElement extends HTMLElement {
     this._scanWires(wired)
   }
 
-  // The pair grammar — `event[@window|@document]:name`, `;`-separated — parsed
-  // in one place for the `on` attribute and `static wires` both, so the two
-  // cannot fork. A malformed pair warns and is skipped; its neighbours still wire.
+  // The pair grammar — `event[@window|@document][|passive|once|capture]:name`,
+  // `;`-separated — parsed in one place for the `on` attribute and
+  // `static wires` both, so the two cannot fork. A malformed pair warns and is
+  // skipped; its neighbours still wire. Modifiers ride `|` rather than the
+  // `.` other frameworks use, because an event type is any string and dotted
+  // custom events exist in the wild — jQuery taught a generation to namespace
+  // with dots — while `|` is already this library's separator on `bind`.
   _parseHandlers(raw) {
     const entries = []
     for (const part of raw.split(';')) {
@@ -629,8 +641,21 @@ export class HgElement extends HTMLElement {
         console.warn(`hydrargyri: unknown handler "${trimmed}" — expected event:name`)
         continue
       }
-      let event = trimmed.slice(0, colon).trim()
+      const pipes = trimmed.slice(0, colon).split('|')
+      let event = pipes[0].trim()
       const name = trimmed.slice(colon + 1).trim()
+      let options = null
+      for (const mod of pipes.slice(1)) {
+        const option = mod.trim()
+        if (!LISTENER_OPTIONS.has(option)) {
+          console.warn(`hydrargyri: unknown handler option "${trimmed}" — expected |passive, |once or |capture`)
+          options = false
+          break
+        }
+        if (!options) options = {}
+        options[option] = true
+      }
+      if (options === false) continue
       let where = null
       const at = event.lastIndexOf('@')
       if (at !== -1) {
@@ -641,7 +666,7 @@ export class HgElement extends HTMLElement {
         }
         event = event.slice(0, at)
       }
-      entries.push({ event, where, name })
+      entries.push({ event, where, name, options })
     }
     return entries
   }
@@ -650,11 +675,14 @@ export class HgElement extends HTMLElement {
   // handler stays this element's; stored in _listeners like any other, so
   // disconnect unhooks it and nothing can leak.
   _wireEntry(el, entry) {
-    const { event, where, name } = entry
+    const { event, where, name, options } = entry
     const target = where === 'window' ? window : where === 'document' ? document : el
     const listener = (e) => this._handle(name, e)
-    target.addEventListener(event, listener)
-    this._listeners.push({ el: target, event, listener, key: pairKey(entry) })
+    if (options) target.addEventListener(event, listener, options)
+    else target.addEventListener(event, listener)
+    // `options` kept for the teardown: a capture listener only comes off when
+    // `removeEventListener` is told it was capture.
+    this._listeners.push({ el: target, event, listener, options, key: pairKey(entry) })
   }
 
   // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
@@ -699,7 +727,10 @@ export class HgElement extends HTMLElement {
   }
 
   _teardownHandlers() {
-    for (const { el, event, listener } of this._listeners) el.removeEventListener(event, listener)
+    for (const { el, event, listener, options } of this._listeners) {
+      if (options) el.removeEventListener(event, listener, options)
+      else el.removeEventListener(event, listener)
+    }
     this._listeners = []
   }
 

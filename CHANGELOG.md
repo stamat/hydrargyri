@@ -11,6 +11,17 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Added
+
+- **The `on` grammar names the native listener options.** `|passive`, `|once` and
+  `|capture` after the event, stackable — `on="touchstart|passive:reveal"`,
+  `wheel|passive|capture@window:zoom` — exactly the three `addEventListener` options and
+  nothing more: options configure the listener, what happens inside the handler stays in
+  the handler. `|passive` is the one that pays: a `touchstart`, `touchmove` or `wheel`
+  listener without it is one the browser waits on before it may scroll. An unknown option
+  warns and skips its pair; a `|capture` listener is unhooked with its flag at disconnect.
+  `static wires` takes the same spellings — the two share one parser.
+
 ### Fixed
 
 - **`static wires` no longer breaks a subclass that overrides `_wireHandlers`.** 2.2.0 made

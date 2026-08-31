@@ -67,6 +67,7 @@ function parseAttributeEntry(entry) {
 function pairKey({ event, where, name }) {
   return `${event}@${where || ""}:${name}`;
 }
+var LISTENER_OPTIONS = /* @__PURE__ */ new Set(["passive", "once", "capture"]);
 function deepFreeze(value) {
   if (value === null || typeof value !== "object") return value;
   for (const key of Object.keys(value)) deepFreeze(value[key]);
@@ -431,16 +432,23 @@ var _HgElement = class _HgElement extends HTMLElement {
     const wired = /* @__PURE__ */ new Map();
     const collect = (el) => {
       if (!this._scope(el)) return;
-      const keys = this._wireHandlers(el);
-      if (keys.length) wired.set(el, new Set(keys));
+      const from = this._listeners.length;
+      this._wireHandlers(el);
+      const keys = /* @__PURE__ */ new Set();
+      for (let i = from; i < this._listeners.length; i++) keys.add(this._listeners[i].key);
+      if (keys.size) wired.set(el, keys);
     };
     collect(this);
     this.querySelectorAll("[on],[data-on]").forEach(collect);
     this._scanWires(wired);
   }
-  // The pair grammar — `event[@window|@document]:name`, `;`-separated — parsed
-  // in one place for the `on` attribute and `static wires` both, so the two
-  // cannot fork. A malformed pair warns and is skipped; its neighbours still wire.
+  // The pair grammar — `event[@window|@document][|passive|once|capture]:name`,
+  // `;`-separated — parsed in one place for the `on` attribute and
+  // `static wires` both, so the two cannot fork. A malformed pair warns and is
+  // skipped; its neighbours still wire. Modifiers ride `|` rather than the
+  // `.` other frameworks use, because an event type is any string and dotted
+  // custom events exist in the wild — jQuery taught a generation to namespace
+  // with dots — while `|` is already this library's separator on `bind`.
   _parseHandlers(raw) {
     const entries = [];
     for (const part of raw.split(";")) {
@@ -451,8 +459,21 @@ var _HgElement = class _HgElement extends HTMLElement {
         console.warn(`hydrargyri: unknown handler "${trimmed}" \u2014 expected event:name`);
         continue;
       }
-      let event = trimmed.slice(0, colon).trim();
+      const pipes = trimmed.slice(0, colon).split("|");
+      let event = pipes[0].trim();
       const name = trimmed.slice(colon + 1).trim();
+      let options = null;
+      for (const mod of pipes.slice(1)) {
+        const option = mod.trim();
+        if (!LISTENER_OPTIONS.has(option)) {
+          console.warn(`hydrargyri: unknown handler option "${trimmed}" \u2014 expected |passive, |once or |capture`);
+          options = false;
+          break;
+        }
+        if (!options) options = {};
+        options[option] = true;
+      }
+      if (options === false) continue;
       let where = null;
       const at = event.lastIndexOf("@");
       if (at !== -1) {
@@ -463,33 +484,29 @@ var _HgElement = class _HgElement extends HTMLElement {
         }
         event = event.slice(0, at);
       }
-      entries.push({ event, where, name });
+      entries.push({ event, where, name, options });
     }
     return entries;
   }
   // resize@window / click@document put the listener on the global while the
   // handler stays this element's; stored in _listeners like any other, so
   // disconnect unhooks it and nothing can leak.
-  _wireEntry(el, { event, where, name }) {
+  _wireEntry(el, entry) {
+    const { event, where, name, options } = entry;
     const target = where === "window" ? window : where === "document" ? document : el;
     const listener = (e) => this._handle(name, e);
-    target.addEventListener(event, listener);
-    this._listeners.push({ el: target, event, listener });
+    if (options) target.addEventListener(event, listener, options);
+    else target.addEventListener(event, listener);
+    this._listeners.push({ el: target, event, listener, options, key: pairKey(entry) });
   }
   // One node's `on`/`data-on` parsed and wired — the unit _scanHandlers sweeps
   // with, callable alone for nodes that arrive after the scan (hydrargyri-each
   // wires fresh rows with it, without rescanning the standing ones). Scope is
   // the caller's to check; calling twice on one node doubles its listeners.
-  // Returns the wired pair keys, which is what lets wires skip them.
   _wireHandlers(el) {
     const raw = el.getAttribute("on") || el.getAttribute("data-on");
-    if (!raw) return [];
-    const keys = [];
-    for (const entry of this._parseHandlers(raw)) {
-      this._wireEntry(el, entry);
-      keys.push(pairKey(entry));
-    }
-    return keys;
+    if (!raw) return;
+    for (const entry of this._parseHandlers(raw)) this._wireEntry(el, entry);
   }
   // Class-declared listeners on the nodes a selector names — the plumbing a
   // subclass needs in every instance, wired without the author writing it.
@@ -522,7 +539,10 @@ var _HgElement = class _HgElement extends HTMLElement {
     }
   }
   _teardownHandlers() {
-    for (const { el, event, listener } of this._listeners) el.removeEventListener(event, listener);
+    for (const { el, event, listener, options } of this._listeners) {
+      if (options) el.removeEventListener(event, listener, options);
+      else el.removeEventListener(event, listener);
+    }
     this._listeners = [];
   }
   _subscribe(key, value) {

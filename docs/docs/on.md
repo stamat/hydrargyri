@@ -123,6 +123,28 @@ listener per element is the wrong shape anyway: one module-scope listener
 writing into a [`reactive()`](api.html#reactivemodel) model fans out to every
 element holding it, and the elements carry no listeners at all.
 
+## Listener options
+
+`|passive`, `|once` and `|capture` — the three
+[`addEventListener` options](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#options),
+spelled after the event — `on="touchstart|passive:reveal"`,
+`on="click|once:arm"`, `on="focus|capture@document:track"`, and they stack:
+`wheel|passive|capture:zoom`. `|passive` is the one that pays rent: a
+`touchstart`, `touchmove` or `wheel` listener is one the browser must wait on
+before it may scroll, and `passive` is the author promising not to
+`preventDefault`, which lets the scroll go immediately. `|once` spends the
+listener on its first event; `|capture` hears it on the way down — and is
+unhooked with its flag at disconnect, which is the half a hand-written
+`removeEventListener` forgets.
+
+Options configure the listener; what happens inside the handler stays in the
+handler, which is why the list ends there — a `|stop` or `|prevent` would be
+behaviour in an attribute, and behaviour lives in JS files, where it can be
+tested. The pipe is the same separator `bind` already uses for its formatters,
+and not the `.` other frameworks chose, because an event type is any string
+and dotted custom events exist in the wild. An option the grammar does not
+know — `click|nope:go` — warns and skips its pair; the neighbours still wire.
+
 ## `command` events
 
 `on="command:name"` hears

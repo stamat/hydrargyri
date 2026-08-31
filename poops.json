@@ -98,6 +98,10 @@
     {
       "in": "node_modules/code-preview-element/dist/code-preview-hljs.min.js",
       "out": "_site/js"
+    },
+    {
+      "in": "hydrargyri-logo.svg",
+      "out": "_site"
     }
   ],
   "exec": {

@@ -11,10 +11,41 @@
   top: -0.1em;
 }
 
-// The landing page's title wears the same mark, so it wears it the same way: a
-// size up from the text beside it, which is what keeps the offset above right —
-// it holds for any text size as long as this ratio matches the topbar's.
-h1 .brand-mark {
-  font-size: 1.18em;
-  margin-inline-end: 0.15em;
+// Decorative: the `<h1>` under it already says the name, so the image is `alt=""`.
+//
+// The radius is undone, not inherited: the theme rounds every image by `--radius`,
+// and the mark's triangle reaches its own top corners, so 0.5rem of each is clipped
+// off. A logo is artwork, not a media block.
+.brand-logo {
+  text-align: center;
+
+  img {
+    width: 6rem;
+    height: auto;
+    border-radius: 0;
+  }
+}
+
+// Scoped to the sibling rather than to `h1`, because this stylesheet is loaded by
+// the docs layout too and its page titles stay left. The permalink is dropped with
+// it: the title is the page, so the anchor links nowhere useful, and it sits in
+// flow even at `opacity: 0`, pulling the centred wordmark off centre.
+.brand-logo + h1 {
+  text-align: center;
+
+  .heading-anchor {
+    display: none;
+  }
+}
+
+// The tagline, matched by position rather than a class: the same `.brand-logo`
+// anchor the wordmark rule uses, and the landing page has exactly one paragraph
+// in that slot. Sized between `h1` and body text so it reads as part of the
+// masthead and not as the first line of prose.
+.brand-logo + h1 + p {
+  margin-top: -0.5rem;
+  color: var(--fg-muted);
+  font-size: 1.15rem;
+  text-align: center;
+  text-wrap: balance;
 }

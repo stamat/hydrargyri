@@ -11,6 +11,18 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Changed
+
+- **The landing page leads with the logo.** `hydrargyri-logo.svg` centred above the title,
+  which drops the `☿` glyph it used to wear — the topbar still carries the mark. Docs
+  site only; `dist/` is untouched.
+- **The landing page gains a tagline** under the title — "Reactive custom elements in
+  plain HTML. No build step, no shadow DOM." — so a first-time reader knows what the
+  thing is before the first paragraph.
+- **The docs palette takes the logo's orange**, replacing the salt brown. Light theme uses
+  a darker step of the same hue, `#ba5a00`, because the mark's `#ff7b00` is 2.6:1 on white
+  and a link needs 4.5:1; dark keeps the colour as drawn.
+
 ## [2.3.0] - 2026-08-31
 
 ### Added

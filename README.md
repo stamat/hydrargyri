@@ -1,4 +1,4 @@
-# ☿ Hydrargyri [![npm version](https://img.shields.io/npm/v/hydrargyri)](https://www.npmjs.com/package/hydrargyri) [![ci](https://img.shields.io/github/actions/workflow/status/stamat/hydrargyri/ci.yml?branch=main&label=ci)](https://github.com/stamat/hydrargyri/actions/workflows/ci.yml) [![license mit](https://img.shields.io/badge/license-MIT-green)](https://github.com/stamat/hydrargyri/blob/main/LICENSE)
+# <img src="https://raw.githubusercontent.com/stamat/hydrargyri/main/hydrargyri-logo.svg" alt="" height="28"> Hydrargyri [![npm version](https://img.shields.io/npm/v/hydrargyri)](https://www.npmjs.com/package/hydrargyri) [![ci](https://img.shields.io/github/actions/workflow/status/stamat/hydrargyri/ci.yml?branch=main&label=ci)](https://github.com/stamat/hydrargyri/actions/workflows/ci.yml) [![license mit](https://img.shields.io/badge/license-MIT-green)](https://github.com/stamat/hydrargyri/blob/main/LICENSE)
 
 > Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.
 

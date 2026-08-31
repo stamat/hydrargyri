@@ -1,12 +1,16 @@
-// Salt is brown in the alchemical plates, and it is where the old demo page's
-// palette came from. Overrides the theme's tokens, so it is used after it.
+// The logo triangle's orange, which is where the site's accent comes from now.
+// Overrides the theme's tokens, so it is used after it.
+//
+// Light takes a darker step of the same hue: `#ff7b00` on white is 2.6:1, under
+// the 4.5:1 a link needs, while on the dark background it is 6.9:1 and stays as
+// drawn.
 :root,
 :root[data-theme="light"] {
-  --accent: #824f2d;
-  --link: #6f4326;
+  --accent: #ba5a00;
+  --link: #ba5a00;
 }
 
 :root[data-theme="dark"] {
-  --accent: #dcc8ac;
-  --link: #dcc8ac;
+  --accent: #ff7b00;
+  --link: #ff7b00;
 }

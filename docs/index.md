@@ -5,7 +5,11 @@ description: Reactive web components in the light DOM — declarative binds and 
 nav: false
 ---
 
-# <span class="brand-mark">☿</span> Hydrargyri
+<div class="brand-logo"><img src="hydrargyri-logo.svg" alt="" width="239" height="207"></div>
+
+# Hydrargyri
+
+Reactive custom elements in plain HTML. No build step, no shadow DOM.
 
 Every reactive framework starts the same way: move your markup into our world.
 Templates in JS, decorators that need a build step, expressions interpreted out

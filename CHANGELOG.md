@@ -11,6 +11,8 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-08-31
+
 ### Added
 
 - **The `on` grammar names the native listener options.** `|passive`, `|once` and

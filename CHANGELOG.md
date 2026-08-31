@@ -22,6 +22,19 @@ for the person who wrote the code.
   warns and skips its pair; a `|capture` listener is unhooked with its flag at disconnect.
   `static wires` takes the same spellings — the two share one parser.
 
+### Changed
+
+- **The docs site moves to poops 3.0.0 and poops-docs-theme 5.1.1, and previews to
+  code-preview-element 3.0.4.** Build tooling only — `dist/` comes out byte for byte
+  identical, so nothing changes for anyone installing this package. On the site: the
+  sidebar marks the current page in the markup rather than once `docs.js` runs, so a
+  reference page with no script still says where you are; the search field wears a `/`
+  badge naming the key that opens it; and a preview whose sample sits near the `70vh` cap
+  stopped oscillating between scrollbar and no scrollbar. Poops 3's `slugify` change moves
+  anchors built from `Đ Ł Ø Ħ Þ ß`, and the theme's topbar renamed `media` to `bar-when`
+  and `open-when` — neither reaches these docs, which carry no such heading and override
+  no such selector. Poops 3 needs Node 22; CI already runs 22 and 24.
+
 ### Fixed
 
 - **`static wires` no longer breaks a subclass that overrides `_wireHandlers`.** 2.2.0 made

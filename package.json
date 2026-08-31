@@ -57,7 +57,7 @@
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.0",
     "poops": "^3.0.0",
-    "poops-docs-theme": "^5.1.1"
+    "poops-docs-theme": "^5.2.0"
   },
   "dependencies": {
     "book-of-spells": "^1.0.22"

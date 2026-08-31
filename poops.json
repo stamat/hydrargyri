@@ -71,7 +71,6 @@
       "site": {
         "title": "Hydrargyri",
         "brand": "hydrargyri",
-        "brandMark": "☿",
         "brandImage": "hydrargyri-logo.svg",
         "description": "Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.",
         "lang": "en",

@@ -19,10 +19,10 @@ for the person who wrote the code.
   plain HTML. No build step, no shadow DOM." — so a first-time reader knows what the
   thing is before the first paragraph.
 - **The logo is the topbar mark, the tab icon and the README's title glyph**, replacing
-  `☿` in all three. `site.brandImage` in `poops.json` is what carries it, which needs
-  poops-docs-theme 5.2.0 — the `brandMark` glyph stays beside it as the fallback until
-  that release and the dependency bump land, so a build on 5.1.x is the old mark rather
-  than the theme's default 💩. The README points at the raw GitHub url, not a relative
+  `☿` in all three. `site.brandImage` in `poops.json` carries it, which is why the docs
+  site moves to poops-docs-theme 5.2.0 — the release that added it. `brandMark` is gone
+  from the config: `brandImage` wins over it wherever both are set, so the glyph was dead
+  weight once the bump landed. The README points at the raw GitHub url, not a relative
   path, because npm's renderer resolves neither relative images nor the repo they sit in.
 - **The landing page's `<title>` says what the thing is** — "Reactive custom elements in
   plain HTML · Hydrargyri", from the page's front matter `title`. `site.title` stays

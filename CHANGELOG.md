@@ -14,11 +14,20 @@ for the person who wrote the code.
 ### Changed
 
 - **The landing page leads with the logo.** `hydrargyri-logo.svg` centred above the title,
-  which drops the `☿` glyph it used to wear — the topbar still carries the mark. Docs
-  site only; `dist/` is untouched.
+  which drops the `☿` glyph it used to wear. Docs site only; `dist/` is untouched.
 - **The landing page gains a tagline** under the title — "Reactive custom elements in
   plain HTML. No build step, no shadow DOM." — so a first-time reader knows what the
   thing is before the first paragraph.
+- **The logo is the topbar mark, the tab icon and the README's title glyph**, replacing
+  `☿` in all three. `site.brandImage` in `poops.json` is what carries it, which needs
+  poops-docs-theme 5.2.0 — the `brandMark` glyph stays beside it as the fallback until
+  that release and the dependency bump land, so a build on 5.1.x is the old mark rather
+  than the theme's default 💩. The README points at the raw GitHub url, not a relative
+  path, because npm's renderer resolves neither relative images nor the repo they sit in.
+- **The landing page's `<title>` says what the thing is** — "Reactive custom elements in
+  plain HTML · Hydrargyri", from the page's front matter `title`. `site.title` stays
+  "Hydrargyri" so every docs page keeps the short suffix, and `og:site_name` carries the
+  name into link previews the page title no longer leads with.
 - **The docs palette takes the logo's orange**, replacing the salt brown. Light theme uses
   a darker step of the same hue, `#ba5a00`, because the mark's `#ff7b00` is 2.6:1 on white
   and a link needs 4.5:1; dark keeps the colour as drawn.

@@ -1,6 +1,6 @@
 ---
 layout: poops-docs-theme/prose
-title: Hydrargyri
+title: Reactive custom elements in plain HTML
 description: Reactive web components in the light DOM — declarative binds and handlers on markup you already wrote.
 nav: false
 ---

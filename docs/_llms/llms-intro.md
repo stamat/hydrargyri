@@ -59,7 +59,9 @@ The API:
   paints; `attr#class` would replace the list instead), `if` / `if#condition` (toggles
   `hidden` — bare follows truthiness, `#name` runs the named predicate from
   `conditions`, called as `(value, element)` on every paint of the key, truthy
-  shows), `unless` / `unless#condition` (the same toggle inverted — `if` and
+  shows; `hidden` is the platform attribute, so any author `display` on the
+  element overrides it — `x-panel { display: block }` defeats the toggle
+  silently), `unless` / `unless#condition` (the same toggle inverted — `if` and
   `unless` on sibling nodes are a full if/else with no JS). Entries separate
   with `;`; a path may reach into an object (`user.name`).
 - A `bind` on a **nested hydrargyri element**, naming a key that element does not

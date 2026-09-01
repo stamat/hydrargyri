@@ -183,6 +183,26 @@ the markup carries only its name.
 yours to use, but `unless#isLow` is a double negation the next reader unpicks
 at their own expense — naming the positive (`if#inStock`) reads better.
 
+### When `hidden` does not hide
+
+The toggle is the platform's attribute, not a mechanism of hydrargyri's own, and the
+hiding comes from the browser's stylesheet — which any `display` an author sets
+outranks. Per
+[MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/hidden):
+"changing the value of the CSS `display` property on a hidden element will
+override the _hidden_ state. For instance, elements styled `display: block`
+will be displayed despite the `hidden` attribute's presence."
+
+Custom elements are inline by default, so a stylesheet that gives one a box —
+`x-panel { display: block }` — silently defeats every `if` bind on that tag.
+The bind still runs and the attribute still lands; nothing warns, because
+nothing is wrong from hydrargyri's side. Two ways out:
+
+```css
+x-panel:not([hidden]) { display: block }  /* per element */
+[hidden] { display: none !important }     /* once, page-wide */
+```
+
 ## Formatters
 
 A bind paints the value as it holds it. A formatter is the named function that

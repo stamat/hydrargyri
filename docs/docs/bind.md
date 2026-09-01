@@ -352,6 +352,23 @@ the nearest declaring element wins — a child declaring `rows` itself keeps the
 bind and shadows the parent. A key nobody declares warns like any other typo,
 once, from the element the bind was written on.
 
+Two elements on the way up can declare the same key, and the walk stops at the
+first — the rule a shadowed variable follows, and the reason nothing has to
+name the owner in the markup:
+
+```html
+<x-page theme="dark">
+  <x-widget bind="theme:prop#tone"></x-widget>   <!-- dark, from the page -->
+  <x-shelf theme="light">
+    <x-widget bind="theme:prop#tone"></x-widget> <!-- light, from the shelf -->
+  </x-shelf>
+</x-page>
+```
+
+Which is also the way to make a bind explicit when a page has grown enough that
+the walk is a question: declare the key on the element in between, and every
+bind under it stops there.
+
 What an ancestor may write this way is the child's **public surface**: `prop#`,
 `attr#`, `class#`, `value`, and the `if`/`unless` toggle on the child element
 itself. `text` and `html` are refused with a warning, because both replace

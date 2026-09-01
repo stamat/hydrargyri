@@ -13,6 +13,20 @@ for the person who wrote the code.
 
 ### Added
 
+- **`on="input:set#name"` writes a control's value into state, with no handler to write.**
+  Five pages of these docs opened with the same line — `rename(e, el) { el.name =
+  e.target.value || null }` — plumbing standing in front of whatever the page was actually
+  about. `set#key` takes the firing control's own value: `.checked` for a checkbox,
+  `.value` for everything else, and `''` writes `null`, which removes a reflected
+  attribute exactly as those handlers did by hand. A `<button value="closed">` is how a
+  constant gets written now. It is not two-way binding: `bind="name:value"` paints in,
+  `set#name` writes out, two attributes and either one works alone. The `#` is what marks
+  a built-in, and no JavaScript name can hold one — a `handlers` entry you called `set`
+  still answers `on="click:set"`, so no markup that worked before means anything different
+  now. Four things warn and write nothing rather than guess: an undeclared key, a node
+  with no `value` at all, a global wire like `click@document:set#state` where the node
+  that fires is whatever the page was clicking, and any built-in name but `set`.
+
 - **A `bind` on a nested hydrargyri element can name the ancestor's state.** A bind sitting
   on a hydrargyri element, for a key that element does not declare, now belongs to the
   nearest ancestor that does — `<user-list><hg-each bind="rows:prop#items"></hg-each>`

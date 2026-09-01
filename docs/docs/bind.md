@@ -59,7 +59,7 @@ Three types on one element, doing three different jobs:
 
 ```html
 <demo-badge label="draft">
-  <label>Label <input on="input:relabel" bind="label:value"></label>
+  <label>Label <input on="input:set#label" bind="label:value"></label>
   <p><span bind="label">draft</span> <em bind="tone:attr#data-tone;tone"></em></p>
   <button on="click:toggle">Toggle tone</button>
 </demo-badge>
@@ -69,7 +69,6 @@ Three types on one element, doing three different jobs:
 hg("demo-badge", {
   attributes: ["label", "tone"],
   handlers: {
-    relabel(e, el) { el.label = e.target.value || null },
     toggle(e, el) { el.tone = el.tone === "warn" ? null : "warn" }
   }
 });
@@ -81,10 +80,11 @@ twice: `data-tone="warn"` appears and then goes, because `null` removes an
 `attr` bind's attribute rather than setting it to the string `"null"`. That is
 what makes an `attr` bind usable as a CSS hook.
 
-Typing in the field writes state through `relabel`, and the `value` bind writes
-it back into the field. That is not [two-way
-binding](limits.html#two-way-binding) — it is one direction twice, and the
-handler in the middle is the part you can put a breakpoint in.
+Typing in the field writes state through [`set#label`](on.html#setkey), and the
+`value` bind writes it back into the field. That is not [two-way
+binding](limits.html#two-way-binding) — it is one direction twice, declared
+twice, and swapping the built-in for a handler of your own is where a
+breakpoint goes the day you need one.
 
 **Mind the caret on a text field.** A handler that stores what it was given is
 invisible: the repaint writes the string already in the field, and setting
@@ -94,6 +94,11 @@ what it stores — `trim()`, `toUpperCase()`, `Number()`, a fallback like
 to the end of the field on every keystroke. Store the raw value and shape it
 with a [formatter](#formatters) on the way out, or bind the write-back to
 `change` instead of `input`.
+
+[`set#key`](on.html#setkey) stores what the control held, so it is the
+invisible kind — with one exception that belongs to the attribute rather than
+to the built-in: a reflected key coerces, so typing `05` into a number field
+stores `5`, and the repaint rewrites the field under the caret.
 
 ## Classes
 
@@ -147,7 +152,7 @@ defined like a handler, named from the markup, never evaluated:
 
 ```html
 <demo-stock items="3">
-  <label>Items <input type="number" min="0" on="input:restock" bind="items:value"></label>
+  <label>Items <input type="number" min="0" on="input:set#items" bind="items:value"></label>
   <p bind="items:if">In stock: <span bind="items"></span></p>
   <p bind="items:if#isLow">Running low.</p>
   <p bind="items:unless">Sold out.</p>
@@ -157,9 +162,6 @@ defined like a handler, named from the markup, never evaluated:
 ```js demo
 hg("demo-stock", {
   attributes: ["items"],
-  handlers: {
-    restock(e, el) { el.items = e.target.value || null }
-  },
   conditions: {
     isLow: (n) => n > 0 && n < 3
   }
@@ -213,7 +215,7 @@ named from the markup after a `|`, never evaluated:
 
 ```html
 <demo-price price="1499.99" currency="USD">
-  <label>Price <input type="number" step="0.01" on="input:reprice" bind="price:value"></label>
+  <label>Price <input type="number" step="0.01" on="input:set#price" bind="price:value"></label>
   <p>Shown as <strong bind="price|money:currency"></strong></p>
   <button on="click:swap">Switch currency</button>
 </demo-price>
@@ -223,7 +225,6 @@ named from the markup after a `|`, never evaluated:
 hg("demo-price", {
   attributes: ["price", "currency"],
   handlers: {
-    reprice(e, el) { el.price = e.target.value || null },
     swap(e, el) { el.currency = el.currency === "USD" ? "EUR" : "USD" }
   },
   formatters: {

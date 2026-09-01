@@ -113,6 +113,17 @@ The API:
   scan on every matching node in scope, the element itself included; a pair
   the node's own `on` attribute already carries is skipped, so such markup
   keeps firing once.
+- `on="input:set#key"` is the only built-in handler name. It writes the firing
+  control's own value into `key` on the element owning the wire — `.checked` for
+  a checkbox, `.value` otherwise, and `''` writes `null`, which removes a
+  reflected attribute. A `<button value="closed">` is how a constant is written.
+  The `#` is what marks a built-in and no JavaScript name can hold one, so a
+  `handlers` entry called `set` is never shadowed. Warns and writes nothing for:
+  a key declared in neither `attributes` nor `properties`, a node with no
+  `value`, a global wire (`click@document:set#key` — the node that fires there is
+  whatever was clicked), and any built-in name but `set`. Object paths
+  (`set#user.role`) are not keys, and an `<hg-each>` row's item is out of reach —
+  `set` writes the element's key, never `hgItem`.
 - `data-bind` and `data-on` are accepted where a validator objects to the bare
   names.
 - `parseBinds(raw)` parses a `bind` attribute into `{ path, type, attr, format }`
@@ -124,7 +135,9 @@ The API:
 Deliberate non-goals: implicit deep reactivity (assignment is watched, mutation
 needs `update(key)` or an opt-in `reactive()` model — hydrargyri never wraps an
 object you did not ask wrapped),
-two-way binding (DOM to state goes through a handler you wrote), late DOM (binds
+two-way binding (DOM to state is its own declaration — a handler you wrote, or
+`set#key` named on the control; one attribute doing both directions is what
+stays refused), late DOM (binds
 are scanned on connect; `el.rescan()` re-runs the scan on the current subtree,
 a reconnect does the same — nothing watches the subtree on its own), sanitizing (`:html` is
 `innerHTML` verbatim — bind your own state to it, never user input), templating

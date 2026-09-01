@@ -27,14 +27,16 @@ touch.
 
 ## Two-way binding
 
-DOM to state goes through a handler you wrote — `on="input:rename"` — never
-behind your back. A `value` bind writes state **into** a field and never reads
-it back out.
+DOM to state is its own declaration — a handler you wrote, or the
+[`set#key`](on.html#setkey) built-in named on the control. A `value` bind writes
+state **into** a field and never reads it back out, and an `on="input:set#name"`
+beside it is a second attribute, not one attribute doing both.
 
-The version that reads back is four lines and would remove `rename` from the
-[greeter](on.html). It would also mean the field and the state disagree for as
-long as it takes an `input` event to fire, and that whichever of the two you
-are debugging, the other one is writing to it.
+What stays refused is that single declaration: a `value` bind that also writes
+back. It would mean the field and the state disagree for as long as it takes an
+`input` event to fire, that whichever of the two you are debugging the other one
+is writing to it, and that nothing in the markup says so. Two attributes, either
+usable without the other, is the version you can read.
 
 ## Late DOM
 

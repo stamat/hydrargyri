@@ -30,10 +30,11 @@ hg("demo-greeter", {
 });
 ```
 
-DOM to state goes through a handler you wrote; state to DOM through a bind.
-Nothing writes back on its own — clear the field and `name` becomes `null`,
-which removes the attribute, because `rename` says so and not because hydrargyri
-decided.
+DOM to state goes through a handler you wrote — or through
+[`set#key`](#setkey), which writes the same line for you; state to DOM through a
+bind. Nothing writes back on its own — clear the field and `name` becomes
+`null`, which removes the attribute, because `rename` says so and not because
+hydrargyri decided.
 
 ## The signature
 
@@ -70,6 +71,74 @@ detaching the element on a click is not a handler anyone meant. Platform names
 are still better avoided: a reader of the markup has to know the resolution
 rule to know `remove` is yours.
 
+## `set#key`
+
+`on="input:set#name"` writes the firing control's own value into `name` on the
+element that owns the wire. It is the direction a [`value`
+bind](bind.html#the-types) never paints, and it stays its own declaration:
+`bind="name:value"` paints state into the control, `set#name` writes the control
+back into state, and either one works without the other.
+
+The `#` is what marks a built-in, and no JavaScript name can hold one — so a
+`handlers` entry you called `set` still answers `on="click:set"`, and no markup
+that worked before this existed means anything different now.
+
+<!-- demo -->
+
+```html
+<demo-note label="draft" pinned>
+  <label>Label <input on="input:set#label" bind="label:value"></label>
+  <label><input type="checkbox" on="change:set#pinned" bind="pinned:prop#checked"> Pinned</label>
+  <p><b bind="label">draft</b> is <span bind="pinned:if">pinned</span><span bind="pinned:unless">loose</span>.</p>
+  <button value="draft" on="click:set#label">Reset the label</button>
+</demo-note>
+```
+
+```js demo
+hg("demo-note", { attributes: ["label", "pinned"] });
+```
+
+No handlers, and nothing was given up for that: the checkbox and the field are
+the page's own controls, and the state is still only ever in the attributes.
+
+### Where the value comes from
+
+| the control | what lands in the key |
+| ----------- | --------------------- |
+| `<input>`, `<textarea>`, `<select>` | `.value`, and an emptied field writes `null` — which removes a reflected attribute, the same `\|\| null` a handler writes by hand |
+| `<input type="checkbox">` | `.checked` — a checkbox's `value` is the string `"on"` ticked or not, so its state is nowhere else |
+| `<input type="radio">` | `.value`, and only the one becoming checked fires `change` |
+| `<button value="closed">` | `"closed"` — `value` is the button's own attribute, which is how a constant is written with no handler |
+
+A reflected key coerces on the way back out, so `set#count` from a number field
+reads as a number. A `properties` key has no attribute to coerce through and
+keeps the exact string.
+
+### What it refuses
+
+Each of these warns and writes nothing, rather than guessing:
+
+- **A key the element declares in neither `attributes` nor `properties`.**
+  Writing it anyway would leave a stray property no bind is watching.
+- **A node with no `value` at all** — a `<div>`, a `<span>`. That is a
+  miswiring, not an empty field, and `null` would read as the field clearing.
+- **A global wire.** `on="click@document:set#state"` is refused where it is
+  wired, because the node that fires there is whatever the page was clicking,
+  never the control you named. Write a handler for that.
+- **Any built-in but `set`.** There is only the one.
+
+Two more things are simply outside it. **Object paths are not keys** —
+`set#user.role` names nothing, and mutating inside an object is what
+[`update()`](api.html#updatekey-update) and [`reactive()`](api.html#reactivemodel) are
+for. And **an `<hg-each>` row is its own scope**: `set#done` writes a key on the
+element, not on the row's `hgItem`, so a checkbox inside a row keeps its
+handler — [the todo list](examples.html#a-todo-list-a-form-adds-to) shows the
+shape.
+
+One rough edge worth knowing: `''` writes `null` unconditionally, which is
+right everywhere except a `string`-typed attribute, where `''` is a meaningful
+value. Write a handler if you need to keep it.
+
 ## `data-on`
 
 `data-on` works identically, for markup that must satisfy a validator. Where
@@ -88,7 +157,7 @@ stop writing.
 <!-- demo -->
 
 ```html
-<demo-menu on="click@document:close">
+<demo-menu state="closed" on="click@document:close">
   <button on="click:toggle">Menu</button>
   <p>The menu is <strong bind="state">closed</strong>. Click anywhere else in
   this preview to close it.</p>
@@ -97,10 +166,7 @@ stop writing.
 
 ```js demo
 hg("demo-menu", {
-  properties: ["state"],
-  connected(el) {
-    el.state = "closed";
-  },
+  attributes: ["state"],
   handlers: {
     toggle(e, el) {
       e.stopPropagation(); // or the click closes what it just opened

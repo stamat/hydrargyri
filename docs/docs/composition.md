@@ -14,7 +14,7 @@ listens to any event name, custom events included, and they bubble.
 <!-- demo -->
 
 ```html
-<demo-cart on="item-picked:refresh">
+<demo-cart count="0" on="item-picked:refresh">
   <p>Picked: <output bind="count">0</output></p>
   <demo-item sku="7"><button on="click:pick">add sku 7</button></demo-item>
   <demo-item sku="9"><button on="click:pick">add sku 9</button></demo-item>
@@ -37,10 +37,7 @@ hg("demo-item", {
 });
 
 hg("demo-cart", {
-  properties: ["count"],
-  connected(el) {
-    el.count = 0;
-  },
+  attributes: ["count"],
   handlers: {
     refresh(e, el) {
       el.count += 1;

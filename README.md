@@ -54,7 +54,8 @@ are what run through it. It sits on
 - **`on` wires what fires.** `on="click:increment"`, the handler called as
   `(event, element)`; a handler keyed by a command string answers
   [Invoker Commands](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
-  directly.
+  directly. `on="input:set#name"` is the one built-in — the firing control's own
+  value written into a key, no handler to write at all.
 - **Formatters at paint.** `bind="price|money:currency"` shapes the value on its
   way into the node, its arguments resolved as property paths.
 - **Named conditions.** `bind="items:if#isLow"` runs a predicate from a JS file,
@@ -89,12 +90,12 @@ answer for are the ones the others win.
 
 |                                | hydrargyri                                                                   | [Catalyst](https://github.com/github/catalyst) | [Stimulus](https://stimulus.hotwired.dev)              | [Alpine](https://alpinejs.dev)                | [Lit](https://lit.dev)                        |
 | ------------------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------ | --------------------------------------------- | --------------------------------------------- |
-| **Size, gzipped**              | 4.2 kB                                                                       | 2.6 kB                                         | 11.3 kB                                                | 17.1 kB                                       | 6.2 kB                                        |
+| **Size, gzipped**              | 5.1 kB                                                                       | 2.6 kB                                         | 11.3 kB                                                | 17.1 kB                                       | 6.2 kB                                        |
 | **Build step**                 | no                                                                           | yes — TS decorators                            | no                                                     | no                                            | no, but expected                              |
 | **Component boundary**         | custom element                                                               | custom element                                 | its own registry                                       | attribute scan                                | custom element                                |
 | **Shadow DOM**                 | never                                                                        | opt-in                                         | n/a                                                    | n/a                                           | by default                                    |
 | **Evaluates attributes**       | no                                                                           | no                                             | no                                                     | yes                                           | no                                            |
-| **Declarative value binding**  | `bind`                                                                       | no — refs you repaint                          | no — refs you repaint                                  | `x-text`, `x-bind`                            | in the JS template                            |
+| **Declarative value binding**  | `bind` in, `set#key` back                                                    | no — refs you repaint                          | no — refs you repaint                                  | `x-text`, `x-bind`                            | in the JS template                            |
 | **Conditionals**               | named predicates                                                             | your DOM code                                  | your controller code                                   | `x-if`, evaluated                             | ternaries in JS                               |
 | **Typed attributes**           | `attributes`, reflected                                                      | `@attr`                                        | the values API                                         | no                                            | `@property`                                   |
 | **Formatters at paint**        | `formatters`                                                                 | no                                             | no                                                     | expressions                                   | directives                                    |
@@ -121,7 +122,7 @@ names-in-markup creed, the same CSP-cleanliness, near-identical event wiring
 and typed attribute-backed values. The doctrine splits on exactly two points —
 `bind` paints declaratively where Stimulus targets are refs you repaint by
 hand, and the component boundary is the platform's custom element instead of a
-runtime with a registry, which is also why hydrargyri is 4.2 kB gzipped where
+runtime with a registry, which is also why hydrargyri is 5.1 kB gzipped where
 Stimulus is 11.3 kB. Past that split it reaches where the table above does not look:
 outlets wiring one controller to another, action params and options,
 `targetConnected`, a classes API, Turbo underneath the whole thing. Weigh the
@@ -177,8 +178,9 @@ for each.
   the opt-in proxy that needs no such call. It only opens by name: hydrargyri never
   wraps an object you did not ask wrapped, and will not grow dependency
   tracking, computed values or effects.
-- **Two-way binding.** DOM to state goes through a handler you wrote —
-  `on="input:rename"` — never behind your back.
+- **Two-way binding.** DOM to state is its own declaration — a handler you
+  wrote, or `set#key` named on the control. What stays refused is one attribute
+  doing both directions behind your back.
 - **Late DOM.** Binds and handlers are scanned when the element connects. A
   `bind` node inserted afterwards is not seen; re-connecting the element
   rescans everything.

@@ -709,6 +709,12 @@ export class HgElement extends HTMLElement {
   // disconnect unhooks it and nothing can leak.
   _wireEntry(el, entry) {
     const { event, where, name, options } = entry
+    // A built-in writes what the firing node holds, and on a global that node
+    // is whatever the page was clicking — never the control the author wired.
+    if (where && name.includes('#')) {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> "${name}" cannot ride a global listener — a built-in writes the firing control's value, and @${where} fires on anything`)
+      return
+    }
     const target = where === 'window' ? window : where === 'document' ? document : el
     const listener = (e) => this._handle(name, e)
     if (options) target.addEventListener(event, listener, options)
@@ -796,6 +802,10 @@ export class HgElement extends HTMLElement {
   // `on="click:remove"` reaches Element.prototype.remove and the click
   // silently detaches the element itself.
   _handle(name, e) {
+    // Built-ins live behind the `#`, which no method name and no handler key
+    // can hold — so `set#label` cannot shadow a handler an author called `set`,
+    // and nothing that resolved before this line resolves differently now.
+    if (name.includes('#')) return this._builtin(name, e)
     if (this._authoredMethod(name)) return this[name](e, this)
     if (typeof this.handlers[name] === 'function') return this.handlers[name](e, this)
     if (typeof this[name] === 'function') {
@@ -803,6 +813,36 @@ export class HgElement extends HTMLElement {
       return
     }
     console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no handler "${name}"`)
+  }
+
+  // `set#key` writes the firing control's own value into the key — the one
+  // direction a `bind` never paints, declared per control in the markup rather
+  // than implied. The write goes through the accessor an author's handler would
+  // have used, so reflection, coercion, subscriptions and the repaint are the
+  // existing ones and no second write path exists to drift from them.
+  _builtin(raw, e) {
+    const hash = raw.indexOf('#')
+    const name = raw.slice(0, hash).trim()
+    const key = transformDashToCamelCase(raw.slice(hash + 1).trim())
+    if (name !== 'set') {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> unknown built-in "${name}" — set is the only one`)
+      return
+    }
+    if (!this._owns(key)) {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> set#${key} — no attribute or property "${key}" is declared`)
+      return
+    }
+    const node = e.target
+    // A checkbox's value is the string "on" ticked or not; its state is only
+    // ever on `checked`.
+    const value = node.type === 'checkbox' ? node.checked : node.value
+    // No value at all — a div, a span — is a miswiring, not an empty field, and
+    // writing null for it would read as the field having been cleared.
+    if (value === undefined) {
+      console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> set#${key} — <${node.tagName.toLowerCase()}> has no value to write`)
+      return
+    }
+    this[key] = value === '' ? null : value
   }
 
   // Walks from the instance down to HgElement.prototype, exclusive — what is

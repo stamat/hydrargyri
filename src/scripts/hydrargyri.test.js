@@ -1,7 +1,7 @@
 // Covers the whole public surface: the factory, the HgElement base class,
 // attribute↔property reflection, every bind type, formatters, handler wiring,
 // static wires, nesting scope, binds a nested element hands to its ancestor,
-// lifecycle hooks, deferred init during parse,
+// lifecycle hooks, the set built-in, deferred init during parse,
 // pre-upgrade property capture, reactive models, rescan(), and markup stamped
 // from a template before define. Deliberately not covered: automatic pickup of
 // dynamically inserted bind/on nodes — watching the subtree is a documented
@@ -422,6 +422,146 @@ test('an unknown handler warns instead of throwing', () => {
   const root = mount(`<${name}><button on="click:nope"></button></${name}>`)
   expect(() => root.querySelector('button').click()).not.toThrow()
   expect(warn).toHaveBeenCalled()
+})
+
+test('set writes the firing control\'s value into a reflected attribute, no handler in sight', () => {
+  const name = tag()
+  hg(name, ['label'])
+  const root = mount(`<${name} label="draft"><input on="input:set#label"></${name}>`)
+  const el = root.querySelector(name)
+  const input = root.querySelector('input')
+  input.value = 'shipped'
+  input.dispatchEvent(new Event('input'))
+  expect(el.label).toBe('shipped')
+  expect(el.getAttribute('label')).toBe('shipped', 'the attribute is the only copy and it did not follow')
+})
+
+test('a cleared field writes null through set, which removes the attribute rather than emptying it', () => {
+  const name = tag()
+  hg(name, ['label'])
+  const root = mount(`<${name} label="draft"><input on="input:set#label"></${name}>`)
+  const el = root.querySelector(name)
+  const input = root.querySelector('input')
+  input.value = ''
+  input.dispatchEvent(new Event('input'))
+  expect(el.label).toBeNull()
+  expect(el.hasAttribute('label')).toBe(false, 'an emptied field left label="" behind')
+})
+
+test('set reads a checkbox by its checked state, never its value, which is the string "on"', () => {
+  const name = tag()
+  hg(name, ['done'])
+  const root = mount(`<${name}><input type="checkbox" on="change:set#done"></${name}>`)
+  const el = root.querySelector(name)
+  const box = root.querySelector('input')
+  box.checked = true
+  box.dispatchEvent(new Event('change'))
+  expect(el.done).toBe(true)
+  box.checked = false
+  box.dispatchEvent(new Event('change'))
+  expect(el.done).toBe(null, 'false removes a reflected attribute, and an absent one reads null')
+})
+
+test('a button carries its own value, so writing a constant needs no handler either', () => {
+  const name = tag()
+  hg(name, ['state'])
+  const root = mount(`<${name} state="open"><button value="closed" on="click:set#state">Close</button></${name}>`)
+  const el = root.querySelector(name)
+  root.querySelector('button').click()
+  expect(el.state).toBe('closed')
+})
+
+test('set writes a property-only key, where the value stays the exact string the control held', () => {
+  const name = tag()
+  hg(name, { properties: ['draft'] })
+  const root = mount(`<${name}><input on="input:set#draft"></${name}>`)
+  const el = root.querySelector(name)
+  const input = root.querySelector('input')
+  input.value = '007'
+  input.dispatchEvent(new Event('input'))
+  expect(el.draft).toBe('007', 'a property key has no attribute to coerce through, so nothing may reshape it')
+  expect(el.hasAttribute('draft')).toBe(false)
+})
+
+test('a value bind and a set on one node are two declarations, and state stays the only source', () => {
+  const name = tag()
+  hg(name, ['items'])
+  const root = mount(`<${name} items="3"><input on="input:set#items" bind="items:value"></${name}>`)
+  const el = root.querySelector(name)
+  const input = root.querySelector('input')
+  expect(input.value).toBe('3', 'the bind did not paint the initial state into the control')
+  input.value = '5'
+  input.dispatchEvent(new Event('input'))
+  expect(el.items).toBe(5, 'a reflected attribute did not read back as a number')
+  el.items = 9
+  expect(input.value).toBe('9', 'state written in JS did not repaint the control')
+})
+
+test('a dashed attribute is reached by its markup spelling, camelCased like every other key', () => {
+  const name = tag()
+  hg(name, ['first-name'])
+  const root = mount(`<${name} first-name="ada"><input on="input:set#first-name"></${name}>`)
+  const el = root.querySelector(name)
+  const input = root.querySelector('input')
+  input.value = 'grace'
+  input.dispatchEvent(new Event('input'))
+  expect(el.firstName).toBe('grace')
+  expect(el.getAttribute('first-name')).toBe('grace')
+})
+
+test('set into a key the element never declared warns and writes nothing', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, [])
+  const root = mount(`<${name}><input on="input:set#nope"></${name}>`)
+  const el = root.querySelector(name)
+  const input = root.querySelector('input')
+  input.value = 'x'
+  input.dispatchEvent(new Event('input'))
+  expect(el.nope).toBe(undefined, 'a stray own property was created that no bind watches')
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('nope'))
+})
+
+test('set on a node with no value warns and leaves the state alone', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, ['label'])
+  const root = mount(`<${name} label="draft"><div on="click:set#label"></div></${name}>`)
+  const el = root.querySelector(name)
+  root.querySelector('div').click()
+  expect(el.label).toBe('draft')
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('value'))
+})
+
+test('an unknown built-in name warns rather than guessing what was meant', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, ['label'])
+  const root = mount(`<${name} label="draft"><button on="click:nope#label"></button></${name}>`)
+  const el = root.querySelector(name)
+  root.querySelector('button').click()
+  expect(el.label).toBe('draft')
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('built-in'))
+})
+
+test('a built-in aimed at a global is refused at wiring, because the node that fires is not the author\'s control', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const name = tag()
+  hg(name, ['state'])
+  const root = mount(`<${name} state="open" on="click@document:set#state"></${name}>`)
+  const el = root.querySelector(name)
+  document.body.click()
+  expect(el.state).toBe('open')
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('global'))
+})
+
+test('a handler the author named set still answers on="click:set", because built-ins live behind the #', () => {
+  const name = tag()
+  const seen = []
+  hg(name, { handlers: { set: (e, el) => seen.push(el.tagName) } })
+  const root = mount(`<${name}><button on="click:set"></button></${name}>`)
+  root.querySelector('button').click()
+  expect(seen).toEqual([name.toUpperCase()])
 })
 
 test('one on attribute wires several semicolon-separated events', () => {

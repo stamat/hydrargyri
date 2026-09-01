@@ -129,6 +129,11 @@ Run this checklist before writing any code; stop at the first "no".
   a subclass method — warns and is skipped. New instance fields on
   `HgElement` go into the `RESERVED` set in the same change, or an element
   can silently dismantle its own machinery.
+- **Built-in handler names live behind the `#`.** `on="click:set#key"` routes to
+  `_builtin` ahead of the authored-method / `handlers` chain, because no
+  JavaScript name can hold a `#` — which is what keeps a built-in from shadowing
+  a handler an author called `set`. A second built-in goes in `_builtin` and
+  nowhere else.
 - **Attributes are the only copy of reflected state.** A reflected getter reads
   `getAttribute` every time; caching one would let devtools and hydrargyri disagree.
 - **`attributeChangedCallback` fires on every `setAttribute`**, value changed or

@@ -24,18 +24,13 @@ script never loading leaves the page exactly as written.
 
 ```html
 <demo-greeter name="stranger">
-  <label>Name <input on="input:rename"></label>
+  <label>Name <input on="input:set#name"></label>
   <p>Hello, <span bind="name">stranger</span>!</p>
 </demo-greeter>
 ```
 
 ```js demo
-hg("demo-greeter", {
-  attributes: ["name"],
-  handlers: {
-    rename(e, el) { el.name = e.target.value || null }
-  }
-});
+hg("demo-greeter", { attributes: ["name"] });
 ```
 
 Edit the markup above and it re-renders — that is the whole contract. Block the
@@ -72,12 +67,12 @@ answer for are the ones the others win.
 
 |                                | hydrargyri                                                                   | [Catalyst](https://github.com/github/catalyst) | [Stimulus](https://stimulus.hotwired.dev)              | [Alpine](https://alpinejs.dev)                | [Lit](https://lit.dev)                        |
 | ------------------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------ | --------------------------------------------- | --------------------------------------------- |
-| **Size, gzipped**              | 4.2 kB                                                                       | 2.6 kB                                         | 11.3 kB                                                | 17.1 kB                                       | 6.2 kB                                        |
+| **Size, gzipped**              | 5.1 kB                                                                       | 2.6 kB                                         | 11.3 kB                                                | 17.1 kB                                       | 6.2 kB                                        |
 | **Build step**                 | no                                                                           | yes — TS decorators                            | no                                                     | no                                            | no, but expected                              |
 | **Component boundary**         | custom element                                                               | custom element                                 | its own registry                                       | attribute scan                                | custom element                                |
 | **Shadow DOM**                 | never                                                                        | opt-in                                         | n/a                                                    | n/a                                           | by default                                    |
 | **Evaluates attributes**       | no                                                                           | no                                             | no                                                     | yes                                           | no                                            |
-| **Declarative value binding**  | `bind`                                                                       | no — refs you repaint                          | no — refs you repaint                                  | `x-text`, `x-bind`                            | in the JS template                            |
+| **Declarative value binding**  | `bind` in, `set#key` back                                                    | no — refs you repaint                          | no — refs you repaint                                  | `x-text`, `x-bind`                            | in the JS template                            |
 | **Conditionals**               | named predicates                                                             | your DOM code                                  | your controller code                                   | `x-if`, evaluated                             | ternaries in JS                               |
 | **Typed attributes**           | `attributes`, reflected                                                      | `@attr`                                        | the values API                                         | no                                            | `@property`                                   |
 | **Formatters at paint**        | `formatters`                                                                 | no                                             | no                                                     | expressions                                   | directives                                    |
@@ -104,7 +99,7 @@ names-in-markup creed, the same CSP-cleanliness, near-identical event wiring and
 typed attribute-backed values. The doctrine splits on exactly two points —
 `bind` paints declaratively where Stimulus targets are refs you repaint by hand,
 and the component boundary is the platform's custom element instead of a runtime
-with a registry, which is also why hydrargyri is 4.2 kB gzipped where Stimulus
+with a registry, which is also why hydrargyri is 5.1 kB gzipped where Stimulus
 is 11.3. Past that split it reaches where the table above does not look: outlets
 wiring one controller to another, action params and options, `targetConnected`,
 a classes API, Turbo underneath the whole thing. Weigh the two points against

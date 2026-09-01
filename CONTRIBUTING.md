@@ -18,9 +18,10 @@ library.
   them.
 - **No shadow DOM.** The light DOM is the point: the page's CSS, the page's
   semantics, the page working before the script arrives.
-- **No two-way binding.** DOM to state goes through a handler the author
-  wrote. A `value` bind that silently writes back is the kind of magic that
-  pages one debugger at 3am.
+- **No two-way binding.** DOM to state is its own declaration — a handler the
+  author wrote, or the `set#key` built-in named on the control. A `value` bind
+  that silently writes back is the kind of magic that pages one debugger at
+  3am; two attributes, either usable alone, is not that.
 - **No implicit deep reactivity.** Assignment triggers a repaint; mutation
   inside a plain object needs `update(key)`. The one door is `reactive()`,
   opt-in and by name: the author asks for the proxy and holds it. A hydrargyri

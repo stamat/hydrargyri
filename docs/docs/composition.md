@@ -72,6 +72,21 @@ That is not a hydrargyri API — it is a property on a custom element, set the w
 property is set. The child's attribute changes, its binds repaint, and its
 `attributeChanged` runs. Nothing had to be registered for that to work.
 
+The markup form of the same write is a `bind` on the child, naming a key the
+child does not declare:
+
+```html
+<demo-cart>
+  <demo-item bind="picked:prop#sku"></demo-item>
+</demo-cart>
+```
+
+The bind belongs to the nearest ancestor that declares `picked` — the cart —
+and the value lands on the item's property, which is what [`<hg-each>`](each.html)
+takes its `items` from. [What is scanned, and
+when](bind.html#a-bind-an-element-hands-to-its-ancestor) has the walk, and the
+two bind types it refuses.
+
 ## Sideways
 
 Siblings never hear each other: an event travels up, not across. So the two
@@ -118,8 +133,8 @@ hg("demo-mixer", {
 
 The relay writes a property, never the sibling's nodes. `bind="amount"` inside
 `demo-vessel` belongs to `demo-vessel` — binds go to the nearest hydrargyri ancestor,
-and a hydrargyri element is its own — so the mixer could not paint that `<output>`
-even if it tried. It sets the value; the vessel repaints itself.
+and a nested element's nodes are its own — so the mixer could not paint that
+`<output>` even if it tried. It sets the value; the vessel repaints itself.
 
 Which is also why the relay has to be a hydrargyri element: it needs an `on` of its
 own to catch the event. A plain `<div>` between two siblings relays nothing.
@@ -177,7 +192,7 @@ were looking at.
 | Between                   | Through                                                 |
 | ------------------------- | ------------------------------------------------------- |
 | child → ancestor          | a bubbling event, caught by the ancestor's `on`         |
-| parent → child            | writing the child's observed attribute                  |
+| parent → child            | writing the child's property or observed attribute — from JS, or a `bind` on the child naming a key the parent owns |
 | sibling → sibling         | both of the above, via their common ancestor            |
 | any element → any element | `commandfor`/`command`, where the browser is new enough |
 | anything wider            | the page's job, not hydrargyri's                             |
@@ -193,3 +208,8 @@ Binds and handlers belong to the **nearest** hydrargyri ancestor, whatever its t
 so a hydrargyri element inside another hydrargyri element keeps its own nodes, and neither
 paints into the other's. That is what makes the cart above work: `bind="count"`
 is the cart's, `on="click:pick"` is the item's, and the two do not negotiate.
+
+A `bind` on the nested element itself is the one thing that crosses, and only
+for a key the nested element does not declare: that bind is the ancestor's, and
+it writes the child's property — [Downwards](#downwards) above. Handlers never
+cross; `on` names a function on the element that owns the markup.

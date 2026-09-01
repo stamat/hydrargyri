@@ -78,8 +78,8 @@ line.
 
 ## `items`, and what a value paints
 
-`items` is an ordinary hydrargyri property, so it is assigned in JavaScript and
-never through an attribute.
+`items` is an ordinary hydrargyri property: assigned in JavaScript, or bound from an
+ancestor's state — never through an attribute of its own.
 
 | `items`                                    | What paints                                       |
 | ------------------------------------------ | ------------------------------------------------- |
@@ -107,6 +107,54 @@ items keep the full repaint on purpose: they cannot report their own mutations,
 so `items[0].name = "…"` reaches the list's proxy without saying which item took
 it, and skipping would paint a stale row. Rows whose position shifts always
 repaint, since `$index` is part of what a row shows.
+
+## Where `items` comes from
+
+`document.querySelector("hg-each").items = rows` is the short way and stays the
+right one for a list a script already holds. When the data belongs to an
+element around the list, markup says so instead: a `bind` on the `<hg-each>`
+itself names a key hg-each does not declare, so it belongs to the nearest
+ancestor that does, and lands on `items` as a property.
+
+<!-- demo -->
+
+```html
+<demo-roster-list>
+  <hg-each bind="crew:prop#items">
+    <ul>
+      <template><li><b bind="name"></b> — <span bind="role">member</span></li></template>
+      <li><b>Ada</b> — <span>admin</span></li>
+    </ul>
+  </hg-each>
+  <button on="click:hire">Hire</button>
+</demo-roster-list>
+```
+
+```js demo
+const crew = reactive([
+  { name: "Ada", role: "admin" },
+  { name: "Grace" }
+]);
+
+hg("demo-roster-list", {
+  properties: { crew },
+  handlers: {
+    hire() { crew.push({ name: "Alan" }) }
+  }
+});
+```
+
+The page script is one `hg()` call. `crew` is a module constant the whole page
+can import, `properties: { crew }` hands it to every `<demo-roster-list>` at
+define time — the [`share()`](api.html#sharevalues) form — and because it came
+from [`reactive()`](api.html#reactivemodel), `crew.push(…)` from anywhere grows
+a row. Nothing had to find the list first.
+
+The same walk carries `if` and `unless`: `<hg-each bind="loaded:if">` hides the
+whole list on the ancestor's state. `text` and `html` are refused — they would
+replace the template and the fallback rows, and a nested element's markup is
+its own. [What is scanned, and
+when](bind.html#a-bind-an-element-hands-to-its-ancestor) has the rule in full.
 
 ## The rows region
 
@@ -226,7 +274,7 @@ as it does [on any element](on.html#how-a-name-resolves).
 
 ```html
 <demo-roster>
-  <hg-each>
+  <hg-each bind="crew:prop#items">
     <ul>
       <template>
         <li><b bind="name"></b> — <span bind="role">member</span>
@@ -248,9 +296,7 @@ const crew = reactive([
 const bench = ["Katherine", "Dorothy", "Margaret", "Mary"];
 
 hg("demo-roster", {
-  connected(el) {
-    el.querySelector("hg-each").items = crew;
-  },
+  properties: { crew },
   handlers: {
     hire() { crew.push({ name: bench[crew.length % bench.length] }) },
     dismiss(e) {
@@ -264,8 +310,8 @@ Neither button is hg-each's. **Hire** sits on `<demo-roster>` and fires there;
 **Dismiss** sits in a row, finds no `dismiss` on hg-each, and walks up to the
 same element — which is why one `handlers` object serves both. The list is
 [`reactive()`](api.html#reactivemodel), so `push` and `splice` repaint with no
-call to `update`, and `<hg-each>` never learns about the data twice: `connected`
-hands it the array once.
+call to `update`, and `<hg-each>` never learns about the data twice: the roster
+declares `crew`, and the bind on `<hg-each>` hands it over.
 
 The name is `dismiss` and not `remove` because [a method on the element
 wins](on.html#how-a-name-resolves), and every element already has `remove()` —

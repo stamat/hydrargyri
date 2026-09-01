@@ -1,6 +1,7 @@
 // Covers the whole public surface: the factory, the HgElement base class,
 // attribute↔property reflection, every bind type, formatters, handler wiring,
-// static wires, nesting scope, lifecycle hooks, deferred init during parse,
+// static wires, nesting scope, binds a nested element hands to its ancestor,
+// lifecycle hooks, deferred init during parse,
 // pre-upgrade property capture, reactive models, rescan(), and markup stamped
 // from a template before define. Deliberately not covered: automatic pickup of
 // dynamically inserted bind/on nodes — watching the subtree is a documented
@@ -652,6 +653,78 @@ test('a bind on the hydrargyri element itself works, scoped to itself', () => {
   hg(name, ['state'])
   const root = mount(`<${name} state="on" bind="state:attr#data-state"></${name}>`)
   expect(root.firstElementChild.getAttribute('data-state')).toBe('on')
+})
+
+test('a bind on a nested hydrargyri element for a key it does not own belongs to the nearest ancestor that does', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const outer = tag()
+  const inner = tag()
+  hg(outer, { properties: ['rows'] })
+  hg(inner, { properties: ['items'] })
+  const root = mount(`<${outer}><${inner} bind="rows:prop#items"></${inner}></${outer}>`)
+  const rows = [{ name: 'Ada' }]
+  root.firstElementChild.rows = rows
+  expect(root.querySelector(inner).items).toBe(rows)
+  expect(warn).not.toHaveBeenCalled()
+})
+
+test('the claim walks past nested elements that do not own the key, to the first that does', () => {
+  const outer = tag()
+  const middle = tag()
+  const inner = tag()
+  hg(outer, { properties: ['rows'] })
+  hg(middle, { properties: ['other'] })
+  hg(inner, { properties: ['items'] })
+  const root = mount(`<${outer}><${middle}><${inner} bind="rows:prop#items"></${inner}></${middle}></${outer}>`)
+  const rows = [{ name: 'Ada' }]
+  root.firstElementChild.rows = rows
+  expect(root.querySelector(inner).items).toBe(rows)
+})
+
+test('a nested element that declares the key keeps the bind, shadowing the ancestor', () => {
+  const outer = tag()
+  const inner = tag()
+  hg(outer, { properties: ['label'] })
+  hg(inner, ['label'])
+  const root = mount(`<${outer}><${inner} label="in" bind="label:prop#title"></${inner}></${outer}>`)
+  root.firstElementChild.label = 'out'
+  expect(root.querySelector(inner).title).toBe('in')
+})
+
+test('a bind on a nested hydrargyri element for a key nobody owns warns once and paints nothing', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const outer = tag()
+  const inner = tag()
+  hg(outer, { properties: ['rows'] })
+  hg(inner, { properties: ['items'] })
+  const root = mount(`<${outer}><${inner} bind="typo:prop#items"></${inner}></${outer}>`)
+  expect(warn).toHaveBeenCalledTimes(1)
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('typo'))
+  expect(root.querySelector(inner).items).toBe(null)
+})
+
+test('an ancestor cannot paint text or html through a nested element into markup that is not its own', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const outer = tag()
+  const inner = tag()
+  hg(outer, { properties: ['msg'] })
+  hg(inner, { properties: ['items'] })
+  const root = mount(`<${outer}><${inner} bind="msg"><b>kept</b></${inner}></${outer}>`)
+  root.firstElementChild.msg = 'wipe'
+  expect(root.querySelector(inner).querySelector('b').textContent).toBe('kept')
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('own markup'))
+})
+
+test('an if bind on a nested element hides that element from the ancestor state', () => {
+  const outer = tag()
+  const inner = tag()
+  hg(outer, { properties: ['ready'] })
+  hg(inner, { properties: ['items'] })
+  const root = mount(`<${outer}><${inner} bind="ready:if"></${inner}></${outer}>`)
+  const innerEl = root.querySelector(inner)
+  expect(innerEl.hasAttribute('hidden')).toBe(true)
+  root.firstElementChild.ready = true
+  expect(innerEl.hasAttribute('hidden')).toBe(false)
 })
 
 test('a prop bind on the host writing its own reactive key is refused at scan, not painted into a stack overflow', () => {

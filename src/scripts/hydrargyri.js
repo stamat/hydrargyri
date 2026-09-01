@@ -1,11 +1,12 @@
 import { isArray, stringToPrimitive, transformDashToCamelCase, getObjectValueByPath } from 'book-of-spells'
 
 // Every tag defined through hydrargyri, so bind/handler scanning can tell which
-// nested hydrargyri element owns a node: the nearest hydrargyri ancestor, whatever its tag.
+// nested hydrargyri element owns a node: the nearest hydrargyri ancestor, whatever its tag,
+// and which ancestors a bind on a nested element may fall through to.
 const hgTags = new Set()
 
-// The selector _scope matches against, rebuilt when a new tag arrives rather
-// than once per scanned node.
+// The selector _scope and _claim match against, rebuilt when a new tag arrives
+// rather than once per scanned node.
 let hgSelector = ''
 
 const BIND_TYPES = new Set(['text', 'html', 'value', 'attr', 'prop', 'class', 'if', 'unless'])
@@ -552,7 +553,8 @@ export class HgElement extends HTMLElement {
   }
 
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
-  // element's own, so different hydrargyri elements nest without stealing binds.
+  // element's own, so different hydrargyri elements nest without stealing handlers.
+  // Binds go through _claim instead, which can hand one to an ancestor.
   // The selector grows with every tag ever defined and closest() pays for it
   // per scanned node — the ceiling is scan cost on pages defining many tags;
   // a per-scan ancestor cache is the upgrade if it ever shows up in a profile.
@@ -564,13 +566,36 @@ export class HgElement extends HTMLElement {
     return key in this._reflected || key in this._state
   }
 
+  // Which hydrargyri element a bind entry belongs to. A node's binds are the nearest
+  // hydrargyri element's, as ever — except a bind sitting on a hydrargyri element for a
+  // key that element does not declare, which is the nearest ancestor that does:
+  // the element has no state to paint it from, so the only other outcome is a
+  // warning and a dead attribute. Nearest owner wins, so an element declaring
+  // the key shadows every ancestor. Handlers keep the strict rule — `on` names
+  // a function on the element that owns the markup, not state passed down.
+  _claim(el, nearest, key) {
+    if (nearest !== el) return nearest
+    let owner = nearest
+    while (owner && !owner._owns(key)) owner = owner.parentElement?.closest(hgSelector) ?? null
+    return owner
+  }
+
   _scanBinds() {
     this._binds = {}
     const collect = (el) => {
-      if (!this._scope(el)) return
       const raw = el.getAttribute('bind') || el.getAttribute('data-bind')
       if (!raw) return
+      const nearest = el.closest(hgSelector)
+      // A subclass narrowing _scope still decides the nodes it would have
+      // claimed outright — hydrargyri-each keeps its rows region out of its own
+      // bind scan that way, and a claim must not walk around the veto.
+      if (nearest === this && !this._scope(el)) return
       for (const entry of parseBinds(raw)) {
+        // A key no element on the chain owns falls back to the element the
+        // author wrote the bind under, so the unknown-key warning below fires
+        // once — never from every ancestor that looked at it and passed on.
+        const claim = this._claim(el, nearest, entry.path[0])
+        if (claim !== this && !(claim === null && nearest === this)) continue
         // A formatter argument names a dependency the same way the bind key
         // does, so the entry registers under every named key — repainting any
         // of them re-renders the node, with no dependency tracking anywhere.
@@ -579,6 +604,14 @@ export class HgElement extends HTMLElement {
         const unknown = [...keys].find((key) => !this._owns(key))
         if (unknown !== undefined) {
           console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${unknown}" for bind "${raw}"`)
+          continue
+        }
+        // text and html replace everything under the node they paint. On a
+        // nested hydrargyri element that is the element's own markup and the binds it
+        // scanned from it — an ancestor writes a nested element's property,
+        // never its contents.
+        if (el !== this && nearest === el && (entry.type === 'text' || entry.type === 'html')) {
+          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> bind "${raw}" would replace <${el.tagName.toLowerCase()}>'s own markup — an ancestor writes a nested element's property, never its contents`)
           continue
         }
         // A prop bind on the element's own host, writing a reactive key it

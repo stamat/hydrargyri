@@ -62,6 +62,15 @@ The API:
   shows), `unless` / `unless#condition` (the same toggle inverted — `if` and
   `unless` on sibling nodes are a full if/else with no JS). Entries separate
   with `;`; a path may reach into an object (`user.name`).
+- A `bind` on a **nested hydrargyri element**, naming a key that element does not
+  declare, belongs to the nearest ancestor that does: `<user-list><hg-each
+  bind="rows:prop#items">` hands the list's `rows` to hg-each's `items` with no
+  JavaScript at the call site. The walk stops at the first declaring element, so
+  a nested element declaring the key keeps its own bind, and a key nobody
+  declares warns like any typo. `text` and `html` are refused across that
+  boundary — they replace everything under the node, and a nested element's
+  markup is its own. Plain nodes are unchanged: they belong to the nearest
+  hydrargyri ancestor, nested element included. Handlers never cross.
 - A `|formatter` after the type runs the named function from `formatters` as
   `(value, element, ...args)` — the return value is what lands in the node:
   `bind="price|money:currency"`. Args are property paths resolved on the

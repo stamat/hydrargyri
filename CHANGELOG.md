@@ -11,6 +11,20 @@ for the person who wrote the code.
 
 ## [Unreleased]
 
+### Added
+
+- **A `bind` on a nested hydrargyri element can name the ancestor's state.** A bind sitting
+  on a hydrargyri element, for a key that element does not declare, now belongs to the
+  nearest ancestor that does — `<user-list><hg-each bind="rows:prop#items"></hg-each>`
+  hands the list's `rows` to hg-each's `items` without a line of JavaScript at the call
+  site. Before, that markup could only warn: the bind was scoped to the element it sat
+  on, which had no such key. The walk stops at the first element declaring the key, so a
+  nested element declaring it keeps its own bind, and a key nobody declares warns as any
+  typo does. `text` and `html` are refused across that boundary and warn — both replace
+  everything under the node they paint, and a nested element's markup is its own.
+  Everything else is unchanged: plain nodes still belong to the nearest hydrargyri ancestor,
+  and handlers never cross.
+
 ### Changed
 
 - **The landing page leads with the logo.** `hydrargyri-logo.svg` centred above the title,

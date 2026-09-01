@@ -389,7 +389,8 @@ var _HgElement = class _HgElement extends HTMLElement {
     this._listeners.push({ el: this, event: "command", listener });
   }
   // The nearest hydrargyri ancestor owns a node — any hydrargyri tag, not only this
-  // element's own, so different hydrargyri elements nest without stealing binds.
+  // element's own, so different hydrargyri elements nest without stealing handlers.
+  // Binds go through _claim instead, which can hand one to an ancestor.
   // The selector grows with every tag ever defined and closest() pays for it
   // per scanned node — the ceiling is scan cost on pages defining many tags;
   // a per-scan ancestor cache is the upgrade if it ever shows up in a profile.
@@ -399,18 +400,39 @@ var _HgElement = class _HgElement extends HTMLElement {
   _owns(key) {
     return key in this._reflected || key in this._state;
   }
+  // Which hydrargyri element a bind entry belongs to. A node's binds are the nearest
+  // hydrargyri element's, as ever — except a bind sitting on a hydrargyri element for a
+  // key that element does not declare, which is the nearest ancestor that does:
+  // the element has no state to paint it from, so the only other outcome is a
+  // warning and a dead attribute. Nearest owner wins, so an element declaring
+  // the key shadows every ancestor. Handlers keep the strict rule — `on` names
+  // a function on the element that owns the markup, not state passed down.
+  _claim(el, nearest, key) {
+    var _a, _b;
+    if (nearest !== el) return nearest;
+    let owner = nearest;
+    while (owner && !owner._owns(key)) owner = (_b = (_a = owner.parentElement) == null ? void 0 : _a.closest(hgSelector)) != null ? _b : null;
+    return owner;
+  }
   _scanBinds() {
     this._binds = {};
     const collect = (el) => {
-      if (!this._scope(el)) return;
       const raw = el.getAttribute("bind") || el.getAttribute("data-bind");
       if (!raw) return;
+      const nearest = el.closest(hgSelector);
+      if (nearest === this && !this._scope(el)) return;
       for (const entry of parseBinds(raw)) {
+        const claim = this._claim(el, nearest, entry.path[0]);
+        if (claim !== this && !(claim === null && nearest === this)) continue;
         const keys = /* @__PURE__ */ new Set([entry.path[0]]);
         if (entry.format) for (const arg of entry.format.args) keys.add(arg[0]);
         const unknown = [...keys].find((key) => !this._owns(key));
         if (unknown !== void 0) {
           console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> has no attribute or property "${unknown}" for bind "${raw}"`);
+          continue;
+        }
+        if (el !== this && nearest === el && (entry.type === "text" || entry.type === "html")) {
+          console.warn(`hydrargyri: <${this.tagName.toLowerCase()}> bind "${raw}" would replace <${el.tagName.toLowerCase()}>'s own markup \u2014 an ancestor writes a nested element's property, never its contents`);
           continue;
         }
         if (el === this && entry.type === "prop" && entry.attr && this._owns(transformDashToCamelCase(entry.attr))) {

@@ -275,6 +275,8 @@ entry, and is skipped. The element's **other** binds keep painting.
 | `bind="url:attr"` — `attr` with no `#name` | same warning; there is no attribute to write                    |
 | `bind="rows:prop"` — `prop` with no `#name` | same warning; there is no property to write                    |
 | `bind="items:prop#items"` on the element's own tag | warns that the bind writes its own reactive key — a feedback loop the paint cannot leave — and is skipped; assign the property from a handler instead |
+| `bind="rows"` on a nested hydrargyri element, `rows` the ancestor's | warns; a `text` or `html` bind would replace the nested element's own markup, and an ancestor writes its property, never its contents |
+| `bind="rows:prop#items"` on a nested element, `rows` declared nowhere on the chain | warns like a typo in the key, from the element carrying the bind |
 | `bind="price\|money:tax"` — an argument naming nothing the element owns | warns like a typo in the key, and the entry is skipped |
 | `bind="price\|a\|b"` — a second `\|` | warns; one formatter per entry, chaining is not supported             |
 | `bind="user.name"` before `user` exists | nothing painted, no warning — a path is allowed to be empty for now |
@@ -309,3 +311,30 @@ A `bind` node inserted after that scan is not seen until the element is asked
 to look again: [`rescan()`](api.html#rescan) runs the same scan on the current
 subtree, and re-connecting the element does it through the lifecycle. Nothing
 watches the subtree on its own; see [Limits](limits.html#late-dom).
+
+### A bind an element hands to its ancestor
+
+The fence above has one gap, and it is the nested element **itself**. A `bind`
+sitting on a hydrargyri element, naming a key that element does not declare, belongs
+to the nearest ancestor that does — which is how a parent hands a child its
+state with no JavaScript at the call site:
+
+```html
+<user-list>
+  <hg-each bind="rows:prop#items">…</hg-each>
+</user-list>
+```
+
+`rows` is the list's, `items` is [hg-each](each.html)'s, and nothing is
+evaluated on the way across. The walk climbs until an element declares the key,
+so an intermediate element that knows nothing about `rows` is passed over, and
+the nearest declaring element wins — a child declaring `rows` itself keeps the
+bind and shadows the parent. A key nobody declares warns like any other typo,
+once, from the element the bind was written on.
+
+What an ancestor may write this way is the child's **public surface**: `prop#`,
+`attr#`, `class#`, `value`, and the `if`/`unless` toggle on the child element
+itself. `text` and `html` are refused with a warning, because both replace
+everything under the node they paint — the child's own markup, and the binds it
+scanned from it. An ancestor writes a nested element's property, never its
+contents.
